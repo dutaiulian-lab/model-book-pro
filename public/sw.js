@@ -12,3 +12,4 @@ self.addEventListener('fetch', (e) => {
 // Update cache version 2
 // Update cache version 3
 // Update cache version 4 (Perfect Centering)
+// Update cache version 5 (Trimmed Opaque PNG)
