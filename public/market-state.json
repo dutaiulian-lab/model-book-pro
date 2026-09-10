@@ -1,396 +1,90 @@
 {
-  "timestamp": "2026-09-10T08:13:01.484Z",
+  "timestamp": "2026-09-10T08:18:37.189Z",
   "total_scanned": 521,
   "matches": [
-    {
-      "ticker": "AES",
-      "price": 14.819999694824219,
-      "ema21": 14.766439745407702,
-      "vol_status": "Below 20d Average"
-    },
     {
       "ticker": "AWK",
       "price": 140.3300018310547,
       "ema21": 138.00010262150676,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-3.6%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "APH",
       "price": 81.33999633789062,
       "ema21": 80.8411310525744,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-8.9%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "ANET",
       "price": 192.92999267578125,
       "ema21": 191.68531590398283,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BRK-B",
-      "price": 506.7200012207031,
-      "ema21": 505.1791868645586,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BIO",
-      "price": 376.9700012207031,
-      "ema21": 372.8910189910815,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BBY",
-      "price": 88.02999877929688,
-      "ema21": 85.96514493308806,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TECH",
-      "price": 72.25,
-      "ema21": 72.15454070536235,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BIIB",
-      "price": 210.72999572753906,
-      "ema21": 215.31763458572254,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BWA",
-      "price": 65.26000213623047,
-      "ema21": 65.71359577147267,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BMY",
-      "price": 64.41000366210938,
-      "ema21": 65.82720828536146,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-10.2%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "CAH",
       "price": 240,
       "ema21": 238.049077277539,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "CMG",
-      "price": 36.029998779296875,
-      "ema21": 36.32533961417105,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "C",
-      "price": 137.8000030517578,
-      "ema21": 134.99710317701903,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "KO",
-      "price": 87.55000305175781,
-      "ema21": 88.35902153998657,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-7.1%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "CTVA",
       "price": 84.75,
       "ema21": 83.89888130687251,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-6.8%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "FANG",
       "price": 202.6300048828125,
       "ema21": 201.206968608113,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "DVN",
-      "price": 48.97999954223633,
-      "ema21": 47.49110224256427,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "DLR",
-      "price": 189.0800018310547,
-      "ema21": 189.33402010483513,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-6.6%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "EOG",
       "price": 147.00999450683594,
       "ema21": 145.68382463547687,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "EMR",
-      "price": 150.33999633789062,
-      "ema21": 153.4837702835426,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "EXPD",
-      "price": 188.30999755859375,
-      "ema21": 185.98993001813028,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-4.3%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "XOM",
       "price": 164.22999572753906,
       "ema21": 160.38653677269926,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "FAST",
-      "price": 48.790000915527344,
-      "ema21": 49.687700707841074,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "BEN",
-      "price": 34.119998931884766,
-      "ema21": 34.08351330590884,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "GEN",
-      "price": 29.760000228881836,
-      "ema21": 29.527848663342194,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-6.9%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "GILD",
       "price": 145.64999389648438,
       "ema21": 144.82284747241664,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "HSIC",
-      "price": 87.97000122070312,
-      "ema21": 89.06189981209054,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "ILMN",
-      "price": 205,
-      "ema21": 209.76417403385022,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "IVZ",
-      "price": 32.09000015258789,
-      "ema21": 32.12683478012386,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "IQV",
-      "price": 256.9800109863281,
-      "ema21": 254.16672662425103,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "J",
-      "price": 141.75,
-      "ema21": 145.68786487645292,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "JNJ",
-      "price": 267.0799865722656,
-      "ema21": 268.28751233316535,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "KDP",
-      "price": 32.08000183105469,
-      "ema21": 31.83157584452605,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "KEYS",
-      "price": 331.010009765625,
-      "ema21": 327.1080915645699,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "LYB",
-      "price": 64.51000213623047,
-      "ema21": 63.999668875716345,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "MA",
-      "price": 567.5,
-      "ema21": 577.4858736425085,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-7.4%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "MRK",
       "price": 147.52999877929688,
       "ema21": 145.60684418462208,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "MSFT",
-      "price": 491.6499938964844,
-      "ema21": 489.61908452054416,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "MHK",
-      "price": 127.94000244140625,
-      "ema21": 130.24243453677983,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "NTAP",
-      "price": 184.74000549316406,
-      "ema21": 187.44617866291458,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "NDAQ",
-      "price": 94.22000122070312,
-      "ema21": 96.53804942053516,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "MSI",
-      "price": 459.8900146484375,
-      "ema21": 469.59228093986724,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "NDSN",
-      "price": 313.94000244140625,
-      "ema21": 317.23990639019735,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "NTRS",
-      "price": 184.69000244140625,
-      "ema21": 185.60212702009255,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "NUE",
-      "price": 257.9100036621094,
-      "ema21": 256.31305408294986,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-6.0%",
+      "vol_status": "VCP Dry-Up"
     },
     {
       "ticker": "NVDA",
       "price": 223.6699981689453,
       "ema21": 220.01512445748227,
-      "vol_status": "Below 20d Average"
+      "base_depth": "-5.4%",
+      "vol_status": "VCP Dry-Up"
     },
     {
-      "ticker": "DGX",
-      "price": 235.4600067138672,
-      "ema21": 237.63351126030642,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "RJF",
-      "price": 175.47000122070312,
-      "ema21": 176.6110105224822,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "REGN",
-      "price": 807.6500244140625,
-      "ema21": 806.3674263111053,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "NOW",
-      "price": 131.11000061035156,
-      "ema21": 131.8643316892857,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "SYF",
-      "price": 77.3499984741211,
-      "ema21": 78.51580475245511,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TGT",
-      "price": 157.52000427246094,
-      "ema21": 159.16361455100312,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TRGP",
-      "price": 291.3800048828125,
-      "ema21": 288.022073572391,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TER",
-      "price": 383.69000244140625,
-      "ema21": 367.22844194510986,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TFX",
-      "price": 135.72000122070312,
-      "ema21": 137.68425417653336,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TRV",
-      "price": 366.8500061035156,
-      "ema21": 368.25272597790917,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "VRTX",
-      "price": 521.1199951171875,
-      "ema21": 533.2811267306935,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "V",
-      "price": 367.3900146484375,
-      "ema21": 371.9133895243818,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "WMB",
-      "price": 75.1500015258789,
-      "ema21": 73.85456078491501,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "ZBRA",
-      "price": 344.8299865722656,
-      "ema21": 351.05285054953987,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "PLTR",
-      "price": 169.52999877929688,
-      "ema21": 171.60017283706813,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "CRWD",
-      "price": 207.8000030517578,
-      "ema21": 208.24708509328727,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "SNOW",
-      "price": 331.4800109863281,
-      "ema21": 324.3302556342789,
-      "vol_status": "Below 20d Average"
-    },
-    {
-      "ticker": "TSM",
-      "price": 435.3599853515625,
-      "ema21": 421.65580484225103,
-      "vol_status": "Below 20d Average"
+      "ticker": "NUE",
+      "price": 257.9100036621094,
+      "ema21": 256.31305408294986,
+      "base_depth": "-7.9%",
+      "vol_status": "VCP Dry-Up"
     }
   ]
 }

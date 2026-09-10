@@ -100,38 +100,50 @@ async function run() {
                 
                 const current = data[data.length - 1];
                 const sma50 = calculateSMA(data, 50, 'close');
+                const sma150 = calculateSMA(data, 150, 'close');
                 const sma200 = calculateSMA(data, 200, 'close');
                 const ema21 = calculateEMA(data, 21);
-                const volSma20 = calculateSMA(data, 20, 'volume');
-
-                // 1. Core Trend
-                const trendUp = current.close > sma50 && sma50 > sma200;
                 
-                // 2. Base Depth Filter: Must be within 25% of 52-week high (Minervini/Moglen style shallow base)
+                // Need a 20-day old 200 SMA to check if it's trending up
+                const old200SMAData = data.slice(0, data.length - 20);
+                const sma200_20days_ago = calculateSMA(old200SMAData, 200, 'close');
+
+                const volSma20 = calculateSMA(data, 20, 'volume');
+                const volSma50 = calculateSMA(data, 50, 'volume');
+
+                // 1. Mark Minervini Trend Template (ULTRA STRICT)
+                const trendUp = (
+                    current.close > sma50 &&
+                    sma50 > sma150 &&
+                    sma150 > sma200 &&
+                    sma200 > sma200_20days_ago // 200-day must be trending UP
+                );
+                
+                // 2. Base Depth Filter: Must be within 15% of 52-week high (Super tight bases only)
                 const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-252).map(d => d.high));
                 const distanceFromHigh = ((high52 - current.close) / high52) * 100;
-                const isShallowBase = distanceFromHigh <= 25; // Never buy a broken chart down 50%
+                const isShallowBase = distanceFromHigh <= 15.0; 
                 
-                // 3. 21-EMA Proximity
+                // 3. 21-EMA Proximity & Respect (Must Close ABOVE it, but touch it)
                 const distanceTo21 = Math.abs((current.low - ema21) / ema21);
-                const touching21 = distanceTo21 <= 0.03; 
+                const touching21 = distanceTo21 <= 0.02; // Low came within 2% of the EMA
+                const closedAbove21 = current.close >= ema21; // MUST not break support
                 
-                // 4. Volume Contraction
-                const lowVolume = current.volume < volSma20;
+                // 4. Volume Contraction (Must be below both 20d and 50d average)
+                const lowVolume = current.volume < volSma20 && current.volume < volSma50;
                 
                 // 5. VCP Tightness (Daily Range Contraction)
-                // The range (High - Low) of today should be smaller than the average range of the last 10 days
                 const todayRange = current.high - current.low;
                 const avgRange = data.slice(-10).reduce((sum, d) => sum + (d.high - d.low), 0) / 10;
-                const isTight = todayRange <= (avgRange * 1.1); // Not expanding wildly
+                const isTight = todayRange <= avgRange; // Today's range is smaller than average (compression)
 
-                if (trendUp && isShallowBase && touching21 && lowVolume && isTight) {
+                if (trendUp && isShallowBase && touching21 && closedAbove21 && lowVolume && isTight) {
                     matches.push({
                         ticker,
                         price: current.close,
                         ema21: ema21,
                         base_depth: `-${distanceFromHigh.toFixed(1)}%`,
-                        vol_status: "Below 20d Avg & Tight Range"
+                        vol_status: "VCP Dry-Up"
                     });
                 }
             }
