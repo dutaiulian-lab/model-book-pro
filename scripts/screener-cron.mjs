@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import YahooFinance from 'yahoo-finance2';
 
-// Fetch the ENTIRE US MARKET dynamically
+const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+
 async function fetchAllUSTickers() {
     try {
         console.log("Downloading the master list of all US Market Tickers...");
@@ -10,11 +12,9 @@ async function fetchAllUSTickers() {
         const tickers = text.split('\n')
             .map(t => t.trim())
             .filter(t => t.length > 0 && !t.includes('-') && !t.includes('.') && !t.endsWith('W') && !t.endsWith('U')); 
-        // Filter out warrants (W), units (U), and preferred shares (-) to stick to common stock
         console.log(`Successfully loaded ${tickers.length} master tickers.`);
         return tickers;
     } catch (e) {
-        console.error("Failed to fetch master list, falling back to emergency list.", e);
         return ["AAPL", "MSFT", "NVDA", "SPCX", "CRCL"];
     }
 }
@@ -32,7 +32,6 @@ async function fetchYahooData(ticker) {
     
     let validData = [];
     if (!quotes.close) return null;
-    
     for(let i = 0; i < quotes.close.length; i++) {
         if(quotes.close[i] !== null && quotes.low[i] !== null && quotes.volume[i] !== null) {
             validData.push({ 
@@ -43,11 +42,7 @@ async function fetchYahooData(ticker) {
             });
         }
     }
-    
-    return {
-      history: validData,
-      meta: result.meta
-    };
+    return { history: validData, meta: result.meta };
   } catch (e) {
     return null;
   }
@@ -75,7 +70,6 @@ function calculatePerformance(data, daysAgo) {
     return ((currentPrice - pastPrice) / pastPrice) * 100;
 }
 
-
 async function sendDiscordAlert(matches) {
     const webhook = process.env.DISCORD_WEBHOOK_URL;
     if (!webhook || matches.length === 0) return;
@@ -84,13 +78,11 @@ async function sendDiscordAlert(matches) {
         title: `🎯 APEX SETUP: ${m.ticker}`,
         url: `https://www.tradingview.com/chart/?symbol=${m.ticker}`,
         color: 0x10b981,
-        description: "Perfect 21-EMA Pullback + Relative Strength + Institutional Demand",
+        description: "Perfect 21-EMA Pullback + RS + Fundamentals",
         fields: [
-            { name: "Daily Close", value: `${m.price.toFixed(2)}`, inline: true },
-            { name: "21-EMA Support", value: `${m.ema21.toFixed(2)}`, inline: true },
-            { name: "Base Depth", value: m.base_depth, inline: true },
-            { name: "3-Mo RS vs SPY", value: `+${m.relative_strength_3mo.toFixed(1)}%`, inline: true },
-            { name: "Volatility (ADR)", value: `${m.adr.toFixed(1)}%`, inline: true }
+            { name: "Daily Close", value: `$${m.price.toFixed(2)}`, inline: true },
+            { name: "21-EMA Support", value: `$${m.ema21.toFixed(2)}`, inline: true },
+            { name: "EPS Growth", value: `+${((m.eps_growth||0)*100).toFixed(1)}%`, inline: true }
         ],
         footer: { text: "Model Book Pro · Apex Screener" }
     }));
@@ -110,34 +102,26 @@ async function sendDiscordAlert(matches) {
 async function run() {
     console.log(`Fetching S&P 500 Market Benchmark (SPY)...`);
     const spyDataResult = await fetchYahooData('SPY');
-    if (!spyDataResult || spyDataResult.history.length < 125) {
-        console.error("Failed to fetch SPY benchmark. Aborting.");
-        return;
-    }
+    if (!spyDataResult) return;
     const spyData = spyDataResult.history;
     const spy3mo = calculatePerformance(spyData, 63); 
 
     const tickers = await fetchAllUSTickers();
-    console.log(`Starting WHOLE MARKET Apex Scan on ${tickers.length} tickers... This may take a few minutes.`);
-    const matches = [];
-
-    // Increase batch size to 20 for speed, but add a slight delay to prevent Yahoo IP bans
+    console.log(`Starting Technical Scan on ${tickers.length} tickers...`);
+    
+    let techMatches = [];
     const batchSize = 20;
     for (let i = 0; i < tickers.length; i += batchSize) {
         const batch = tickers.slice(i, i + batchSize);
-        if (i % 500 === 0) {
-            console.log(`Scanning progress: ${i} / ${tickers.length}...`);
-        }
+        if (i % 500 === 0) console.log(`Scanning progress: ${i} / ${tickers.length}...`);
         
         await Promise.all(batch.map(async (ticker) => {
             const result = await fetchYahooData(ticker);
             if (result && result.history.length > 200) {
                 const data = result.history;
                 const meta = result.meta;
-                
                 const current = data[data.length - 1];
                 
-                // PENNY STOCK / ILLIQUID FILTER (Model Book standard: Price > $5, Vol > 100k)
                 if (current.close < 5.0 || current.volume < 100000) return;
 
                 const sma50 = calculateSMA(data, 50, 'close');
@@ -147,89 +131,85 @@ async function run() {
                 
                 const old200SMAData = data.slice(0, data.length - 20);
                 const sma200_20days_ago = calculateSMA(old200SMAData, 200, 'close');
-
                 const volSma20 = calculateSMA(data, 20, 'volume');
                 const volSma50 = calculateSMA(data, 50, 'volume');
 
-                // 1. Minervini Trend Template (ULTRA STRICT)
-                const trendUp = (
-                    current.close > sma50 &&
-                    sma50 > sma150 &&
-                    sma150 > sma200 &&
-                    sma200 > sma200_20days_ago 
-                );
-                
-                // 2. Base Depth Filter
+                const trendUp = (current.close > sma50 && sma50 > sma150 && sma150 > sma200 && sma200 > sma200_20days_ago);
                 const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-252).map(d => d.high));
                 const distanceFromHigh = ((high52 - current.close) / high52) * 100;
                 const isShallowBase = distanceFromHigh <= 15.0; 
-                
-                // 3. 21-EMA Proximity & Respect 
                 const distanceTo21 = Math.abs((current.low - ema21) / ema21);
                 const touching21 = distanceTo21 <= 0.02; 
                 const closedAbove21 = current.close >= ema21; 
-                
-                // 4. Volume Contraction 
                 const lowVolume = current.volume < volSma20 && current.volume < volSma50;
-                
-                // 5. VCP Tightness (Daily Range Contraction)
                 const todayRange = current.high - current.low;
                 const avgRange = data.slice(-10).reduce((sum, d) => sum + (d.high - d.low), 0) / 10;
                 const isTight = todayRange <= avgRange; 
-
-                // 6. RELATIVE STRENGTH (RS)
                 const stock3mo = calculatePerformance(data, 63);
                 const outperforming = stock3mo > (Math.max(spy3mo, 0) * 1.5) && stock3mo > 10; 
-
-                // 7. ADR% (Average Daily Range)
                 const adr = (data.slice(-20).reduce((sum, d) => sum + ((d.high - d.low) / d.close), 0) / 20) * 100;
                 const goodVolatility = adr >= 2.0 && adr <= 8.0;
 
-                // 8. INSTITUTIONAL DEMAND
-                let hasInstitutionalDemand = false;
+                let hasInstDemand = false;
                 for (let j = data.length - 15; j < data.length; j++) {
                     const prevClose = data[j-1].close;
-                    const dayVolume = data[j].volume;
-                    const dailyVolAvg = calculateSMA(data.slice(0, j), 50, 'volume');
-                    if (data[j].close > prevClose && dayVolume > (dailyVolAvg * 1.5)) {
-                        hasInstitutionalDemand = true;
-                        break;
+                    if (data[j].close > prevClose && data[j].volume > (calculateSMA(data.slice(0, j), 50, 'volume') * 1.5)) {
+                        hasInstDemand = true; break;
                     }
                 }
 
-                if (trendUp && isShallowBase && touching21 && closedAbove21 && lowVolume && isTight && outperforming && goodVolatility && hasInstitutionalDemand) {
-                    matches.push({
-                        ticker,
-                        price: current.close,
-                        ema21: ema21,
-                        base_depth: `-${distanceFromHigh.toFixed(1)}%`,
-                        adr: adr,
-                        relative_strength_3mo: stock3mo - spy3mo,
-                        vol_status: "Whole Market Elite"
+                if (trendUp && isShallowBase && touching21 && closedAbove21 && lowVolume && isTight && outperforming && goodVolatility && hasInstDemand) {
+                    techMatches.push({
+                        ticker, price: current.close, ema21, base_depth: `-${distanceFromHigh.toFixed(1)}%`,
+                        adr, relative_strength_3mo: stock3mo - spy3mo, vol_status: "VCP Dry-Up"
                     });
                 }
             }
         }));
-        
-        // 200ms delay between batches of 20 to prevent rate limiting across 6000 requests
         await new Promise(r => setTimeout(r, 200));
+    }
+
+    console.log(`\nTechnical Scan found ${techMatches.length} candidates.`);
+    console.log(`Starting FUNDAMENTAL Validation phase...`);
+    
+    let finalMatches = [];
+    
+    for (const match of techMatches) {
+        try {
+            const summary = await yf.quoteSummary(match.ticker, { modules: ['financialData'] });
+            const epsGrowth = summary?.financialData?.earningsGrowth || 0;
+            const revGrowth = summary?.financialData?.revenueGrowth || 0;
+            
+            // THE FUNDAMENTAL FILTER: Must have either > 15% EPS Growth OR > 15% Revenue Growth
+            if (epsGrowth >= 0.15 || revGrowth >= 0.15) {
+                finalMatches.push({
+                    ...match,
+                    eps_growth: epsGrowth,
+                    rev_growth: revGrowth
+                });
+                console.log(`[PASS] ${match.ticker} - EPS Growth: ${(epsGrowth*100).toFixed(1)}%, Rev Growth: ${(revGrowth*100).toFixed(1)}%`);
+            } else {
+                console.log(`[REJECTED] ${match.ticker} - Failed Fundamental Test (EPS: ${(epsGrowth*100).toFixed(1)}%, Rev: ${(revGrowth*100).toFixed(1)}%)`);
+            }
+        } catch (e) {
+            console.log(`[SKIP] ${match.ticker} - Could not fetch fundamentals.`);
+        }
+        await new Promise(r => setTimeout(r, 500)); // Be polite to Yahoo
     }
 
     const output = {
         timestamp: new Date().toISOString(),
         total_scanned: tickers.length,
-        matches
+        matches: finalMatches
     };
 
     const outPath = path.join(process.cwd(), 'public', 'market-state.json');
-    if (!fs.existsSync(path.dirname(outPath))) {
-        fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    }
+    if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
-    console.log(`Saved results to public/market-state.json. Found ${matches.length} matches across the ENTIRE market.`);
+    console.log(`Saved results. Found ${finalMatches.length} stocks that passed BOTH Technicals and Fundamentals.`);
 
-    if (matches.length > 0) {
-        await sendDiscordAlert(matches);
+    if (finalMatches.length > 0) {
+        await sendDiscordAlert(finalMatches);
     }
 }
 

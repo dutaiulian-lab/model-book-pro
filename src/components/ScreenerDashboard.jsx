@@ -196,6 +196,14 @@ export default function ScreenerDashboard() {
                     <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-4 h-4"/> Volatility (ADR)</span>
                     <span className="text-purple-500 font-bold bg-purple-500/10 px-2 py-0.5 rounded text-xs">{match.adr?.toFixed(1)}%</span>
                   </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> EPS Growth (YoY)</span>
+                    <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">+{((match.eps_growth || 0) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> Sales Growth (YoY)</span>
+                    <span className="text-blue-500 font-bold bg-blue-500/10 px-2 py-0.5 rounded text-xs">+{((match.rev_growth || 0) * 100).toFixed(1)}%</span>
+                  </div>
                 </div>
 
                 <div className="mt-5 p-3 rounded-xl bg-muted/20 border border-border/50 shrink-0">
