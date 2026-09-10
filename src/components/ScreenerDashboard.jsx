@@ -163,6 +163,10 @@ export default function ScreenerDashboard() {
                     <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> Daily Volume</span>
                     <span className="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-xs">{match.vol_status}</span>
                   </div>
+                  <div className="flex items-center justify-between text-sm mt-3">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Base Depth</span>
+                    <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">{match.base_depth}</span>
+                  </div>
                 </div>
 
                 <div className="mt-5 p-3 rounded-xl bg-muted/20 border border-border/50 shrink-0">
