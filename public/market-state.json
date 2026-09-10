@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-10T08:30:48.039Z",
+  "timestamp": "2026-09-10T09:10:20.564Z",
   "total_scanned": 6129,
   "matches": [
     {
@@ -9,25 +9,9 @@
       "base_depth": "-3.9%",
       "adr": 2.9642433147009353,
       "relative_strength_3mo": 11.389326796877002,
-      "vol_status": "Whole Market Elite"
-    },
-    {
-      "ticker": "CTVA",
-      "price": 84.75,
-      "ema21": 83.89888130687251,
-      "base_depth": "-6.8%",
-      "adr": 2.568581264302765,
-      "relative_strength_3mo": 9.545540354204158,
-      "vol_status": "Whole Market Elite"
-    },
-    {
-      "ticker": "EWTX",
-      "price": 43.38999938964844,
-      "ema21": 43.087607478985234,
-      "base_depth": "-10.4%",
-      "adr": 4.592041449406343,
-      "relative_strength_3mo": 23.953437473003323,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 2.435,
+      "rev_growth": -0.031
     },
     {
       "ticker": "FIVE",
@@ -36,7 +20,9 @@
       "base_depth": "-6.4%",
       "adr": 3.9935869131776456,
       "relative_strength_3mo": 26.058062899589583,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 4.182,
+      "rev_growth": 0.229
     },
     {
       "ticker": "MGNI",
@@ -45,16 +31,9 @@
       "base_depth": "-10.0%",
       "adr": 3.6846462729482816,
       "relative_strength_3mo": 45.706713845817426,
-      "vol_status": "Whole Market Elite"
-    },
-    {
-      "ticker": "MRK",
-      "price": 147.52999877929688,
-      "ema21": 145.60684418462208,
-      "base_depth": "-6.0%",
-      "adr": 2.454692652423864,
-      "relative_strength_3mo": 19.91345159244692,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.653,
+      "rev_growth": 0.112
     },
     {
       "ticker": "NGL",
@@ -63,7 +42,9 @@
       "base_depth": "-7.1%",
       "adr": 4.517680777060338,
       "relative_strength_3mo": 9.435047733564849,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 11.286,
+      "rev_growth": 0.591
     },
     {
       "ticker": "PSNL",
@@ -72,34 +53,9 @@
       "base_depth": "-13.2%",
       "adr": 4.521991697920756,
       "relative_strength_3mo": 64.76573252259698,
-      "vol_status": "Whole Market Elite"
-    },
-    {
-      "ticker": "QUAD",
-      "price": 10.149999618530273,
-      "ema21": 10.088236484874571,
-      "base_depth": "-9.0%",
-      "adr": 3.071088960025963,
-      "relative_strength_3mo": 29.41400869998794,
-      "vol_status": "Whole Market Elite"
-    },
-    {
-      "ticker": "RVMD",
-      "price": 207.67999267578125,
-      "ema21": 207.2770431175167,
-      "base_depth": "-7.4%",
-      "adr": 3.7427025525955018,
-      "relative_strength_3mo": 35.43054366147805,
-      "vol_status": "Whole Market Elite"
-    },
-    {
-      "ticker": "SAIC",
-      "price": 126.19999694824219,
-      "ema21": 125.83812302054251,
-      "base_depth": "-11.5%",
-      "adr": 3.452943711601917,
-      "relative_strength_3mo": 7.184727201449743,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0,
+      "rev_growth": 0.3
     },
     {
       "ticker": "SBLK",
@@ -108,7 +64,9 @@
       "base_depth": "-5.2%",
       "adr": 2.7130972409176928,
       "relative_strength_3mo": 13.046588967967978,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 3881.94,
+      "rev_growth": 0.445
     },
     {
       "ticker": "TGB",
@@ -117,7 +75,9 @@
       "base_depth": "-9.1%",
       "adr": 4.445904667662569,
       "relative_strength_3mo": 32.481461682827685,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": -0.133,
+      "rev_growth": 1.848
     },
     {
       "ticker": "WHD",
@@ -126,7 +86,9 @@
       "base_depth": "-5.7%",
       "adr": 2.962689453804478,
       "relative_strength_3mo": 16.93991804864123,
-      "vol_status": "Whole Market Elite"
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.189,
+      "rev_growth": 0.643
     }
   ]
 }
