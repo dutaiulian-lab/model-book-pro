@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap , ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function ScreenerDashboard() {
+  const [expandedCards, setExpandedCards] = useState({});
+  const toggleCard = (ticker) => setExpandedCards(prev => ({...prev, [ticker]: !prev[ticker]}));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -138,7 +140,8 @@ export default function ScreenerDashboard() {
             return (
               <div key={idx} className="bg-card border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
                 
-                <div className="flex justify-between items-start mb-4">
+                
+                <div className="flex justify-between items-start mb-0 cursor-pointer" onClick={() => toggleCard(match.ticker)}>
                   <div>
                     <h3 className="text-2xl font-black text-foreground tracking-tight">{match.ticker}</h3>
                     <div className="flex items-end gap-2 mt-1">
@@ -146,12 +149,20 @@ export default function ScreenerDashboard() {
                         <div className="text-[10px] uppercase font-bold text-muted-foreground pb-1">Live</div>
                     </div>
                   </div>
-                  <a href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`} target="_blank" rel="noreferrer" className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider">
-                    Chart ↗
-                  </a>
+                  <div className="flex items-center gap-3">
+                    <a href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`} target="_blank" rel="noreferrer" onClick={(e)=>e.stopPropagation()} className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider">
+                      Chart ↗
+                    </a>
+                    <button className="text-muted-foreground hover:text-foreground transition-colors">
+                      {expandedCards[match.ticker] ? <ChevronUp className="w-5 h-5"/> : <ChevronDown className="w-5 h-5"/>}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-3 mt-4 border-t border-border/50 pt-4 flex-1">
+                {expandedCards[match.ticker] && (
+                  <div className="animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-3 mt-4 border-t border-border/50 pt-4 flex-1">
+
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> Macro Trend</span>
                     <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">Confirmed</span>
@@ -195,6 +206,8 @@ export default function ScreenerDashboard() {
                     Set entry trigger slightly above yesterday's high. Set hard stop-loss at exactly <strong>${ema21.toFixed(2)}</strong>.
                   </p>
                 </div>
+                  </div>
+                )}
 
               </div>
             );
