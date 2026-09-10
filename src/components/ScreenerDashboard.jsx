@@ -111,7 +111,17 @@ export default function ScreenerDashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {matches.map((match, idx) => {
+          
+          {(() => {
+            const sortedMatches = [...matches].sort((a, b) => {
+              const priceA = livePrices[a.ticker] || a.price;
+              const priceB = livePrices[b.ticker] || b.price;
+              const distA = Math.abs((priceA - a.ema21) / a.ema21);
+              const distB = Math.abs((priceB - b.ema21) / b.ema21);
+              return distA - distB;
+            });
+            return sortedMatches.map((match, idx) => {
+
             // Use live price if available, else fallback to the scanned closing price
             const currentPrice = livePrices[match.ticker] || match.price;
             
@@ -188,7 +198,8 @@ export default function ScreenerDashboard() {
 
               </div>
             );
-          })}
+            });
+          })()}
         </div>
       )}
 
