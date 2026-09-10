@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap , ChevronDown, ChevronUp } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap , ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 
 export default function ScreenerDashboard() {
   const [expandedCards, setExpandedCards] = useState({});
+  const [copied, setCopied] = useState(false);
+  const copyTickers = () => {
+    if (!data || !data.matches) return;
+    const tickerString = data.matches.map(m => m.ticker).join(',');
+    navigator.clipboard.writeText(tickerString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const toggleCard = (ticker) => setExpandedCards(prev => ({...prev, [ticker]: !prev[ticker]}));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +56,13 @@ export default function ScreenerDashboard() {
     };
 
     fetchLivePrices();
-    const interval = setInterval(fetchLivePrices, 10000); // Poll every 10 seconds
+    
+    // Smart Polling: Only fetch when the app is actually visible on the screen
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchLivePrices();
+      }
+    }, 10000);
 
     return () => {
       isMounted = false;
@@ -90,8 +104,14 @@ export default function ScreenerDashboard() {
             <Crosshair className="text-amber-500 w-5 h-5" /> 
             Actionable 'Model Book' Setups
         </h2>
-        <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full animate-pulse border border-emerald-500/20">
-            <Zap className="w-3 h-3 fill-emerald-500" /> Live Intraday Data Active
+        <div className="flex items-center gap-3">
+          <button onClick={copyTickers} className="flex items-center gap-1.5 text-xs font-bold text-foreground bg-secondary/80 hover:bg-secondary px-3 py-1.5 rounded-full border border-border/80 transition-all shadow-sm">
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+            {copied ? <span className="text-emerald-500">Copied!</span> : <span>Copy for TradingView</span>}
+          </button>
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full animate-pulse border border-emerald-500/20">
+              <Zap className="w-3 h-3 fill-emerald-500" /> Live
+          </div>
         </div>
       </div>
 

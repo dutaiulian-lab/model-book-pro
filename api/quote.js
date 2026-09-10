@@ -14,6 +14,7 @@ export default async function handler(req, res) {
                 prices[r.symbol] = r.response[0].meta.regularMarketPrice;
             }
         });
+        res.setHeader("Cache-Control", "s-maxage=10, stale-while-revalidate=59");
         return res.status(200).json(prices);
     }
     return res.status(404).json({ error: 'Not found' });
