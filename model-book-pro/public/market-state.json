@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-09-10T07:23:22.267Z",
+  "total_scanned": 38,
+  "matches": [
+    {
+      "ticker": "NVDA",
+      "price": 223.6699981689453,
+      "distance_pct": "1.57%",
+      "vol_status": "Below 20d Average"
+    },
+    {
+      "ticker": "PLTR",
+      "price": 169.52999877929688,
+      "distance_pct": "1.74%",
+      "vol_status": "Below 20d Average"
+    },
+    {
+      "ticker": "CRWD",
+      "price": 207.8000030517578,
+      "distance_pct": "0.60%",
+      "vol_status": "Below 20d Average"
+    },
+    {
+      "ticker": "MSFT",
+      "price": 491.6499938964844,
+      "distance_pct": "0.04%",
+      "vol_status": "Below 20d Average"
+    },
+    {
+      "ticker": "SNOW",
+      "price": 331.4800109863281,
+      "distance_pct": "2.06%",
+      "vol_status": "Below 20d Average"
+    },
+    {
+      "ticker": "NOW",
+      "price": 131.11000061035156,
+      "distance_pct": "0.77%",
+      "vol_status": "Below 20d Average"
+    },
+    {
+      "ticker": "TSM",
+      "price": 435.3599853515625,
+      "distance_pct": "2.42%",
+      "vol_status": "Below 20d Average"
+    }
+  ]
+}
