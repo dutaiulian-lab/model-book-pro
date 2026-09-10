@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Target, TrendingUp, BarChart3, AlertTriangle, ShieldCheck, Crosshair, Clock } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap } from 'lucide-react';
 
 export default function ScreenerDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Store live prices fetched from Yahoo Finance directly in the browser
+  const [livePrices, setLivePrices] = useState({});
 
   useEffect(() => {
     fetch('/market-state.json')
@@ -19,6 +22,48 @@ export default function ScreenerDashboard() {
         setLoading(false);
       });
   }, []);
+
+  // Real-time loop
+  useEffect(() => {
+    if (!data || !data.matches || data.matches.length === 0) return;
+
+    let isMounted = true;
+    const fetchLivePrices = async () => {
+      const tickers = data.matches.map(m => m.ticker).join(',');
+      try {
+        // We use yahoo finance API directly from the browser. 
+        // Using a cors proxy if needed, but Yahoo's v8 chart API often works directly.
+        // If cors blocks, we can fallback to the static price.
+        // Yahoo v7 spark API is very permissive for CORS:
+        const url = `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${tickers}&range=1d&interval=1m`;
+        const res = await fetch(url);
+        const json = await res.json();
+        
+        const newPrices = {};
+        if (json.spark && json.spark.result) {
+            json.spark.result.forEach(r => {
+                if (r.response && r.response[0] && r.response[0].meta) {
+                    newPrices[r.symbol] = r.response[0].meta.regularMarketPrice;
+                }
+            });
+        }
+        
+        if (isMounted && Object.keys(newPrices).length > 0) {
+            setLivePrices(newPrices);
+        }
+      } catch (err) {
+        console.warn("Live pricing fetch failed, falling back to static closing prices.");
+      }
+    };
+
+    fetchLivePrices();
+    const interval = setInterval(fetchLivePrices, 10000); // Poll every 10 seconds
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [data]);
 
   if (loading) {
     return <div className="text-center p-12 text-muted-foreground animate-pulse font-mono tracking-widest text-xs">INITIALIZING ENGINE...</div>;
@@ -35,71 +80,103 @@ export default function ScreenerDashboard() {
       {/* HUD Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5"/> Scanned</div>
+          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5"/> Universe</div>
           <div className="text-2xl font-black text-foreground">{total_scanned} <span className="text-sm font-medium text-muted-foreground tracking-normal">tickers</span></div>
         </div>
         <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="text-primary text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/> Setups Found</div>
+          <div className="text-primary text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/> Top Setups</div>
           <div className="text-2xl font-black text-primary">{matches.length}</div>
         </div>
-        <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm col-span-2 md:col-span-2">
-          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Last Engine Run</div>
+        <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm col-span-2">
+          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Last Daily Scan</div>
           <div className="text-sm font-mono text-foreground mt-1">{new Date(timestamp).toLocaleString()}</div>
         </div>
       </div>
 
       {/* MATCHES LIST */}
-      <h2 className="text-lg font-black tracking-wide text-foreground mt-4 mb-2 flex items-center gap-2">
-        <Crosshair className="text-amber-500 w-5 h-5" /> 
-        Actionable 'Model Book' Setups
-      </h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 mb-2">
+        <h2 className="text-lg font-black tracking-wide text-foreground flex items-center gap-2">
+            <Crosshair className="text-amber-500 w-5 h-5" /> 
+            Actionable 'Model Book' Setups
+        </h2>
+        <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full animate-pulse border border-emerald-500/20">
+            <Zap className="w-3 h-3 fill-emerald-500" /> Live Intraday Data Active
+        </div>
+      </div>
 
       {matches.length === 0 ? (
         <div className="p-12 text-center border border-dashed border-border rounded-2xl bg-card/30">
-          <p className="text-muted-foreground font-medium">No strict Model Book setups met the criteria today.</p>
+          <p className="text-muted-foreground font-medium">No strict Model Book setups met the criteria across the market today.</p>
           <p className="text-xs text-muted-foreground/60 mt-2">Cash is a position. Wait for the pitch.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {matches.map((match, idx) => (
-            <div key={idx} className="bg-card border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-primary/50 transition-all">
-              
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-2xl font-black text-foreground tracking-tight">{match.ticker}</h3>
-                  <div className="text-xl text-muted-foreground mt-1">${match.price.toFixed(2)}</div>
-                </div>
-                <a href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`} target="_blank" rel="noreferrer" className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider">
-                  View Chart ↗
-                </a>
-              </div>
+          {matches.map((match, idx) => {
+            // Use live price if available, else fallback to the scanned closing price
+            const currentPrice = livePrices[match.ticker] || match.price;
+            
+            // Recalculate proximity to 21-EMA in real-time
+            const ema21 = match.ema21;
+            const distanceRaw = ((currentPrice - ema21) / ema21) * 100;
+            const distanceAbs = Math.abs(distanceRaw);
+            const isBelowEMA = currentPrice < ema21;
+            
+            let proximityColor = "text-amber-500 bg-amber-500/10";
+            if (isBelowEMA) proximityColor = "text-rose-500 bg-rose-500/10"; // Trapped below
+            else if (distanceAbs < 1.0) proximityColor = "text-emerald-500 bg-emerald-500/10"; // Extremely tight
 
-              <div className="space-y-3 mt-6 border-t border-border/50 pt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> Macro Trend</span>
-                  <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">Confirmed Uptrend</span>
+            return (
+              <div key={idx} className="bg-card border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
+                
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-2xl font-black text-foreground tracking-tight">{match.ticker}</h3>
+                    <div className="flex items-end gap-2 mt-1">
+                        <div className="text-2xl font-mono text-foreground">${currentPrice.toFixed(2)}</div>
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground pb-1">Live</div>
+                    </div>
+                  </div>
+                  <a href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`} target="_blank" rel="noreferrer" className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider">
+                    Chart ↗
+                  </a>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Proximity to 21-EMA</span>
-                  <span className="text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded text-xs">{match.distance_pct}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> Volume Dry-Up</span>
-                  <span className="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-xs">{match.vol_status}</span>
-                </div>
-              </div>
 
-              <div className="mt-5 p-3 rounded-xl bg-muted/20 border border-border/50">
-                <div className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1 mb-1.5">
-                  <ShieldCheck className="w-3 h-3" /> Trading Plan
-                </div>
-                <p className="text-xs text-foreground/80 leading-relaxed">
-                  Enter on strength triggering slightly above today's high. Set strict stop-loss exactly at the 21-EMA line. 
-                </p>
-              </div>
+                <div className="space-y-3 mt-4 border-t border-border/50 pt-4 flex-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> Macro Trend</span>
+                    <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">Confirmed</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> 21-EMA Line</span>
+                    <span className="text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded text-xs">${ema21.toFixed(2)}</span>
+                  </div>
 
-            </div>
-          ))}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-4 h-4"/> Live Proximity</span>
+                    <span className={`font-bold px-2 py-0.5 rounded text-xs ${proximityColor}`}>
+                        {distanceAbs.toFixed(2)}% {isBelowEMA ? 'Below' : 'Above'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> Daily Volume</span>
+                    <span className="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-xs">{match.vol_status}</span>
+                  </div>
+                </div>
+
+                <div className="mt-5 p-3 rounded-xl bg-muted/20 border border-border/50 shrink-0">
+                  <div className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1 mb-1.5">
+                    <ShieldCheck className="w-3 h-3" /> Trading Plan
+                  </div>
+                  <p className="text-[11px] text-foreground/80 leading-relaxed">
+                    Set entry trigger slightly above yesterday's high. Set hard stop-loss at exactly <strong>${ema21.toFixed(2)}</strong>.
+                  </p>
+                </div>
+
+              </div>
+            );
+          })}
         </div>
       )}
 

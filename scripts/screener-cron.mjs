@@ -1,13 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 
-// Top liquid growth / tech stocks to scan
-const TICKERS = [
-  "NVDA", "APP", "PLTR", "GEV", "CRWD", "TSLA", "META", "CELH", "SMCI", 
-  "AMD", "UBER", "SHOP", "SQ", "CAVA", "ASTS", "HOOD", "COIN", "MSTR", "TTD",
-  "AAPL", "MSFT", "AMZN", "GOOGL", "NFLX", "SNOW", "DDOG", "NET", "PANW",
-  "NOW", "CRM", "AVGO", "QCOM", "ARM", "MU", "INTC", "TSM", "ASML", "LRCX"
-];
+// Hardcoded reliable universe (S&P 500 + Growth Leaders) to prevent brittle web-scraping failures
+const TICKERS = [...new Set([
+  "MMM","AOS","ABT","ABBV","ACN","ADBE","AMD","AES","AFL","A","APD","ABNB","AKAM","ALB","ARE","ALGN","ALLE","LNT","ALL","GOOGL","GOOG","MO","AMZN","AMCR","AEE","AAL","AEP","AXP","AIG","AMT","AWK","AMP","AME","AMGN","APH","ADI","ANSS","AON","APA","AAPL","AMAT","APTV","ACGL","ADM","ANET","AJG","AIZ","T","ATO","ADSK","ADP","AZO","AVB","AVY","AXON","BKR","BALL","BAC","BK","BBWI","BAX","BDX","BRK-B","BBY","BIO","TECH","BIIB","BLK","BX","BA","BKNG","BWA","BXP","BSX","BMY","AVGO","BR","BRO","BF-B","BG","CHRW","CDNS","CZR","CPT","CPB","COF","CAH","KMX","CCL","CARR","CTLT","CAT","CBOE","CBRE","CDW","CE","COR","CNC","CNP","CF","CHTR","CVX","CMG","CB","CHD","CI","CINF","CTAS","CSCO","C","CFG","CLX","CME","CMS","KO","CTSH","CL","CMCSA","CMA","CAG","COP","ED","STZ","CEG","COO","CPRT","GLW","CTVA","CSGP","COST","CTRA","CCI","CSX","CMI","CVS","DHR","DRI","DVA","DE","DAL","XRAY","DVN","DXCM","FANG","DLR","DFS","DG","DLTR","D","DPZ","DOV","DOW","DHI","DTE","DUK","DD","EMN","ETN","EBAY","ECL","EIX","EW","EA","ELV","LLY","EMR","ENPH","ETR","EOG","EPAM","EQT","EFX","EQIX","EQR","ESS","EL","ETSY","EG","EVRG","ES","EXC","EXPE","EXPD","EXR","XOM","FFIV","FDS","FICO","FAST","FRT","FDX","FIS","FITB","FSLR","FE","FI","FLT","FMC","F","FTNT","FTV","FOXA","FOX","BEN","FCX","GRMN","IT","GEHC","GEN","GNRC","GD","GE","GIS","GM","GPC","GILD","GPN","GL","GS","HAL","HIG","HAS","HCA","PEAK","HSIC","HSY","HES","HPE","HLT","HOLX","HD","HON","HRL","HST","HWM","HPQ","HUBB","HUM","HBAN","HII","IBM","IEX","IDXX","ITW","ILMN","INCY","IR","PODD","INTC","ICE","IFF","IP","IPG","INTU","ISRG","IVZ","INVH","IQV","IRM","JBHT","JBL","JKHY","J","JNJ","JCI","JPM","JNPR","K","KVUE","KDP","KEY","KEYS","KMB","KIM","KMI","KLAC","KHC","KR","LHX","LH","LRCX","LW","LVS","LDOS","LEN","LIN","LYV","LKQ","LMT","L","LOW","LULU","LYB","MTB","MRO","MPC","MKTX","MAR","MMC","MLM","MAS","MA","MTCH","MKC","MCD","MCK","MDT","MRK","META","MET","MTD","MGM","MCHP","MU","MSFT","MAA","MRNA","MHK","MOH","TAP","MDLZ","MPWR","MNST","MCO","MS","MOS","MSI","MSCI","NDAQ","NTAP","NFLX","NEM","NWSA","NWS","NEE","NKE","NI","NDSN","NSC","NTRS","NOC","NCLH","NRG","NUE","NVDA","NVR","NXPI","ORLY","OXY","ODFL","OMC","ON","OKE","ORCL","OTIS","PCAR","PKG","PANW","PARA","PH","PAYX","PAYC","PYPL","PNR","PEP","PFE","PCG","PM","PSX","PNW","PXD","PNC","POOL","PPG","PPL","PFG","PG","PGR","PLD","PRU","PEG","PTC","PSA","PHM","QRVO","PWR","QCOM","DGX","RL","RJF","RTX","O","REG","REGN","RF","RSG","RMD","RVTY","RHI","ROK","ROL","ROP","ROST","RCL","SPGI","CRM","SBAC","SLB","STX","SEE","SRE","NOW","SHW","SPG","SWKS","SJM","SNA","SO","LUV","SWK","SBUX","STT","STLD","STE","SYK","SYF","SNPS","SYY","TMUS","TROW","TTWO","TPR","TRGP","TGT","TEL","TDY","TFX","TER","TSLA","TXN","TXT","TMO","TJX","TSCO","TT","TDG","TRV","TRMB","TFC","TYL","TSN","USB","UDR","ULTA","UNP","UAL","UPS","URI","UNH","UHS","VLO","VTR","VLTO","VRSN","VRSK","VZ","VRTX","VFC","VTRS","VICI","V","VMC","WRB","WAB","WBA","WMT","DIS","WBD","WM","WAT","WEC","WFC","WELL","WST","WDC","WRK","WY","WHR","WMB","WTW","GWW","WYNN","XEL","XYL","YUM","ZBRA","ZBH","ZION","ZTS",
+  // Top NASDAQ / Tech / Recent Growth Leaders
+  "APP", "PLTR", "GEV", "CRWD", "CELH", "SMCI", "SHOP", "SQ", 
+  "CAVA", "ASTS", "HOOD", "COIN", "MSTR", "TTD", "SNOW", "DDOG", 
+  "NET", "ARM", "TSM", "ASML", "LULU", "MELI", "PDD", "ABNB"
+])].filter(t => t.length > 0);
 
 async function fetchYahooData(ticker) {
   try {
@@ -51,20 +52,18 @@ function calculateEMA(data, period) {
 async function sendDiscordAlert(matches) {
     const webhook = process.env.DISCORD_WEBHOOK_URL;
     if (!webhook) return;
-    
-    if (matches.length === 0) return; // Only alert if setups found
+    if (matches.length === 0) return;
 
-    const embeds = matches.map(m => ({
+    const embeds = matches.slice(0, 10).map(m => ({ // Discord limit is 10 embeds per message
         title: `🎯 MODEL BOOK SETUP: ${m.ticker}`,
         url: `https://www.tradingview.com/chart/?symbol=${m.ticker}`,
-        color: 0x10b981, // Emerald green
+        color: 0x10b981,
         description: "A perfect 21-EMA Pullback / Volatility Contraction pattern triggered today.",
         fields: [
-            { name: "Price", value: `$${m.price.toFixed(2)}`, inline: true },
-            { name: "21-EMA Proximity", value: m.distance_pct, inline: true },
-            { name: "Volume Status", value: m.vol_status, inline: true }
+            { name: "Daily Close", value: `$${m.price.toFixed(2)}`, inline: true },
+            { name: "21-EMA Support", value: `$${m.ema21.toFixed(2)}`, inline: true }
         ],
-        footer: { text: "Model Book Pro · Automated Scanner" }
+        footer: { text: "Model Book Pro · Broad Market Scanner" }
     }));
 
     try {
@@ -72,7 +71,7 @@ async function sendDiscordAlert(matches) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                content: `🚨 **Institutional Setups Detected for Tomorrow's Open** 🚨`,
+                content: `🚨 **Institutional Setups Detected for Tomorrow's Open (${matches.length} found)** 🚨\nMonitor the Dashboard for Realtime Intraday Proximity!`,
                 embeds
             })
         });
@@ -82,56 +81,58 @@ async function sendDiscordAlert(matches) {
 }
 
 async function run() {
-    console.log(`Starting Market Scan on ${TICKERS.length} tickers...`);
+    const tickers = TICKERS;
+    console.log(`Starting Broad Market Scan on ${tickers.length} tickers...`);
     const matches = [];
 
-    // Parallel fetch with simple concurrency limit to avoid Yahoo rate limits
-    for (let i = 0; i < TICKERS.length; i++) {
-        const ticker = TICKERS[i];
-        console.log(`Scanning ${ticker}...`);
-        const data = await fetchYahooData(ticker);
+    // Process in small batches to avoid memory/rate limit spikes
+    const batchSize = 10;
+    for (let i = 0; i < tickers.length; i += batchSize) {
+        const batch = tickers.slice(i, i + batchSize);
+        console.log(`Scanning batch ${i / batchSize + 1} / ${Math.ceil(tickers.length / batchSize)}...`);
         
-        if (data && data.length > 200) {
-            const current = data[data.length - 1];
-            const sma50 = calculateSMA(data, 50, 'close');
-            const sma200 = calculateSMA(data, 200, 'close');
-            const ema21 = calculateEMA(data, 21);
-            const volSma20 = calculateSMA(data, 20, 'volume');
+        await Promise.all(batch.map(async (ticker) => {
+            const data = await fetchYahooData(ticker);
+            if (data && data.length > 200) {
+                const current = data[data.length - 1];
+                const sma50 = calculateSMA(data, 50, 'close');
+                const sma200 = calculateSMA(data, 200, 'close');
+                const ema21 = calculateEMA(data, 21);
+                const volSma20 = calculateSMA(data, 20, 'volume');
 
-            const trendUp = current.close > sma50 && sma50 > sma200;
-            const distanceTo21 = Math.abs((current.low - ema21) / ema21);
-            const touching21 = distanceTo21 <= 0.03; 
-            const lowVolume = current.volume < volSma20;
+                const trendUp = current.close > sma50 && sma50 > sma200;
+                const distanceTo21 = Math.abs((current.low - ema21) / ema21);
+                const touching21 = distanceTo21 <= 0.03; 
+                const lowVolume = current.volume < volSma20;
 
-            if (trendUp && touching21 && lowVolume) {
-                matches.push({
-                    ticker,
-                    price: current.close,
-                    distance_pct: `${(distanceTo21 * 100).toFixed(2)}%`,
-                    vol_status: "Below 20d Average"
-                });
+                if (trendUp && touching21 && lowVolume) {
+                    matches.push({
+                        ticker,
+                        price: current.close,
+                        ema21: ema21,
+                        vol_status: "Below 20d Average"
+                    });
+                }
             }
-        }
+        }));
         
-        // Small delay to be polite to Yahoo
+        // Small delay between batches to be polite to Yahoo
         await new Promise(r => setTimeout(r, 200));
     }
 
     const output = {
         timestamp: new Date().toISOString(),
-        total_scanned: TICKERS.length,
+        total_scanned: tickers.length,
         matches
     };
 
-    // Save to public folder for React app
     const outPath = path.join(process.cwd(), 'public', 'market-state.json');
     if (!fs.existsSync(path.dirname(outPath))) {
         fs.mkdirSync(path.dirname(outPath), { recursive: true });
     }
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
-    console.log("Saved results to public/market-state.json");
+    console.log(`Saved results to public/market-state.json. Found ${matches.length} matches.`);
 
-    // Send Discord alerts
     if (matches.length > 0) {
         await sendDiscordAlert(matches);
         console.log("Discord alerts fired.");
