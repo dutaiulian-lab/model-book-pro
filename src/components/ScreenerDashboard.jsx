@@ -34,21 +34,10 @@ export default function ScreenerDashboard() {
       const tickers = data.matches.map(m => m.ticker).join(',');
       try {
         // We use yahoo finance API directly from the browser. 
-        // Using a cors proxy if needed, but Yahoo's v8 chart API often works directly.
-        // If cors blocks, we can fallback to the static price.
-        // Yahoo v7 spark API is very permissive for CORS:
-        const url = `https://query1.finance.yahoo.com/v7/finance/spark?symbols=${tickers}&range=1d&interval=1m`;
+        // Route through our Vercel Serverless Function to avoid CORS and Rate Limits
+        const url = `/api/quote?symbols=${tickers}`;
         const res = await fetch(url);
-        const json = await res.json();
-        
-        const newPrices = {};
-        if (json.spark && json.spark.result) {
-            json.spark.result.forEach(r => {
-                if (r.response && r.response[0] && r.response[0].meta) {
-                    newPrices[r.symbol] = r.response[0].meta.regularMarketPrice;
-                }
-            });
-        }
+        const newPrices = await res.json();
         
         if (isMounted && Object.keys(newPrices).length > 0) {
             setLivePrices(newPrices);
