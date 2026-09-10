@@ -10,3 +10,4 @@ self.addEventListener('fetch', (e) => {
   // Dummy fetch event to satisfy PWA install requirements on Android/Chrome
 });
 // Update cache version 2
+// Update cache version 3
