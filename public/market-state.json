@@ -1,90 +1,24 @@
 {
-  "timestamp": "2026-09-10T08:18:37.189Z",
+  "timestamp": "2026-09-10T08:23:52.097Z",
   "total_scanned": 521,
   "matches": [
-    {
-      "ticker": "AWK",
-      "price": 140.3300018310547,
-      "ema21": 138.00010262150676,
-      "base_depth": "-3.6%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "APH",
-      "price": 81.33999633789062,
-      "ema21": 80.8411310525744,
-      "base_depth": "-8.9%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "ANET",
-      "price": 192.92999267578125,
-      "ema21": 191.68531590398283,
-      "base_depth": "-10.2%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "CAH",
-      "price": 240,
-      "ema21": 238.049077277539,
-      "base_depth": "-7.1%",
-      "vol_status": "VCP Dry-Up"
-    },
     {
       "ticker": "CTVA",
       "price": 84.75,
       "ema21": 83.89888130687251,
       "base_depth": "-6.8%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "FANG",
-      "price": 202.6300048828125,
-      "ema21": 201.206968608113,
-      "base_depth": "-6.6%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "EOG",
-      "price": 147.00999450683594,
-      "ema21": 145.68382463547687,
-      "base_depth": "-4.3%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "XOM",
-      "price": 164.22999572753906,
-      "ema21": 160.38653677269926,
-      "base_depth": "-6.9%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "GILD",
-      "price": 145.64999389648438,
-      "ema21": 144.82284747241664,
-      "base_depth": "-7.4%",
-      "vol_status": "VCP Dry-Up"
+      "adr": 2.568581264302765,
+      "relative_strength_3mo": 9.545540354204158,
+      "vol_status": "VCP Dry-Up + Inst. Demand"
     },
     {
       "ticker": "MRK",
       "price": 147.52999877929688,
       "ema21": 145.60684418462208,
       "base_depth": "-6.0%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "NVDA",
-      "price": 223.6699981689453,
-      "ema21": 220.01512445748227,
-      "base_depth": "-5.4%",
-      "vol_status": "VCP Dry-Up"
-    },
-    {
-      "ticker": "NUE",
-      "price": 257.9100036621094,
-      "ema21": 256.31305408294986,
-      "base_depth": "-7.9%",
-      "vol_status": "VCP Dry-Up"
+      "adr": 2.454692652423864,
+      "relative_strength_3mo": 19.91345159244692,
+      "vol_status": "VCP Dry-Up + Inst. Demand"
     }
   ]
 }
