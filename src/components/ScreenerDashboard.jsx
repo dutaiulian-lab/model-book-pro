@@ -176,7 +176,7 @@ export default function ScreenerDashboard() {
           <p className="text-xs text-muted-foreground/60 mt-2">Cash is a position. Wait for the pitch.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
           
           {(() => {
             const sortedMatches = [...matches].sort((a, b) => {
