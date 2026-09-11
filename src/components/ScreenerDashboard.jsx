@@ -17,6 +17,7 @@ export default function ScreenerDashboard() {
   const [copied, setCopied] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState(null);
+  const [hasSeenInProgress, setHasSeenInProgress] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -26,8 +27,11 @@ export default function ScreenerDashboard() {
         const data = await res.json();
         if (data.success) {
           setScanStatus(data);
-          // Auto-refresh the page if a scan just completed successfully and we were previously tracking it
-          if (data.status === 'completed' && data.conclusion === 'success') {
+          if (data.status === 'in_progress' || data.status === 'queued') {
+            setHasSeenInProgress(true);
+          }
+          // Auto-refresh the page if a scan just completed successfully and we actually saw it running
+          if (isScanning && hasSeenInProgress && data.status === 'completed' && data.conclusion === 'success') {
              if (interval) clearInterval(interval);
              setTimeout(() => window.location.reload(), 1500);
           }
@@ -38,7 +42,7 @@ export default function ScreenerDashboard() {
     checkStatus();
     interval = setInterval(checkStatus, 10000); // Check every 10s
     return () => clearInterval(interval);
-  }, []);
+  }, [isScanning, hasSeenInProgress]);
   const copyTickers = () => {
     if (!data || !data.matches) return;
     const tickerString = data.matches.map(m => m.ticker).join(',');
