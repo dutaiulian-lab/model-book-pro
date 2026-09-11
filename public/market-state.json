@@ -1,5 +1,105 @@
 {
-  "timestamp": "2026-09-11T14:08:54.308Z",
+  "timestamp": "2026-09-11T15:00:22.752Z",
   "total_scanned": 6130,
-  "matches": []
+  "matches": [
+    {
+      "ticker": "BBY",
+      "price": 90.33509826660156,
+      "ema21": 86.5380209721374,
+      "base_depth": "-1.0%",
+      "adr": 3.6775576679068944,
+      "relative_strength_3mo": 13.587753462182729,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.701,
+      "rev_growth": 0.036
+    },
+    {
+      "ticker": "CF",
+      "price": 134.07000732421875,
+      "ema21": 130.04057436406495,
+      "base_depth": "-5.6%",
+      "adr": 3.6675335039214336,
+      "relative_strength_3mo": 22.23805672904572,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.996,
+      "rev_growth": 0.176
+    },
+    {
+      "ticker": "DAR",
+      "price": 66.04499816894531,
+      "ema21": 65.2276234114992,
+      "base_depth": "-5.6%",
+      "adr": 4.1307018989904165,
+      "relative_strength_3mo": 12.290023371938181,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 29.14,
+      "rev_growth": 0.164
+    },
+    {
+      "ticker": "FIVE",
+      "price": 243.50999450683594,
+      "ema21": 242.70316572836975,
+      "base_depth": "-7.7%",
+      "adr": 3.9410924885580503,
+      "relative_strength_3mo": 16.989013084817785,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 4.182,
+      "rev_growth": 0.229
+    },
+    {
+      "ticker": "GEO",
+      "price": 31.530000686645508,
+      "ema21": 31.455172093361586,
+      "base_depth": "-4.9%",
+      "adr": 3.301504586897244,
+      "relative_strength_3mo": 6.589319585076879,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.714,
+      "rev_growth": 0.151
+    },
+    {
+      "ticker": "MGNI",
+      "price": 23.809999465942383,
+      "ema21": 23.480053962141923,
+      "base_depth": "-9.1%",
+      "adr": 3.6831661381549425,
+      "relative_strength_3mo": 43.396903955200806,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.653,
+      "rev_growth": 0.112
+    },
+    {
+      "ticker": "PSNL",
+      "price": 16.3700008392334,
+      "ema21": 16.133651904987108,
+      "base_depth": "-13.3%",
+      "adr": 4.466697493510616,
+      "relative_strength_3mo": 70.20080623922455,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0,
+      "rev_growth": 0.3
+    },
+    {
+      "ticker": "SBLK",
+      "price": 30.790000915527344,
+      "ema21": 30.473979879441114,
+      "base_depth": "-6.4%",
+      "adr": 2.613861438438251,
+      "relative_strength_3mo": 9.828608655590166,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 3881.94,
+      "rev_growth": 0.445
+    },
+    {
+      "ticker": "TGTX",
+      "price": 54.540000915527344,
+      "ema21": 54.28718230955282,
+      "base_depth": "-8.0%",
+      "adr": 4.474316449026706,
+      "relative_strength_3mo": 9.928373027032373,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": -0.706,
+      "rev_growth": 0.703
+    }
+  ]
 }
