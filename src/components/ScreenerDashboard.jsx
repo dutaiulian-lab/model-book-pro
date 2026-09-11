@@ -28,8 +28,8 @@ export default function ScreenerDashboard() {
           setScanStatus(data);
           // Auto-refresh the page if a scan just completed successfully and we were previously tracking it
           if (data.status === 'completed' && data.conclusion === 'success') {
-             // Stop polling
              if (interval) clearInterval(interval);
+             setTimeout(() => window.location.reload(), 1500);
           }
         }
       } catch(e) {}
@@ -129,7 +129,8 @@ export default function ScreenerDashboard() {
     return <div className="text-center p-12 text-rose-500 font-mono bg-rose-500/10 rounded-xl border border-rose-500/20">{error}</div>;
   }
 
-  const { timestamp, total_scanned, matches } = data;
+  const { timestamp, total_scanned } = data;
+  const matches = data?.matches || [];
 
   return (
     <div className="flex flex-col gap-6">
