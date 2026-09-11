@@ -4,6 +4,7 @@ import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap , Che
 export default function ScreenerDashboard() {
   const [expandedCards, setExpandedCards] = useState({});
   const [copied, setCopied] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const copyTickers = () => {
     if (!data || !data.matches) return;
     const tickerString = data.matches.map(m => m.ticker).join(',');
@@ -12,6 +13,23 @@ export default function ScreenerDashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
   const toggleCard = (ticker) => setExpandedCards(prev => ({...prev, [ticker]: !prev[ticker]}));
+
+  const triggerScan = async () => {
+    setIsScanning(true);
+    try {
+      const res = await fetch('/api/trigger-scan', { method: 'POST' });
+      const result = await res.json();
+      if (!res.ok) {
+        alert("Failed to trigger scan: " + result.error);
+      } else {
+        alert("Scan triggered successfully! The background job will take a few minutes to complete. The page will auto-refresh when new data is available (if you reload in a few minutes).");
+      }
+    } catch (e) {
+      alert("Error: " + e.message);
+    }
+    setIsScanning(false);
+  };
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,7 +38,7 @@ export default function ScreenerDashboard() {
   const [livePrices, setLivePrices] = useState({});
 
   useEffect(() => {
-    fetch('/market-state.json')
+    fetch(`/market-state.json?t=${Date.now()}`)
       .then(res => res.json())
       .then(json => {
         setData(json);
@@ -93,7 +111,16 @@ export default function ScreenerDashboard() {
           <div className="text-2xl font-black text-primary">{matches.length}</div>
         </div>
         <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm col-span-2">
-          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Last Daily Scan</div>
+          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center justify-between gap-1.5">
+            <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Last Daily Scan</span>
+            <button 
+              onClick={triggerScan} 
+              disabled={isScanning}
+              className="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-md text-[10px] tracking-wider transition-colors disabled:opacity-50"
+            >
+              {isScanning ? 'TRIGGERING...' : 'SCAN NOW'}
+            </button>
+          </div>
           <div className="text-sm font-mono text-foreground mt-1">{new Date(timestamp).toLocaleString()}</div>
         </div>
       </div>
