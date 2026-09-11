@@ -136,7 +136,7 @@ export default function ScreenerDashboard() {
         <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm col-span-2">
           <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center justify-between gap-1.5">
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5"/> Last Daily Scan
+              <Clock className="w-3.5 h-3.5"/> Last Scan
               {scanStatus && scanStatus.status === 'in_progress' && <span className="ml-2 text-emerald-400 animate-pulse text-[9px]">⚙️ SCANNING...</span>}
               {scanStatus && scanStatus.status === 'queued' && <span className="ml-2 text-yellow-400 text-[9px]">⏳ QUEUED</span>}
               {scanStatus && scanStatus.status === 'completed' && scanStatus.conclusion === 'failure' && <span className="ml-2 text-rose-500 text-[9px]">⚠️ FAILED</span>}
