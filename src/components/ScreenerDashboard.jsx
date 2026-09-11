@@ -1,8 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap , ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 
 export default function ScreenerDashboard() {
-  const [expandedCards, setExpandedCards] = useState({});
+  const [expandedCard, setExpandedCard] = useState(null);
+  const gridRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (gridRef.current && !gridRef.current.contains(event.target)) {
+        setExpandedCard(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const [copied, setCopied] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState(null);
@@ -35,7 +46,7 @@ export default function ScreenerDashboard() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  const toggleCard = (ticker) => setExpandedCards(prev => ({...prev, [ticker]: !prev[ticker]}));
+  const toggleCard = (ticker) => setExpandedCard(prev => prev === ticker ? null : ticker);
 
   const triggerScan = async () => {
     setIsScanning(true);
@@ -176,7 +187,7 @@ export default function ScreenerDashboard() {
           <p className="text-xs text-muted-foreground/60 mt-2">Cash is a position. Wait for the pitch.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+        <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
           
           {(() => {
             const sortedMatches = [...matches].sort((a, b) => {
@@ -218,12 +229,12 @@ export default function ScreenerDashboard() {
                       Chart ↗
                     </a>
                     <button className="text-muted-foreground hover:text-foreground transition-colors">
-                      {expandedCards[match.ticker] ? <ChevronUp className="w-5 h-5"/> : <ChevronDown className="w-5 h-5"/>}
+                      {expandedCard === match.ticker ? <ChevronUp className="w-5 h-5"/> : <ChevronDown className="w-5 h-5"/>}
                     </button>
                   </div>
                 </div>
 
-                {expandedCards[match.ticker] && (
+                {expandedCard === match.ticker && (
                   <div className="animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-3 mt-4 border-t border-border/50 pt-4 flex-1">
 
