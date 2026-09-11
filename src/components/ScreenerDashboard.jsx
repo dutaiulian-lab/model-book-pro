@@ -7,7 +7,7 @@ export default function ScreenerDashboard() {
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (gridRef.current && !gridRef.current.contains(event.target)) {
+      if (!event.target.closest('[data-screener-card="true"]')) {
         setExpandedCard(null);
       }
     }
@@ -187,7 +187,7 @@ export default function ScreenerDashboard() {
           <p className="text-xs text-muted-foreground/60 mt-2">Cash is a position. Wait for the pitch.</p>
         </div>
       ) : (
-        <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
           
           {(() => {
             const sortedMatches = [...matches].sort((a, b) => {
@@ -213,7 +213,7 @@ export default function ScreenerDashboard() {
             else if (distanceAbs < 1.0) proximityColor = "text-emerald-500 bg-emerald-500/10"; // Extremely tight
 
             return (
-              <div key={idx} className="bg-card border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
+              <div key={idx} data-screener-card="true" className="bg-card border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
                 
                 
                 <div className="flex justify-between items-start mb-0 cursor-pointer" onClick={() => toggleCard(match.ticker)}>
