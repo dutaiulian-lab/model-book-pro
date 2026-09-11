@@ -224,6 +224,17 @@ export default function ScreenerDashboard() {
                         <div className="text-2xl font-mono text-foreground">${currentPrice.toFixed(2)}</div>
                         <div className="text-[10px] uppercase font-bold text-muted-foreground pb-1">Live</div>
                     </div>
+                    {match.sector && match.sector !== "Unknown" && (
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                            <span className="bg-muted text-muted-foreground text-[9px] font-bold uppercase px-2 py-0.5 rounded">{match.sector}</span>
+                            {match.float_shares > 0 && match.float_shares < 50000000 && (
+                                <span className="bg-purple-500/10 text-purple-500 text-[9px] font-bold uppercase px-2 py-0.5 rounded">⚡ Low Float</span>
+                            )}
+                            {match.short_percent >= 0.10 && (
+                                <span className="bg-orange-500/10 text-orange-500 text-[9px] font-bold uppercase px-2 py-0.5 rounded">🔥 High Short</span>
+                            )}
+                        </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <a href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`} target="_blank" rel="noreferrer" onClick={(e)=>e.stopPropagation()} className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider">
@@ -271,6 +282,14 @@ export default function ScreenerDashboard() {
                   <div className="flex items-center justify-between text-sm mt-2">
                     <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-4 h-4"/> Volatility (ADR)</span>
                     <span className="text-purple-500 font-bold bg-purple-500/10 px-2 py-0.5 rounded text-xs">{match.adr?.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Short Interest</span>
+                    <span className="font-mono text-foreground/80">{((match.short_percent || 0) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Shares Float</span>
+                    <span className="font-mono text-foreground/80">{match.float_shares ? (match.float_shares / 1000000).toFixed(1) + 'M' : 'N/A'}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2">
                     <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> EPS Growth (YoY)</span>
