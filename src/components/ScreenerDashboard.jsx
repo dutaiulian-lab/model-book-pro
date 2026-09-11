@@ -5,6 +5,29 @@ export default function ScreenerDashboard() {
   const [expandedCards, setExpandedCards] = useState({});
   const [copied, setCopied] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState(null);
+
+  useEffect(() => {
+    let interval;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/scan-status');
+        const data = await res.json();
+        if (data.success) {
+          setScanStatus(data);
+          // Auto-refresh the page if a scan just completed successfully and we were previously tracking it
+          if (data.status === 'completed' && data.conclusion === 'success') {
+             // Stop polling
+             if (interval) clearInterval(interval);
+          }
+        }
+      } catch(e) {}
+    };
+    
+    checkStatus();
+    interval = setInterval(checkStatus, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, []);
   const copyTickers = () => {
     if (!data || !data.matches) return;
     const tickerString = data.matches.map(m => m.ticker).join(',');
@@ -22,7 +45,7 @@ export default function ScreenerDashboard() {
       if (!res.ok) {
         alert("Failed to trigger scan: " + result.error);
       } else {
-        alert("Scan triggered successfully! The background job will take a few minutes to complete. The page will auto-refresh when new data is available (if you reload in a few minutes).");
+        setScanStatus({ status: 'queued' });
       }
     } catch (e) {
       alert("Error: " + e.message);
@@ -112,13 +135,18 @@ export default function ScreenerDashboard() {
         </div>
         <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm col-span-2">
           <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center justify-between gap-1.5">
-            <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Last Daily Scan</span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5"/> Last Daily Scan
+              {scanStatus && scanStatus.status === 'in_progress' && <span className="ml-2 text-emerald-400 animate-pulse text-[9px]">⚙️ SCANNING...</span>}
+              {scanStatus && scanStatus.status === 'queued' && <span className="ml-2 text-yellow-400 text-[9px]">⏳ QUEUED</span>}
+              {scanStatus && scanStatus.status === 'completed' && scanStatus.conclusion === 'failure' && <span className="ml-2 text-rose-500 text-[9px]">⚠️ FAILED</span>}
+            </span>
             <button 
               onClick={triggerScan} 
-              disabled={isScanning}
+              disabled={isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued'))}
               className="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-md text-[10px] tracking-wider transition-colors disabled:opacity-50"
             >
-              {isScanning ? 'TRIGGERING...' : 'SCAN NOW'}
+              {isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued')) ? 'RUNNING...' : 'SCAN NOW'}
             </button>
           </div>
           <div className="text-sm font-mono text-foreground mt-1">{new Date(timestamp).toLocaleString()}</div>
