@@ -149,7 +149,7 @@ export default function ScreenerDashboard() {
               {isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued')) ? 'RUNNING...' : 'SCAN NOW'}
             </button>
           </div>
-          <div className="text-sm font-mono text-foreground mt-1">{new Date(timestamp).toLocaleString(undefined, { hour12: false })}</div>
+          <div className="text-sm font-mono text-foreground mt-1">{new Date(timestamp).toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</div>
         </div>
       </div>
 
