@@ -70,35 +70,6 @@ function calculatePerformance(data, daysAgo) {
     return ((currentPrice - pastPrice) / pastPrice) * 100;
 }
 
-async function sendDiscordAlert(matches) {
-    const webhook = process.env.DISCORD_WEBHOOK_URL;
-    if (!webhook || matches.length === 0) return;
-
-    const embeds = matches.slice(0, 10).map(m => ({
-        title: `🎯 APEX SETUP: ${m.ticker}`,
-        url: `https://www.tradingview.com/chart/?symbol=${m.ticker}`,
-        color: 0x10b981,
-        description: "Perfect 21-EMA Pullback + RS + Fundamentals",
-        fields: [
-            { name: "Daily Close", value: `$${m.price.toFixed(2)}`, inline: true },
-            { name: "21-EMA Support", value: `$${m.ema21.toFixed(2)}`, inline: true },
-            { name: "EPS Growth", value: `+${((m.eps_growth||0)*100).toFixed(1)}%`, inline: true }
-        ],
-        footer: { text: "Model Book Pro · Apex Screener" }
-    }));
-
-    try {
-        await fetch(webhook, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                content: `🚨 **APEX Setups Detected (${matches.length} found)** 🚨\nMonitor the Dashboard for Realtime Intraday Proximity!`,
-                embeds
-            })
-        });
-    } catch (e) {}
-}
-
 async function run() {
     console.log(`Fetching S&P 500 Market Benchmark (SPY)...`);
     const spyDataResult = await fetchYahooData('SPY');
@@ -237,9 +208,6 @@ async function run() {
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
     console.log(`Saved results. Found ${finalMatches.length} stocks that passed BOTH Technicals and Fundamentals.`);
 
-    if (finalMatches.length > 0) {
-        await sendDiscordAlert(finalMatches);
-    }
 }
 
 run();
