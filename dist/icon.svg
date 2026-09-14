@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none">
+  <!-- Background -->
+  <rect width="24" height="24" fill="#0f172a" rx="4"/>
+  <!-- Target Icon -->
+  <g stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="12" cy="12" r="1"/>
+  </g>
+</svg>
