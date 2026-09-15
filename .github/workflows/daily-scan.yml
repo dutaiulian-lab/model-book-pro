@@ -2,7 +2,9 @@ name: Daily Market Screener
 
 on:
   schedule:
-    - cron: '0 6 * * 1-5'
+    # Runs Monday through Friday at 21:30 UTC (5:30 PM EDT / 4:30 PM EST)
+    # Perfectly timed after NYSE/NASDAQ closing cross & final daily volume settlement
+    - cron: '30 21 * * 1-5'
   workflow_dispatch:
 
 permissions:
