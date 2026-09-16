@@ -1,3 +1,95 @@
+
+async function sendDiscordSummary(output, spy3mo) {
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+        console.log("No valid DISCORD_WEBHOOK_URL found. Skipping Discord broadcast.");
+        return;
+    }
+
+    const matches = output.matches || [];
+    const count = matches.length;
+    const isZero = count === 0;
+    const color = isZero ? 0x64748b : 0x10b981; // Slate gray if 0, Emerald green if matches
+
+    const fields = [
+        {
+            name: "🔍 Universe Scanned",
+            value: `${output.total_scanned?.toLocaleString() || "6,000+"} US Tickers`,
+            inline: true
+        },
+        {
+            name: "🎯 A+ Setups Found",
+            value: isZero ? "0 Stocks (Cash Posture)" : `${count} Qualified Leaders`,
+            inline: true
+        },
+        {
+            name: "📊 S&P 500 (3M Perf)",
+            value: spy3mo !== null && spy3mo !== undefined ? `${spy3mo >= 0 ? "+" : ""}${spy3mo.toFixed(1)}%` : "N/A",
+            inline: true
+        }
+    ];
+
+    if (isZero) {
+        fields.push({
+            name: "🛡️ Institutional Regime Guidance",
+            value: "No stocks met strict Stage-2 shallow base (<15%), VCP volume dry-up, and >15% fundamental EPS/Rev growth rules today. Capital preservation active.",
+            inline: false
+        });
+    } else {
+        const topMatches = matches.slice(0, 8);
+        topMatches.forEach((m, idx) => {
+            fields.push({
+                name: `${idx + 1}. ${m.ticker} · $${m.price?.toFixed(2)} (${m.sector || m.industry || "Leader"})`,
+                value: `📉 Base: **${m.base_depth}** | ⚡ 3M RS: **+${m.relative_strength_3mo?.toFixed(1)}%** | 📈 EPS: **+${((m.eps_growth || 0) * 100).toFixed(0)}%** | Rev: **+${((m.rev_growth || 0) * 100).toFixed(0)}%**`,
+                inline: false
+            });
+        });
+        if (matches.length > 8) {
+            fields.push({
+                name: "➕ Additional Setups",
+                value: `Plus ${matches.length - 8} more candidates on the live dashboard.`,
+                inline: false
+            });
+        }
+    }
+
+    const payload = {
+        username: "True Market Leaders Daily Screener",
+        avatar_url: "https://assets.marketleaders.trade/favicon.ico",
+        embeds: [
+            {
+                title: isZero 
+                    ? "🛡️ Daily Market Screener: 0 Setups (Capital Preservation)" 
+                    : `🚀 Daily Market Screener: ${count} A+ Growth Leaders Detected!`,
+                description: isZero
+                    ? "The evening institutional scan has completed across all US equities. No candidates passed the strict dual-filter test today."
+                    : `The evening scan found **${count} stocks** passing the strict technical VCP dry-up + fundamental growth (>15% EPS/Rev) test.`,
+                color,
+                fields,
+                footer: {
+                    text: "True Market Leaders · Qullamaggie / Minervini / O'Neil Engine"
+                },
+                timestamp: new Date().toISOString()
+            }
+        ]
+    };
+
+    try {
+        const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            console.log("✅ Successfully broadcasted Daily Screener Digest to Discord!");
+        } else {
+            console.warn("Discord API returned status:", res.status, await res.text());
+        }
+    } catch (err) {
+        console.error("Error sending to Discord:", err.message);
+    }
+}
+
 import fs from 'fs';
 import path from 'path';
 import YahooFinance from 'yahoo-finance2';
@@ -207,6 +299,8 @@ async function run() {
     if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
     console.log(`Saved results. Found ${finalMatches.length} stocks that passed BOTH Technicals and Fundamentals.`);
+
+    await sendDiscordSummary(output, spy3mo);
 
 }
 
