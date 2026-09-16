@@ -1,5 +1,70 @@
 {
-  "timestamp": "2026-09-15T21:41:02.967Z",
-  "total_scanned": 6134,
-  "matches": []
+  "timestamp": "2026-09-16T21:42:54.755Z",
+  "total_scanned": 6142,
+  "matches": [
+    {
+      "ticker": "MGNI",
+      "price": 23.780000686645508,
+      "ema21": 23.550636879262587,
+      "base_depth": "-9.2%",
+      "adr": 3.613741791653329,
+      "relative_strength_3mo": 27.698301114766373,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.653,
+      "rev_growth": 0.112,
+      "short_percent": 0.0865,
+      "float_shares": 141594065,
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "earnings_date": "2026-11-04"
+    },
+    {
+      "ticker": "NTAP",
+      "price": 191.49000549316406,
+      "ema21": 188.6511680900449,
+      "base_depth": "-8.4%",
+      "adr": 4.364260871439313,
+      "relative_strength_3mo": 18.250353782576582,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.635,
+      "rev_growth": 0.299,
+      "short_percent": 0.054899998,
+      "float_shares": 195281739,
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "earnings_date": "2026-12-01"
+    },
+    {
+      "ticker": "RSKD",
+      "price": 6.269999980926514,
+      "ema21": 6.128341519592495,
+      "base_depth": "-10.2%",
+      "adr": 4.028683650145191,
+      "relative_strength_3mo": 25.661168651678143,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0,
+      "rev_growth": 0.218,
+      "short_percent": 0.0172,
+      "float_shares": 53914968,
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "earnings_date": "2026-11-11"
+    },
+    {
+      "ticker": "ZETA",
+      "price": 30.850000381469727,
+      "ema21": 29.812403605085265,
+      "base_depth": "-6.0%",
+      "adr": 4.463522595248305,
+      "relative_strength_3mo": 55.86509938996243,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0,
+      "rev_growth": 0.435,
+      "short_percent": 0.1097,
+      "float_shares": 222126959,
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "earnings_date": "2026-11-03"
+    }
+  ]
 }
