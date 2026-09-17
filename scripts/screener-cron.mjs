@@ -185,7 +185,8 @@ async function run() {
                 const meta = result.meta;
                 const current = data[data.length - 1];
                 
-                if (current.close < 5.0 || current.volume < 100000) return;
+                // Champion Trader Floor: Minimum 0 price and 0M/day institutional liquidity
+                if (current.close < 10.0 || current.volume < 150000) return;
 
                 const sma50 = calculateSMA(data, 50, 'close');
                 const sma150 = calculateSMA(data, 150, 'close');
@@ -196,6 +197,8 @@ async function run() {
                 const sma200_20days_ago = calculateSMA(old200SMAData, 200, 'close');
                 const volSma20 = calculateSMA(data, 20, 'volume');
                 const volSma50 = calculateSMA(data, 50, 'volume');
+                const dollarVol20m = (volSma20 * current.close) / 1000000;
+                if (dollarVol20m < 20.0) return; // Strict Institutional Liquidity Floor: Must trade >= 0M daily
 
                 const trendUp = (current.close > sma50 && sma50 > sma150 && sma150 > sma200 && sma200 > sma200_20days_ago);
                 const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-252).map(d => d.high));
@@ -265,8 +268,8 @@ async function run() {
                 }
             }
             
-            // THE FUNDAMENTAL FILTER: Must have either > 15% EPS Growth OR > 15% Revenue Growth
-            if (epsGrowth >= 0.15 || revGrowth >= 0.15) {
+            // THE CHAMPION FUNDAMENTAL FILTER: Must have either >= 20% EPS Growth OR >= 25% Revenue Growth (CANSLIM explosive metrics)
+            if (epsGrowth >= 0.20 || revGrowth >= 0.25) {
                 if (!earningsRisk) {
                     finalMatches.push({
                         ...match,
