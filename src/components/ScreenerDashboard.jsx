@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, Play, ExternalLink, X } from 'lucide-react';
 
 export default function ScreenerDashboard() {
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedTab, setSelectedTab] = useState('ALL');
   const [copied, setCopied] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isDispatching, setIsDispatching] = useState(false);
+  const [isTrackingScan, setIsTrackingScan] = useState(false);
   const [scanStatus, setScanStatus] = useState(null);
-  const [hasSeenInProgress, setHasSeenInProgress] = useState(false);
+  const [scanFeedback, setScanFeedback] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,29 +24,75 @@ export default function ScreenerDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const loadMarketData = async () => {
+    try {
+      const res = await fetch(`/market-state.json?t=${Date.now()}`);
+      if (!res.ok) throw new Error("Could not load market data");
+      const json = await res.json();
+      setData(json);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load screener data. Ensure the daily scan has completed.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMarketData();
+  }, []);
+
   useEffect(() => {
     let interval;
     const checkStatus = async () => {
       try {
         const res = await fetch('/api/scan-status');
+        if (!res.ok) return;
         const statusData = await res.json();
         if (statusData.success) {
           setScanStatus(statusData);
-          if (statusData.status === 'in_progress' || statusData.status === 'queued') {
-            setHasSeenInProgress(true);
+
+          const isRunning = statusData.status === 'in_progress' || statusData.status === 'queued';
+          if (isRunning) {
+            setIsTrackingScan(true);
           }
-          if (isScanning && hasSeenInProgress && statusData.status === 'completed' && statusData.conclusion === 'success') {
-             if (interval) clearInterval(interval);
-             setTimeout(() => window.location.reload(), 1500);
+
+          // Scan completed successfully while user was tracking
+          if (isTrackingScan && statusData.status === 'completed' && statusData.conclusion === 'success') {
+            setIsTrackingScan(false);
+            setScanFeedback({
+              type: 'success',
+              title: 'Scan Completed Successfully',
+              message: 'Fresh Model Book candidates have been screened and loaded into the dashboard.',
+              url: statusData.url
+            });
+            loadMarketData();
+          }
+
+          // Scan failed on GitHub Actions
+          if (statusData.status === 'completed' && statusData.conclusion === 'failure') {
+            if (isTrackingScan) {
+              setIsTrackingScan(false);
+            }
+            setScanFeedback({
+              type: 'error',
+              title: 'Scan Failed on GitHub Actions',
+              message: 'The institutional scan job encountered a failure or timeout on the GitHub runner. Click below to inspect logs or retry.',
+              url: statusData.url
+            });
           }
         }
-      } catch(e) {}
+      } catch(e) {
+        console.warn("Could not check scan status", e);
+      }
     };
     
     checkStatus();
-    interval = setInterval(checkStatus, 10000);
+    const pollInterval = (isTrackingScan || scanStatus?.status === 'in_progress' || scanStatus?.status === 'queued') ? 6000 : 20000;
+    interval = setInterval(checkStatus, pollInterval);
     return () => clearInterval(interval);
-  }, [isScanning, hasSeenInProgress]);
+  }, [isTrackingScan, scanStatus?.status]);
 
   const copyTickers = () => {
     if (!filteredMatches || filteredMatches.length === 0) return;
@@ -58,34 +105,41 @@ export default function ScreenerDashboard() {
   const toggleCard = (ticker) => setExpandedCard(prev => prev === ticker ? null : ticker);
 
   const triggerScan = async () => {
-    setIsScanning(true);
+    setIsDispatching(true);
+    setScanFeedback({
+      type: 'info',
+      title: 'Dispatching Scan to GitHub Actions...',
+      message: 'Requesting a runner to execute the Model Book screening pipeline across all US equities.'
+    });
+
     try {
       const res = await fetch('/api/trigger-scan', { method: 'POST' });
       const result = await res.json();
       if (!res.ok) {
-        alert("Failed to trigger scan: " + result.error);
+        setScanFeedback({
+          type: 'error',
+          title: 'Failed to Trigger Scan',
+          message: result.error || 'Server rejected the scan trigger request.'
+        });
       } else {
-        setScanStatus({ status: 'queued' });
+        setIsTrackingScan(true);
+        setScanStatus(prev => ({ ...(prev || {}), status: 'queued' }));
+        setScanFeedback({
+          type: 'info',
+          title: 'Scan Queued & Initializing',
+          message: 'GitHub runner allocated. Analyzing 6,000+ US tickers through Stage-2, VCP, and Extension filters...'
+        });
       }
     } catch (e) {
-      alert("Error: " + e.message);
-    }
-    setIsScanning(false);
-  };
-
-  useEffect(() => {
-    fetch(`/market-state.json?t=${Date.now()}`)
-      .then(res => res.json())
-      .then(json => {
-        setData(json);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setError("Failed to load screener data. Ensure the daily scan has completed.");
-        setLoading(false);
+      setScanFeedback({
+        type: 'error',
+        title: 'Connection Error',
+        message: e.message || 'Could not communicate with the trigger API.'
       });
-  }, []);
+    } finally {
+      setIsDispatching(false);
+    }
+  };
 
   // Real-time loop for live prices
   useEffect(() => {
@@ -181,8 +235,23 @@ export default function ScreenerDashboard() {
         {/* METRICS SUMMARY WIDGET */}
         <div className="flex items-center gap-4 bg-muted/30 border border-border/60 rounded-xl p-3.5 self-stretch md:self-auto justify-between md:justify-end">
           <div className="text-left">
-            <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+            <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
               <Clock className="w-3 h-3"/> Last Scan
+              {scanStatus?.status === 'in_progress' && (
+                <span className="text-emerald-400 font-mono text-[9px] font-black animate-pulse flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> SCANNING
+                </span>
+              )}
+              {scanStatus?.status === 'queued' && (
+                <span className="text-amber-400 font-mono text-[9px] font-black">
+                  ⏳ QUEUED
+                </span>
+              )}
+              {scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure' && (
+                <span className="text-rose-500 font-mono text-[9px] font-black">
+                  ⚠️ FAILED
+                </span>
+              )}
             </div>
             <div className="text-xs font-mono font-bold text-foreground mt-0.5">
               {new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -199,13 +268,97 @@ export default function ScreenerDashboard() {
           </div>
           <button
             onClick={triggerScan}
-            disabled={isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued'))}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ml-2 shadow-sm"
+            disabled={isDispatching || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued'))}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ml-2 shadow-sm flex items-center gap-1.5 ${
+              scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure'
+                ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/30'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50'
+            }`}
           >
-            {isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued')) ? 'SCANNING...' : 'SCAN NOW'}
+            {isDispatching ? (
+              <>
+                <RefreshCw className="w-3 h-3 animate-spin" /> DISPATCHING...
+              </>
+            ) : scanStatus?.status === 'in_progress' ? (
+              <>
+                <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" /> SCANNING...
+              </>
+            ) : scanStatus?.status === 'queued' ? (
+              <>
+                <Clock className="w-3 h-3 animate-pulse text-amber-400" /> QUEUED...
+              </>
+            ) : scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure' ? (
+              <>
+                <AlertTriangle className="w-3 h-3 text-white" /> RETRY SCAN
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 fill-current" /> SCAN NOW
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* LIVE SCAN PROGRESS & FEEDBACK BANNER */}
+      {scanFeedback && (
+        <div className={`p-4 rounded-2xl border flex items-start justify-between gap-3 animate-in fade-in slide-in-from-top-2 shadow-sm ${
+          scanFeedback.type === 'error'
+            ? 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+            : scanFeedback.type === 'success'
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+            : 'bg-blue-500/10 border-blue-500/30 text-blue-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5">
+              {scanFeedback.type === 'error' ? (
+                <AlertTriangle className="w-5 h-5 text-rose-400" />
+              ) : scanFeedback.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+                  {scanFeedback.title}
+                </h4>
+                {scanStatus?.url && (
+                  <a
+                    href={scanStatus.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                  >
+                    View on GitHub <ExternalLink className="w-3 h-3"/>
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {scanFeedback.message}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {scanFeedback.type === 'error' && (
+              <button
+                onClick={triggerScan}
+                disabled={isDispatching}
+                className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap shadow-sm"
+              >
+                Retry Now
+              </button>
+            )}
+            <button
+              onClick={() => setScanFeedback(null)}
+              className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+            >
+              <X className="w-4 h-4"/>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* FILTER TABS & TOOLBAR */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
