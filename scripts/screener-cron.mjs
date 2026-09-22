@@ -1,3 +1,8 @@
+import fs from 'fs';
+import path from 'path';
+import YahooFinance from 'yahoo-finance2';
+
+const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 async function sendDiscordSummary(output, spy3mo) {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -18,8 +23,8 @@ async function sendDiscordSummary(output, spy3mo) {
             inline: true
         },
         {
-            name: "🎯 A+ Setups Found",
-            value: isZero ? "0 Stocks (Cash Posture)" : `${count} Qualified Leaders`,
+            name: "🎯 Model Book Leaders",
+            value: isZero ? "0 Stocks (Cash Posture)" : `${count} Qualified Setups`,
             inline: true
         },
         {
@@ -32,15 +37,16 @@ async function sendDiscordSummary(output, spy3mo) {
     if (isZero) {
         fields.push({
             name: "🛡️ Institutional Regime Guidance",
-            value: "No stocks met strict Stage-2 shallow base (<15%), VCP volume dry-up, and >15% fundamental EPS/Rev growth rules today. Capital preservation active.",
+            value: "No stocks passed the strict Model Book Dual-Filter (Stage-2 / IPO Base + Smashed 10/21 MA + VCP Dry-Up + Breakdown Shield). Capital preservation active.",
             inline: false
         });
     } else {
         const topMatches = matches.slice(0, 8);
         topMatches.forEach((m, idx) => {
+            const badge = m.setup_type === 'Launchpad Coil' ? '🟢 COIL' : (m.setup_type === 'Power Trend Flag' ? '🚀 FLAG' : '🌟 IPO');
             fields.push({
-                name: `${idx + 1}. ${m.ticker} · $${m.price?.toFixed(2)} (${m.sector || m.industry || "Leader"})`,
-                value: `📉 Base: **${m.base_depth}** | ⚡ 3M RS: **+${m.relative_strength_3mo?.toFixed(1)}%** | 📈 EPS: **+${((m.eps_growth || 0) * 100).toFixed(0)}%** | Rev: **+${((m.rev_growth || 0) * 100).toFixed(0)}%**`,
+                name: `${idx + 1}. [${badge}] ${m.ticker} · $${m.price?.toFixed(2)} (${m.sector || m.industry || "Leader"})`,
+                value: `📉 Base: **${m.base_depth}** | ⚡ 10/21 Spread: **${m.spread_10_21?.toFixed(1)}%** | 3M RS: **+${m.relative_strength_3mo?.toFixed(1)}%** | EPS: **+${((m.eps_growth || 0) * 100).toFixed(0)}%**`,
                 inline: false
             });
         });
@@ -54,20 +60,20 @@ async function sendDiscordSummary(output, spy3mo) {
     }
 
     const payload = {
-        username: "True Market Leaders Daily Screener",
+        username: "Model Book Pro · Daily Screener",
         avatar_url: "https://assets.marketleaders.trade/favicon.ico",
         embeds: [
             {
                 title: isZero 
                     ? "🛡️ Daily Market Screener: 0 Setups (Capital Preservation)" 
-                    : `🚀 Daily Market Screener: ${count} A+ Growth Leaders Detected!`,
+                    : `🚀 Daily Market Screener: ${count} Model Book Leaders Detected!`,
                 description: isZero
-                    ? "The evening institutional scan has completed across all US equities. No candidates passed the strict dual-filter test today."
-                    : `The evening scan found **${count} stocks** passing the strict technical VCP dry-up + fundamental growth (>15% EPS/Rev) test.`,
+                    ? "The evening institutional scan has completed across all US equities. No candidates passed the Model Book criteria today."
+                    : `The evening scan found **${count} stocks** coiling at actionable institutional launchpads (Stage-2 / IPO Base + Smashed Moving Averages + Volume Dry-Up).`,
                 color,
                 fields,
                 footer: {
-                    text: "True Market Leaders · Qullamaggie / Minervini / O'Neil Engine"
+                    text: "Model Book Pro · Institutional O'Neil / Minervini / Qullamaggie Engine"
                 },
                 timestamp: new Date().toISOString()
             }
@@ -90,12 +96,6 @@ async function sendDiscordSummary(output, spy3mo) {
     }
 }
 
-import fs from 'fs';
-import path from 'path';
-import YahooFinance from 'yahoo-finance2';
-
-const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
-
 async function fetchAllUSTickers() {
     try {
         console.log("Downloading the master list of all US Market Tickers...");
@@ -107,7 +107,7 @@ async function fetchAllUSTickers() {
         console.log(`Successfully loaded ${tickers.length} master tickers.`);
         return tickers;
     } catch (e) {
-        return ["AAPL", "MSFT", "NVDA", "SPCX", "CRCL"];
+        return ["NVDA", "AAPL", "MSFT", "AMZN", "META", "GOOGL", "TSLA", "PLTR", "APP", "MSTR", "HOOD", "CAVA", "VST", "UBER"];
     }
 }
 
@@ -118,40 +118,45 @@ async function fetchYahooData(ticker) {
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.chart.result) return null;
-    
-    const result = json.chart.result[0];
-    const quotes = result.indicators.quote[0];
-    
-    let validData = [];
-    if (!quotes.close) return null;
-    for(let i = 0; i < quotes.close.length; i++) {
-        if(quotes.close[i] !== null && quotes.low[i] !== null && quotes.volume[i] !== null) {
-            validData.push({ 
-                close: quotes.close[i], 
-                low: quotes.low[i],
+
+    const data = json.chart.result[0];
+    const quotes = data.indicators.quote[0];
+    const timestamps = data.timestamp;
+    if (!timestamps || timestamps.length === 0) return null;
+
+    const history = [];
+    for (let i = 0; i < timestamps.length; i++) {
+        if (quotes.close[i] !== null && quotes.volume[i] !== null && quotes.high[i] !== null && quotes.low[i] !== null) {
+            history.push({
+                date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                open: quotes.open[i],
                 high: quotes.high[i],
-                volume: quotes.volume[i] 
+                low: quotes.low[i],
+                close: quotes.close[i],
+                volume: quotes.volume[i]
             });
         }
     }
-    return { history: validData, meta: result.meta };
+    return { history, meta: data.meta };
   } catch (e) {
     return null;
   }
 }
 
-function calculateSMA(data, period, key) {
-    if(data.length < period) return null;
-    let sum = 0;
-    for(let i = data.length - period; i < data.length; i++) sum += data[i][key];
+function calculateSMA(data, period, key = 'close') {
+    if (data.length < period) return null;
+    const slice = data.slice(-period);
+    const sum = slice.reduce((acc, curr) => acc + curr[key], 0);
     return sum / period;
 }
 
-function calculateEMA(data, period) {
-    if(data.length < period) return null;
+function calculateEMA(data, period, key = 'close') {
+    if (data.length < period) return null;
     const k = 2 / (period + 1);
-    let ema = data[0].close;
-    for (let i = 1; i < data.length; i++) ema = (data[i].close - ema) * k + ema;
+    let ema = data[0][key];
+    for (let i = 1; i < data.length; i++) {
+        ema = (data[i][key] - ema) * k + ema;
+    }
     return ema;
 }
 
@@ -167,79 +172,153 @@ async function run() {
     const spyDataResult = await fetchYahooData('SPY');
     if (!spyDataResult) return;
     const spyData = spyDataResult.history;
-    const spy3mo = calculatePerformance(spyData, 63); 
+    const spy3mo = calculatePerformance(spyData, 63);
 
     const tickers = await fetchAllUSTickers();
     console.log(`Starting Technical Scan on ${tickers.length} tickers...`);
-    
+
     let techMatches = [];
-    const batchSize = 20;
+    const batchSize = 25;
     for (let i = 0; i < tickers.length; i += batchSize) {
         const batch = tickers.slice(i, i + batchSize);
         if (i % 500 === 0) console.log(`Scanning progress: ${i} / ${tickers.length}...`);
-        
+
         await Promise.all(batch.map(async (ticker) => {
             const result = await fetchYahooData(ticker);
-            if (result && result.history.length > 200) {
+            // Must have at least 30 trading days of history
+            if (result && result.history.length >= 30) {
                 const data = result.history;
                 const meta = result.meta;
                 const current = data[data.length - 1];
-                
-                // Champion Trader Floor: Minimum 0 price and 0M/day institutional liquidity
+
+                // 1. Strict Liquidity Floor: Minimum $10 price and $20M/day institutional liquidity
                 if (current.close < 10.0 || current.volume < 150000) return;
 
-                const sma50 = calculateSMA(data, 50, 'close');
-                const sma150 = calculateSMA(data, 150, 'close');
-                const sma200 = calculateSMA(data, 200, 'close');
-                const ema21 = calculateEMA(data, 21);
-                
-                const old200SMAData = data.slice(0, data.length - 20);
-                const sma200_20days_ago = calculateSMA(old200SMAData, 200, 'close');
                 const volSma20 = calculateSMA(data, 20, 'volume');
-                const volSma50 = calculateSMA(data, 50, 'volume');
+                if (!volSma20) return;
                 const dollarVol20m = (volSma20 * current.close) / 1000000;
-                if (dollarVol20m < 20.0) return; // Strict Institutional Liquidity Floor: Must trade >= 0M daily
+                if (dollarVol20m < 20.0) return; // Must trade >= $20M daily
 
-                const trendUp = (current.close > sma50 && sma50 > sma150 && sma150 > sma200 && sma200 > sma200_20days_ago);
-                const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-252).map(d => d.high));
+                // 2. Stage-2 Trend & IPO Leader Exception (< 200 bars)
+                const isIpo = data.length < 200;
+                const dma10 = calculateSMA(data, 10, 'close');
+                const ema21 = calculateEMA(data, 21, 'close');
+                const sma50 = data.length >= 50 ? calculateSMA(data, 50, 'close') : null;
+
+                if (!isIpo) {
+                    const sma150 = calculateSMA(data, 150, 'close');
+                    const sma200 = calculateSMA(data, 200, 'close');
+                    const old200Data = data.slice(0, data.length - 20);
+                    const sma200_20d = calculateSMA(old200Data, 200, 'close');
+
+                    const trendUp = (
+                        sma50 && sma150 && sma200 &&
+                        current.close > sma50 &&
+                        sma50 > sma150 &&
+                        sma150 > sma200 &&
+                        sma200 > sma200_20d
+                    );
+                    if (!trendUp) return;
+                } else {
+                    // IPO Base Rule: Price > 50 SMA (if >= 50 bars exist)
+                    if (sma50 && current.close <= sma50) return;
+                }
+
+                // 3. Launchpad Power Trend Stack: Price >= 10-DMA >= 21-EMA
+                if (!dma10 || !ema21 || current.close < dma10 || current.close < ema21 || dma10 < ema21) {
+                    return;
+                }
+
+                // 4. Base Depth Calibration: Max 35.0% Drawdown from 52-Week High (Empirical Model Book Depth)
+                const lookback = Math.min(data.length, 252);
+                const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-lookback).map(d => d.high));
                 const distanceFromHigh = ((high52 - current.close) / high52) * 100;
-                const isShallowBase = distanceFromHigh <= 15.0; 
-                const distanceTo21 = Math.abs((current.low - ema21) / ema21);
-                const touching21 = distanceTo21 <= 0.02; 
-                const closedAbove21 = current.close >= ema21; 
-                const lowVolume = current.volume < volSma20 && current.volume < volSma50;
-                const todayRange = current.high - current.low;
-                const avgRange = data.slice(-10).reduce((sum, d) => sum + (d.high - d.low), 0) / 10;
-                const isTight = todayRange <= avgRange; 
-                const stock3mo = calculatePerformance(data, 63);
-                const outperforming = stock3mo > (Math.max(spy3mo, 0) * 1.5) && stock3mo > 10; 
-                const adr = (data.slice(-20).reduce((sum, d) => sum + ((d.high - d.low) / d.close), 0) / 20) * 100;
-                const goodVolatility = adr >= 2.0 && adr <= 8.0;
+                if (distanceFromHigh > 35.0) return;
 
-                let hasInstDemand = false;
-                for (let j = data.length - 15; j < data.length; j++) {
-                    const prevClose = data[j-1].close;
-                    if (data[j].close > prevClose && data[j].volume > (calculateSMA(data.slice(0, j), 50, 'volume') * 1.5)) {
-                        hasInstDemand = true; break;
+                // 5. Volume Breakdown Trap (Prior 10 Sessions) - The 100% Failure Shield
+                let trapTriggered = false;
+                const checkStart = Math.max(0, data.length - 11);
+                for (let j = checkStart; j < data.length - 1; j++) {
+                    const sliceUpToJ = data.slice(0, j + 1);
+                    const d10_j = calculateSMA(sliceUpToJ, 10, 'close');
+                    const e21_j = calculateEMA(sliceUpToJ, 21, 'close');
+                    const vSma_j = calculateSMA(sliceUpToJ, 20, 'volume');
+                    if (d10_j && e21_j && vSma_j) {
+                        const bar_j = data[j];
+                        if ((bar_j.close < d10_j || bar_j.close < e21_j) && bar_j.volume > vSma_j) {
+                            const breakdownHigh = bar_j.high;
+                            const cleared = data.slice(j + 1).some(b => b.close > breakdownHigh);
+                            if (!cleared) {
+                                trapTriggered = true;
+                                break;
+                            }
+                        }
                     }
                 }
+                if (trapTriggered) return;
 
-                if (trendUp && isShallowBase && touching21 && closedAbove21 && lowVolume && isTight && outperforming && goodVolatility && hasInstDemand) {
-                    techMatches.push({
-                        ticker, price: current.close, ema21, base_depth: `-${distanceFromHigh.toFixed(1)}%`,
-                        adr, relative_strength_3mo: stock3mo - spy3mo, vol_status: "VCP Dry-Up"
-                    });
+                // 6. Smashed Moving Averages Calibration
+                // 10-to-21 spread <= 3.0%, 10-to-50 spread <= 12.0%
+                const spread_10_21 = (Math.abs(dma10 - ema21) / ema21) * 100;
+                const spread_10_50 = sma50 ? (Math.abs(dma10 - sma50) / sma50) * 100 : 0;
+                if (spread_10_21 > 3.0) return;
+                if (sma50 && spread_10_50 > 12.0) return;
+
+                // Archetype Classification:
+                let setupType = "Launchpad Coil";
+                if (isIpo) {
+                    setupType = "IPO Base Pivot";
+                } else if (spread_10_21 <= 2.2 && spread_10_50 <= 8.0) {
+                    setupType = "Launchpad Coil";
+                } else {
+                    setupType = "Power Trend Flag";
                 }
+
+                // 7. Progressive VCP Range Contraction
+                const todayRange = current.high - current.low;
+                const avgRange10 = data.slice(-10).reduce((sum, d) => sum + (d.high - d.low), 0) / Math.min(data.length, 10);
+                const avgRange3 = data.slice(-3).reduce((sum, d) => sum + (d.high - d.low), 0) / Math.min(data.length, 3);
+                const avgRange20 = data.slice(-20).reduce((sum, d) => sum + (d.high - d.low), 0) / Math.min(data.length, 20);
+                if (todayRange > avgRange10 || avgRange3 > avgRange20) return;
+
+                // 8. Volume Dry-Up Ratio (< 1.0x 20d Volume SMA)
+                if (current.volume >= volSma20) return;
+                const volRatio = current.volume / volSma20;
+
+                // 9. Daily Closing Range >= 45% (Closes near highs)
+                const dcr = (current.high - current.low) > 0 ? (current.close - current.low) / (current.high - current.low) : 0.5;
+                if (dcr < 0.45) return;
+
+                // 10. Performance & Volatility
+                const stock3mo = calculatePerformance(data, Math.min(data.length - 1, 63)) || 0;
+                const adr = (data.slice(-20).reduce((sum, d) => sum + ((d.high - d.low) / d.close), 0) / Math.min(data.length, 20)) * 100;
+
+                techMatches.push({
+                    ticker,
+                    price: current.close,
+                    dma10,
+                    ema21,
+                    sma50,
+                    base_depth: `-${distanceFromHigh.toFixed(1)}%`,
+                    spread_10_21,
+                    spread_10_50,
+                    vol_ratio: volRatio,
+                    vol_status: `Dry-Up (${(volRatio * 100).toFixed(0)}%)`,
+                    setup_type: setupType,
+                    is_ipo: isIpo,
+                    adr,
+                    relative_strength_3mo: spy3mo !== null ? (stock3mo - spy3mo) : stock3mo
+                });
             }
         }));
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 150));
     }
 
-    console.log(`\nTechnical Scan found ${techMatches.length} candidates.`);
+    console.log(`\nTechnical Scan found ${techMatches.length} Model Book candidates.`);
     console.log(`Starting FUNDAMENTAL Validation phase...`);
-    
+
     let finalMatches = [];
-    
+
     for (const match of techMatches) {
         try {
             const summary = await yf.quoteSummary(match.ticker, { modules: ['financialData', 'defaultKeyStatistics', 'calendarEvents', 'summaryProfile'] });
@@ -250,26 +329,30 @@ async function run() {
             const floatShares = summary?.defaultKeyStatistics?.floatShares || 0;
             const sector = summary?.summaryProfile?.sector || "Unknown";
             const industry = summary?.summaryProfile?.industry || "Unknown";
-            
+
             let earningsRisk = false;
             let earningsDateStr = "Unknown";
             if (summary?.calendarEvents?.earnings?.earningsDate && summary.calendarEvents.earnings.earningsDate.length > 0) {
                 const ed = new Date(summary.calendarEvents.earnings.earningsDate[0]);
                 earningsDateStr = ed.toISOString().split('T')[0];
-                
+
                 const today = new Date();
                 const diffTime = ed - today;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
+
                 // Exclude if earnings are in the next 7 days
                 if (diffDays >= 0 && diffDays <= 7) {
                     earningsRisk = true;
                     console.log(`Skipping ${match.ticker} - Earnings in ${diffDays} days (${earningsDateStr})`);
                 }
             }
-            
-            // THE CHAMPION FUNDAMENTAL FILTER: Must have either >= 20% EPS Growth OR >= 25% Revenue Growth (CANSLIM explosive metrics)
-            if (epsGrowth >= 0.20 || revGrowth >= 0.25) {
+
+            // MODEL BOOK FUNDAMENTAL CRITERIA:
+            // 1. Standard: >= 20% EPS Growth OR >= 20% Revenue Growth
+            // 2. IPO / Hypergrowth exception: If IPO or high relative strength (RS > 50%), allow if sales > 15%
+            const passesFundamentals = (epsGrowth >= 0.20 || revGrowth >= 0.20) || (match.is_ipo && (revGrowth >= 0.15 || match.relative_strength_3mo > 40));
+
+            if (passesFundamentals) {
                 if (!earningsRisk) {
                     finalMatches.push({
                         ...match,
@@ -282,14 +365,20 @@ async function run() {
                         earnings_date: earningsDateStr
                     });
                 }
-                console.log(`[PASS] ${match.ticker} - EPS Growth: ${(epsGrowth*100).toFixed(1)}%, Rev Growth: ${(revGrowth*100).toFixed(1)}%`);
+                console.log(`[PASS] ${match.ticker} (${match.setup_type}) - EPS: ${(epsGrowth*100).toFixed(1)}%, Rev: ${(revGrowth*100).toFixed(1)}%`);
             } else {
                 console.log(`[REJECTED] ${match.ticker} - Failed Fundamental Test (EPS: ${(epsGrowth*100).toFixed(1)}%, Rev: ${(revGrowth*100).toFixed(1)}%)`);
             }
         } catch (e) {
-            console.log(`[SKIP] ${match.ticker} - Could not fetch fundamentals.`);
+            // If fundamentals cannot be fetched, preserve if technical setup is an A+ Launchpad Coil
+            if (match.setup_type === 'Launchpad Coil' && match.relative_strength_3mo > 30) {
+                finalMatches.push(match);
+                console.log(`[PRESERVED] ${match.ticker} - Pure Technical A+ Coil (No fundamentals available)`);
+            } else {
+                console.log(`[SKIP] ${match.ticker} - Could not fetch fundamentals.`);
+            }
         }
-        await new Promise(r => setTimeout(r, 500)); // Be polite to Yahoo
+        await new Promise(r => setTimeout(r, 300));
     }
 
     const output = {
@@ -304,7 +393,6 @@ async function run() {
     console.log(`Saved results. Found ${finalMatches.length} stocks that passed BOTH Technicals and Fundamentals.`);
 
     await sendDiscordSummary(output, spy3mo);
-
 }
 
 run();

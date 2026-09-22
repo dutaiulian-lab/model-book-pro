@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap , ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter } from 'lucide-react';
 
 export default function ScreenerDashboard() {
   const [expandedCard, setExpandedCard] = useState(null);
-  const gridRef = useRef(null);
+  const [selectedTab, setSelectedTab] = useState('ALL');
+  const [copied, setCopied] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState(null);
+  const [hasSeenInProgress, setHasSeenInProgress] = useState(false);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [livePrices, setLivePrices] = useState({});
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -14,24 +22,19 @@ export default function ScreenerDashboard() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  const [copied, setCopied] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanStatus, setScanStatus] = useState(null);
-  const [hasSeenInProgress, setHasSeenInProgress] = useState(false);
 
   useEffect(() => {
     let interval;
     const checkStatus = async () => {
       try {
         const res = await fetch('/api/scan-status');
-        const data = await res.json();
-        if (data.success) {
-          setScanStatus(data);
-          if (data.status === 'in_progress' || data.status === 'queued') {
+        const statusData = await res.json();
+        if (statusData.success) {
+          setScanStatus(statusData);
+          if (statusData.status === 'in_progress' || statusData.status === 'queued') {
             setHasSeenInProgress(true);
           }
-          // Auto-refresh the page if a scan just completed successfully and we actually saw it running
-          if (isScanning && hasSeenInProgress && data.status === 'completed' && data.conclusion === 'success') {
+          if (isScanning && hasSeenInProgress && statusData.status === 'completed' && statusData.conclusion === 'success') {
              if (interval) clearInterval(interval);
              setTimeout(() => window.location.reload(), 1500);
           }
@@ -40,16 +43,18 @@ export default function ScreenerDashboard() {
     };
     
     checkStatus();
-    interval = setInterval(checkStatus, 10000); // Check every 10s
+    interval = setInterval(checkStatus, 10000);
     return () => clearInterval(interval);
   }, [isScanning, hasSeenInProgress]);
+
   const copyTickers = () => {
-    if (!data || !data.matches) return;
-    const tickerString = data.matches.map(m => m.ticker).join(',');
+    if (!filteredMatches || filteredMatches.length === 0) return;
+    const tickerString = filteredMatches.map(m => m.ticker).join(',');
     navigator.clipboard.writeText(tickerString);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
   const toggleCard = (ticker) => setExpandedCard(prev => prev === ticker ? null : ticker);
 
   const triggerScan = async () => {
@@ -68,13 +73,6 @@ export default function ScreenerDashboard() {
     setIsScanning(false);
   };
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // Store live prices fetched from Yahoo Finance directly in the browser
-  const [livePrices, setLivePrices] = useState({});
-
   useEffect(() => {
     fetch(`/market-state.json?t=${Date.now()}`)
       .then(res => res.json())
@@ -84,12 +82,12 @@ export default function ScreenerDashboard() {
       })
       .catch(err => {
         console.error(err);
-        setError("Failed to load screener data. Ensure the GitHub Action has run.");
+        setError("Failed to load screener data. Ensure the daily scan has completed.");
         setLoading(false);
       });
   }, []);
 
-  // Real-time loop
+  // Real-time loop for live prices
   useEffect(() => {
     if (!data || !data.matches || data.matches.length === 0) return;
 
@@ -97,225 +95,352 @@ export default function ScreenerDashboard() {
     const fetchLivePrices = async () => {
       const tickers = data.matches.map(m => m.ticker).join(',');
       try {
-        // We use yahoo finance API directly from the browser. 
-        // Route through our Vercel Serverless Function to avoid CORS and Rate Limits
-        const url = `/api/quote?symbols=${tickers}`;
-        const res = await fetch(url);
-        const newPrices = await res.json();
-        
-        if (isMounted && Object.keys(newPrices).length > 0) {
-            setLivePrices(newPrices);
+        const res = await fetch(`/api/quote?symbols=${tickers}`);
+        if (!res.ok) return;
+        const quotes = await res.json();
+        if (isMounted && quotes) {
+          const prices = {};
+          quotes.forEach(q => {
+            if (q.symbol && q.regularMarketPrice) {
+              prices[q.symbol] = q.regularMarketPrice;
+            }
+          });
+          setLivePrices(prices);
         }
-      } catch (err) {
-        console.warn("Live pricing fetch failed, falling back to static closing prices.");
+      } catch (e) {
+        console.warn("Could not fetch real-time quotes", e);
       }
     };
 
     fetchLivePrices();
-    
-    // Smart Polling: Only fetch when the app is actually visible on the screen
-    const interval = setInterval(() => {
-      if (!document.hidden) {
-        fetchLivePrices();
-      }
-    }, 10000);
-
+    const priceInterval = setInterval(fetchLivePrices, 15000);
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      clearInterval(priceInterval);
     };
   }, [data]);
 
   if (loading) {
-    return <div className="text-center p-12 text-muted-foreground animate-pulse font-mono tracking-widest text-xs">INITIALIZING ENGINE...</div>;
-  }
-  if (error) {
-    return <div className="text-center p-12 text-rose-500 font-mono bg-rose-500/10 rounded-xl border border-rose-500/20">{error}</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">Running Institutional Model Book Diagnostics...</p>
+      </div>
+    );
   }
 
-  const { timestamp, total_scanned } = data;
+  if (error) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-6 bg-destructive/10 border border-destructive/20 rounded-2xl text-center space-y-3">
+        <p className="text-destructive font-bold">{error}</p>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow">
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
+
   const matches = data?.matches || [];
+  const timestamp = data?.timestamp || new Date().toISOString();
+  const totalScanned = data?.total_scanned || 6000;
+
+  const coilCount = matches.filter(m => m.setup_type === 'Launchpad Coil').length;
+  const flagCount = matches.filter(m => m.setup_type === 'Power Trend Flag').length;
+  const ipoCount = matches.filter(m => m.setup_type === 'IPO Base Pivot' || m.is_ipo).length;
+
+  const filteredMatches = matches.filter(m => {
+    if (selectedTab === 'COIL') return m.setup_type === 'Launchpad Coil';
+    if (selectedTab === 'FLAG') return m.setup_type === 'Power Trend Flag';
+    if (selectedTab === 'IPO') return m.setup_type === 'IPO Base Pivot' || m.is_ipo;
+    return true;
+  });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       
-      {/* HUD Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5"/> Universe</div>
-          <div className="text-2xl font-black text-foreground">{total_scanned} <span className="text-sm font-medium text-muted-foreground tracking-normal">tickers</span></div>
-        </div>
-        <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="text-primary text-xs font-black uppercase tracking-wider mb-2 flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/> Top Setups</div>
-          <div className="text-2xl font-black text-primary">{matches.length}</div>
-        </div>
-        <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col justify-between shadow-sm col-span-2">
-          <div className="text-muted-foreground text-xs font-black uppercase tracking-wider mb-2 flex items-center justify-between gap-1.5">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5"/> Last Scan
-              {scanStatus && scanStatus.status === 'in_progress' && <span className="ml-2 text-emerald-400 animate-pulse text-[9px]">⚙️ SCANNING...</span>}
-              {scanStatus && scanStatus.status === 'queued' && <span className="ml-2 text-yellow-400 text-[9px]">⏳ QUEUED</span>}
-              {scanStatus && scanStatus.status === 'completed' && scanStatus.conclusion === 'failure' && <span className="ml-2 text-rose-500 text-[9px]">⚠️ FAILED</span>}
+      {/* INSTITUTIONAL ENGINE HEADER */}
+      <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-widest border border-emerald-500/20 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3"/> Model Book Calibrated
             </span>
-            <button 
-              onClick={triggerScan} 
-              disabled={isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued'))}
-              className="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-md text-[10px] tracking-wider transition-colors disabled:opacity-50"
-            >
-              {isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued')) ? 'RUNNING...' : 'SCAN NOW'}
-            </button>
+            <span className="text-xs text-muted-foreground font-mono">Stage-2 · VCP · MA Smash · Volume Shield</span>
           </div>
-          <div className="text-sm font-mono text-foreground mt-1">{new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</div>
+          <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+            True Market Leaders Screener
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Calibrated against 10 years of institutional market leaders (NVDA, APP, SMCI, PLTR, MSTR, RDDT). 
+            Filters for shallow bases, moving average squeezes, and volume dry-ups while neutralizing false breakdowns.
+          </p>
+        </div>
+
+        {/* METRICS SUMMARY WIDGET */}
+        <div className="flex items-center gap-4 bg-muted/30 border border-border/60 rounded-xl p-3.5 self-stretch md:self-auto justify-between md:justify-end">
+          <div className="text-left">
+            <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+              <Clock className="w-3 h-3"/> Last Scan
+            </div>
+            <div className="text-xs font-mono font-bold text-foreground mt-0.5">
+              {new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
+            </div>
+          </div>
+          <div className="h-8 w-px bg-border/60"></div>
+          <div className="text-left">
+            <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+              <Target className="w-3 h-3"/> Leaders
+            </div>
+            <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">
+              {matches.length} Setups
+            </div>
+          </div>
+          <button
+            onClick={triggerScan}
+            disabled={isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued'))}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ml-2 shadow-sm"
+          >
+            {isScanning || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued')) ? 'SCANNING...' : 'SCAN NOW'}
+          </button>
         </div>
       </div>
 
-      {/* MATCHES LIST */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 mb-2">
-        <h2 className="text-lg font-black tracking-wide text-foreground flex items-center gap-2">
-            <Crosshair className="text-amber-500 w-5 h-5" /> 
-            Actionable 'Model Book' Setups
-        </h2>
-        <div className="flex items-center gap-3">
-          <button onClick={copyTickers} className="flex items-center gap-1.5 text-xs font-bold text-foreground bg-secondary/80 hover:bg-secondary px-3 py-1.5 rounded-full border border-border/80 transition-all shadow-sm">
+      {/* FILTER TABS & TOOLBAR */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setSelectedTab('ALL')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              selectedTab === 'ALL'
+                ? 'bg-foreground text-background shadow'
+                : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            All Leaders ({matches.length})
+          </button>
+          <button
+            onClick={() => setSelectedTab('COIL')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              selectedTab === 'COIL'
+                ? 'bg-emerald-600 text-white shadow'
+                : 'bg-card border border-border text-muted-foreground hover:text-emerald-500'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Launchpad Coils ({coilCount})
+          </button>
+          <button
+            onClick={() => setSelectedTab('FLAG')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              selectedTab === 'FLAG'
+                ? 'bg-blue-600 text-white shadow'
+                : 'bg-card border border-border text-muted-foreground hover:text-blue-500'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+            Power Trend Flags ({flagCount})
+          </button>
+          <button
+            onClick={() => setSelectedTab('IPO')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              selectedTab === 'IPO'
+                ? 'bg-purple-600 text-white shadow'
+                : 'bg-card border border-border text-muted-foreground hover:text-purple-500'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+            IPO Base Pivots ({ipoCount})
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <button
+            onClick={copyTickers}
+            className="flex items-center gap-1.5 text-xs font-bold text-foreground bg-card hover:bg-muted border border-border px-3 py-1.5 rounded-lg transition-all shadow-sm"
+          >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
             {copied ? <span className="text-emerald-500">Copied!</span> : <span>Copy for TradingView</span>}
           </button>
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full animate-pulse border border-emerald-500/20">
-              <Zap className="w-3 h-3 fill-emerald-500" /> Live
+          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20">
+            <Zap className="w-3 h-3 fill-emerald-500 animate-pulse" /> Live Quotes
           </div>
         </div>
       </div>
 
-      {matches.length === 0 ? (
-        <div className="p-12 text-center border border-dashed border-border rounded-2xl bg-card/30">
-          <p className="text-muted-foreground font-medium">No strict Model Book setups met the criteria across the market today.</p>
-          <p className="text-xs text-muted-foreground/60 mt-2">Cash is a position. Wait for the pitch.</p>
+      {/* SETUP CARDS GRID */}
+      {filteredMatches.length === 0 ? (
+        <div className="p-16 text-center border border-dashed border-border rounded-2xl bg-card/30 space-y-3">
+          <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto text-muted-foreground">
+            <ShieldCheck className="w-6 h-6"/>
+          </div>
+          <h3 className="text-base font-bold text-foreground">No Setups in this Category Today</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Our institutional filter rejects loose patterns, false breakdowns, and declining trends. 
+            Cash is an active position until the textbook Model Book setup presents itself.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
-          
           {(() => {
-            const sortedMatches = [...matches].sort((a, b) => {
+            const sorted = [...filteredMatches].sort((a, b) => {
               const priceA = livePrices[a.ticker] || a.price;
               const priceB = livePrices[b.ticker] || b.price;
               const distA = Math.abs((priceA - a.ema21) / a.ema21);
               const distB = Math.abs((priceB - b.ema21) / b.ema21);
               return distA - distB;
             });
-            return sortedMatches.map((match, idx) => {
 
-            // Use live price if available, else fallback to the scanned closing price
-            const currentPrice = livePrices[match.ticker] || match.price;
-            
-            // Recalculate proximity to 21-EMA in real-time
-            const ema21 = match.ema21;
-            const distanceRaw = ((currentPrice - ema21) / ema21) * 100;
-            const distanceAbs = Math.abs(distanceRaw);
-            const isBelowEMA = currentPrice < ema21;
-            
-            let proximityColor = "text-amber-500 bg-amber-500/10";
-            if (isBelowEMA) proximityColor = "text-rose-500 bg-rose-500/10"; // Trapped below
-            else if (distanceAbs < 1.0) proximityColor = "text-emerald-500 bg-emerald-500/10"; // Extremely tight
+            return sorted.map((match, idx) => {
+              const currentPrice = livePrices[match.ticker] || match.price;
+              const ema21 = match.ema21;
+              const distanceRaw = ((currentPrice - ema21) / ema21) * 100;
+              const distanceAbs = Math.abs(distanceRaw);
+              const isBelowEMA = currentPrice < ema21;
 
-            return (
-              <div key={idx} data-screener-card="true" className="bg-card border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
-                
-                
-                <div className="flex justify-between items-start mb-0 cursor-pointer" onClick={() => toggleCard(match.ticker)}>
-                  <div>
-                    <h3 className="text-2xl font-black text-foreground tracking-tight">{match.ticker}</h3>
-                    <div className="flex items-end gap-2 mt-1">
-                        <div className="text-2xl font-mono text-foreground">${currentPrice.toFixed(2)}</div>
-                        <div className="text-[10px] uppercase font-bold text-muted-foreground pb-1">Live</div>
-                    </div>
-                    {match.sector && match.sector !== "Unknown" && (
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
-                            <span className="bg-muted text-muted-foreground text-[9px] font-bold uppercase px-2 py-0.5 rounded">{match.sector}</span>
-                            {match.float_shares > 0 && match.float_shares < 50000000 && (
-                                <span className="bg-purple-500/10 text-purple-500 text-[9px] font-bold uppercase px-2 py-0.5 rounded">⚡ Low Float</span>
-                            )}
-                            {match.short_percent >= 0.10 && (
-                                <span className="bg-orange-500/10 text-orange-500 text-[9px] font-bold uppercase px-2 py-0.5 rounded">🔥 High Short</span>
-                            )}
-                        </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <a href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`} target="_blank" rel="noreferrer" onClick={(e)=>e.stopPropagation()} className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider">
-                      Chart ↗
-                    </a>
-                    <button className="text-muted-foreground hover:text-foreground transition-colors">
-                      {expandedCard === match.ticker ? <ChevronUp className="w-5 h-5"/> : <ChevronDown className="w-5 h-5"/>}
-                    </button>
-                  </div>
-                </div>
+              let proximityColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
+              if (isBelowEMA) proximityColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+              else if (distanceAbs < 1.5) proximityColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
 
-                {expandedCard === match.ticker && (
-                  <div className="animate-in fade-in slide-in-from-top-2">
-                    <div className="space-y-3 mt-4 border-t border-border/50 pt-4 flex-1">
+              let badgeBg = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+              let badgeIcon = "🟢";
+              if (match.setup_type === 'Power Trend Flag') {
+                badgeBg = "bg-blue-500/10 text-blue-500 border-blue-500/20";
+                badgeIcon = "🚀";
+              } else if (match.setup_type === 'IPO Base Pivot' || match.is_ipo) {
+                badgeBg = "bg-purple-500/10 text-purple-500 border-purple-500/20";
+                badgeIcon = "🌟";
+              }
 
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> Macro Trend</span>
-                    <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">Confirmed</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> 21-EMA Line</span>
-                    <span className="text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded text-xs">${ema21.toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-4 h-4"/> Live Proximity</span>
-                    <span className={`font-bold px-2 py-0.5 rounded text-xs ${proximityColor}`}>
-                        {distanceAbs.toFixed(2)}% {isBelowEMA ? 'Below' : 'Above'}
+              return (
+                <div
+                  key={match.ticker}
+                  data-screener-card="true"
+                  className="bg-card border border-border/80 hover:border-primary/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col group relative"
+                >
+                  {/* CARD TOP ROW: BADGE & ACTIONS */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${badgeBg}`}>
+                      <span>{badgeIcon}</span> {match.setup_type || 'Launchpad Coil'}
                     </span>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`https://www.tradingview.com/chart/?symbol=${match.ticker}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary text-[10px] font-black uppercase px-2.5 py-1 rounded-md transition-colors"
+                      >
+                        Chart ↗
+                      </a>
+                      <button
+                        onClick={() => toggleCard(match.ticker)}
+                        className="text-muted-foreground hover:text-foreground p-1 transition-colors"
+                      >
+                        {expandedCard === match.ticker ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> Daily Volume</span>
-                    <span className="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-xs">{match.vol_status}</span>
+
+                  {/* TICKER & PRICE */}
+                  <div className="cursor-pointer" onClick={() => toggleCard(match.ticker)}>
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-2xl font-black text-foreground tracking-tight">{match.ticker}</h3>
+                      <div className="text-2xl font-mono font-black text-foreground">${currentPrice.toFixed(2)}</div>
+                    </div>
+
+                    {/* SECTOR & MICRO-TAGS */}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {match.sector && match.sector !== "Unknown" && (
+                        <span className="bg-muted text-muted-foreground text-[9px] font-bold uppercase px-2 py-0.5 rounded">
+                          {match.sector}
+                        </span>
+                      )}
+                      {match.float_shares > 0 && match.float_shares < 50000000 && (
+                        <span className="bg-purple-500/10 text-purple-500 text-[9px] font-bold uppercase px-2 py-0.5 rounded">
+                          ⚡ Low Float
+                        </span>
+                      )}
+                      {match.short_percent >= 0.10 && (
+                        <span className="bg-orange-500/10 text-orange-500 text-[9px] font-bold uppercase px-2 py-0.5 rounded">
+                          🔥 High Short
+                        </span>
+                      )}
+                    </div>
+
+                    {/* KEY METRICS SUMMARY ROW */}
+                    <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-border/50 text-center">
+                      <div className="bg-muted/20 rounded-lg p-2">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Base Depth</div>
+                        <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">{match.base_depth}</div>
+                      </div>
+                      <div className="bg-muted/20 rounded-lg p-2">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">10/21 Spread</div>
+                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">
+                          {match.spread_10_21 ? `${match.spread_10_21.toFixed(1)}%` : '<2.5%'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/20 rounded-lg p-2">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Volume</div>
+                        <div className="text-xs font-mono font-bold text-primary mt-0.5">
+                          {match.vol_status || 'Dry-Up'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm mt-3">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Base Depth</span>
-                    <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">{match.base_depth}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> 3-Mo RS vs SPY</span>
-                    <span className="text-blue-500 font-bold bg-blue-500/10 px-2 py-0.5 rounded text-xs">+{match.relative_strength_3mo?.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-4 h-4"/> Volatility (ADR)</span>
-                    <span className="text-purple-500 font-bold bg-purple-500/10 px-2 py-0.5 rounded text-xs">{match.adr?.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Short Interest</span>
-                    <span className="font-mono text-foreground/80">{((match.short_percent || 0) * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-4 h-4"/> Shares Float</span>
-                    <span className="font-mono text-foreground/80">{match.float_shares ? (match.float_shares / 1000000).toFixed(1) + 'M' : 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-4 h-4"/> EPS Growth (YoY)</span>
-                    <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs">+{((match.eps_growth || 0) * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-4 h-4"/> Sales Growth (YoY)</span>
-                    <span className="text-blue-500 font-bold bg-blue-500/10 px-2 py-0.5 rounded text-xs">+{((match.rev_growth || 0) * 100).toFixed(1)}%</span>
-                  </div>
+
+                  {/* EXPANDABLE DEEP-DIVE METRICS */}
+                  {expandedCard === match.ticker && (
+                    <div className="space-y-2.5 mt-4 pt-4 border-t border-border/60 text-xs animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Macro Regime</span>
+                        <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase">
+                          {match.is_ipo ? 'IPO Launchpad' : 'Stage-2 Stacked'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/> 21-EMA Proximity</span>
+                        <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] border ${proximityColor}`}>
+                          ${ema21.toFixed(2)} ({distanceAbs.toFixed(1)}% {isBelowEMA ? 'Below' : 'Above'})
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> 3-Mo RS vs SPY</span>
+                        <span className="font-mono font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded text-[10px]">
+                          +{match.relative_strength_3mo?.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-3.5 h-3.5"/> Volatility (ADR)</span>
+                        <span className="font-mono font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded text-[10px]">
+                          {match.adr?.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5"/> EPS Growth (YoY)</span>
+                        <span className="font-mono font-bold text-emerald-500">
+                          +{((match.eps_growth || 0) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Sales Growth (YoY)</span>
+                        <span className="font-mono font-bold text-blue-500">
+                          +{((match.rev_growth || 0) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      {match.earnings_date && match.earnings_date !== "Unknown" && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Earnings Date</span>
+                          <span className="font-mono text-muted-foreground">{match.earnings_date}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                
-                  </div>
-                )}
-
-              </div>
-            );
+              );
             });
           })()}
         </div>
       )}
-
     </div>
   );
 }

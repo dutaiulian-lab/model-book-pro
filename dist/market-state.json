@@ -1,5 +1,38 @@
 {
-  "timestamp": "2026-09-11T20:17:31.396Z",
-  "total_scanned": 6130,
-  "matches": []
+  "timestamp": "2026-09-22T00:15:37.947Z",
+  "total_scanned": 6141,
+  "matches": [
+    {
+      "ticker": "TX",
+      "price": 57.22999954223633,
+      "ema21": 56.2518196858779,
+      "base_depth": "-2.6%",
+      "adr": 2.5858144737994904,
+      "relative_strength_3mo": 21.604875319949173,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.595,
+      "rev_growth": 0.1,
+      "short_percent": 0.0073,
+      "float_shares": 42948194,
+      "sector": "Basic Materials",
+      "industry": "Steel",
+      "earnings_date": "2026-10-27"
+    },
+    {
+      "ticker": "WPM",
+      "price": 151.00999450683594,
+      "ema21": 148.89339190493095,
+      "base_depth": "-8.9%",
+      "adr": 3.1638077568484864,
+      "relative_strength_3mo": 21.201026284657463,
+      "vol_status": "VCP Dry-Up",
+      "eps_growth": 0.857,
+      "rev_growth": 0.847,
+      "short_percent": 0,
+      "float_shares": 453215315,
+      "sector": "Basic Materials",
+      "industry": "Gold",
+      "earnings_date": "2026-11-05"
+    }
+  ]
 }
