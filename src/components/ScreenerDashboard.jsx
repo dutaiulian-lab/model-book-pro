@@ -147,8 +147,10 @@ export default function ScreenerDashboard() {
   const coilCount = matches.filter(m => m.setup_type === 'Launchpad Coil').length;
   const flagCount = matches.filter(m => m.setup_type === 'Power Trend Flag').length;
   const ipoCount = matches.filter(m => m.setup_type === 'IPO Base Pivot' || m.is_ipo).length;
+  const readyCount = matches.filter(m => m.timing_status === 'READY_AT_PAD' || (m.dist_10dma !== undefined && m.dist_10dma <= 2.2)).length;
 
   const filteredMatches = matches.filter(m => {
+    if (selectedTab === 'READY') return m.timing_status === 'READY_AT_PAD' || (m.dist_10dma !== undefined && m.dist_10dma <= 2.2);
     if (selectedTab === 'COIL') return m.setup_type === 'Launchpad Coil';
     if (selectedTab === 'FLAG') return m.setup_type === 'Power Trend Flag';
     if (selectedTab === 'IPO') return m.setup_type === 'IPO Base Pivot' || m.is_ipo;
@@ -217,6 +219,17 @@ export default function ScreenerDashboard() {
             }`}
           >
             All Leaders ({matches.length})
+          </button>
+          <button
+            onClick={() => setSelectedTab('READY')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              selectedTab === 'READY'
+                ? 'bg-emerald-600 text-white shadow ring-2 ring-emerald-400/40'
+                : 'bg-card border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            🎯 Ready at Pad ({readyCount})
           </button>
           <button
             onClick={() => setSelectedTab('COIL')}
@@ -293,6 +306,14 @@ export default function ScreenerDashboard() {
             return sorted.map((match, idx) => {
               const currentPrice = livePrices[match.ticker] || match.price;
               const ema21 = match.ema21;
+              const dma10 = match.dma10 || match.price;
+              const liveDist10 = dma10 > 0 ? ((currentPrice - dma10) / dma10) * 100 : (match.dist_10dma || 0);
+              const isLiveExtended = liveDist10 > 3.5;
+              const isLiveReady = liveDist10 <= 2.2 && liveDist10 >= -0.5;
+
+              const stopPrice = match.suggested_stop || (dma10 * 0.985);
+              const stopPct = Math.max(1.0, ((currentPrice - stopPrice) / currentPrice) * 100);
+
               const distanceRaw = ((currentPrice - ema21) / ema21) * 100;
               const distanceAbs = Math.abs(distanceRaw);
               const isBelowEMA = currentPrice < ema21;
@@ -367,19 +388,51 @@ export default function ScreenerDashboard() {
                       )}
                     </div>
 
+                    {/* TIMING & RISK LAUNCHPAD METER */}
+                    <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/70 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        {isLiveReady ? (
+                          <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            🎯 READY AT PAD
+                          </span>
+                        ) : isLiveExtended ? (
+                          <span className="flex items-center gap-1.5 text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-rose-500/20">
+                            ⚠️ EXTENDED
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-blue-500/20">
+                            ⚡ AT PIVOT
+                          </span>
+                        )}
+                        <span className="font-mono text-muted-foreground text-[11px]">
+                          {liveDist10 >= 0 ? `+${liveDist10.toFixed(1)}%` : `${liveDist10.toFixed(1)}%`} vs 10-DMA
+                        </span>
+                      </div>
+                      <div className="text-[10px] font-mono font-bold text-muted-foreground">
+                        Stop: <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className={stopPct <= 3.5 ? "text-emerald-400" : "text-amber-400"}>-{stopPct.toFixed(1)}%</span>)
+                      </div>
+                    </div>
+
                     {/* KEY METRICS SUMMARY ROW */}
-                    <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-border/50 text-center">
-                      <div className="bg-muted/20 rounded-lg p-2">
-                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Base Depth</div>
+                    <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-border/50 text-center">
+                      <div className="bg-muted/20 rounded-lg p-1.5">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Base</div>
                         <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">{match.base_depth}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-2">
-                        <div className="text-[9px] uppercase font-bold text-muted-foreground">10/21 Spread</div>
+                      <div className="bg-muted/20 rounded-lg p-1.5">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">10-DMA</div>
+                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">
+                          {liveDist10 >= 0 ? `+${liveDist10.toFixed(1)}%` : `${liveDist10.toFixed(1)}%`}
+                        </div>
+                      </div>
+                      <div className="bg-muted/20 rounded-lg p-1.5">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">10/21 MA</div>
                         <div className="text-xs font-mono font-bold text-foreground mt-0.5">
                           {match.spread_10_21 ? `${match.spread_10_21.toFixed(1)}%` : '<2.5%'}
                         </div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-2">
+                      <div className="bg-muted/20 rounded-lg p-1.5">
                         <div className="text-[9px] uppercase font-bold text-muted-foreground">Volume</div>
                         <div className="text-xs font-mono font-bold text-primary mt-0.5">
                           {match.vol_status || 'Dry-Up'}
@@ -391,6 +444,18 @@ export default function ScreenerDashboard() {
                   {/* EXPANDABLE DEEP-DIVE METRICS */}
                   {expandedCard === match.ticker && (
                     <div className="space-y-2.5 mt-4 pt-4 border-t border-border/60 text-xs animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5"/> 10-DMA Pad Floor</span>
+                        <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
+                          ${dma10.toFixed(2)} ({liveDist10 >= 0 ? '+' : ''}{liveDist10.toFixed(1)}% cushion)
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Recommended Stop</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
+                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% risk)
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Macro Regime</span>
                         <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase">

@@ -44,9 +44,12 @@ async function sendDiscordSummary(output, spy3mo) {
         const topMatches = matches.slice(0, 8);
         topMatches.forEach((m, idx) => {
             const badge = m.setup_type === 'Launchpad Coil' ? '🟢 COIL' : (m.setup_type === 'Power Trend Flag' ? '🚀 FLAG' : '🌟 IPO');
+            const timing = m.timing_label || '🎯 Ready at Pad';
+            const dist10 = m.dist_10dma !== undefined ? `${m.dist_10dma >= 0 ? '+' : ''}${m.dist_10dma.toFixed(1)}%` : '<2.5%';
+            const stopStr = m.suggested_stop ? `$${m.suggested_stop.toFixed(2)} (-${m.suggested_stop_pct?.toFixed(1)}%)` : 'Tight MA';
             fields.push({
-                name: `${idx + 1}. [${badge}] ${m.ticker} · $${m.price?.toFixed(2)} (${m.sector || m.industry || "Leader"})`,
-                value: `📉 Base: **${m.base_depth}** | ⚡ 10/21 Spread: **${m.spread_10_21?.toFixed(1)}%** | 3M RS: **+${m.relative_strength_3mo?.toFixed(1)}%** | EPS: **+${((m.eps_growth || 0) * 100).toFixed(0)}%**`,
+                name: `${idx + 1}. [${badge}] ${m.ticker} · $${m.price?.toFixed(2)} [${timing}]`,
+                value: `📉 Base: **${m.base_depth}** | 🎯 10-DMA: **${dist10}** | 🛡️ Stop: **${stopStr}** | 3M RS: **+${m.relative_strength_3mo?.toFixed(1)}%** | EPS: **+${((m.eps_growth || 0) * 100).toFixed(0)}%**`,
                 inline: false
             });
         });
@@ -229,6 +232,15 @@ async function run() {
                     return;
                 }
 
+                // EXTENSION GUARDRAIL (Timing & Lowest Risk Calibration):
+                // Reject immediately if price is already stretched away from the moving average pad.
+                // Buying extended stocks (> 3.5% from 10-DMA or > 6.5% from 21-EMA) destroys risk/reward.
+                const dist10dma = ((current.close - dma10) / dma10) * 100;
+                const dist21ema = ((current.close - ema21) / ema21) * 100;
+                if (dist10dma > 3.5 || dist21ema > 6.5) {
+                    return;
+                }
+
                 // 4. Base Depth Calibration: Max 35.0% Drawdown from 52-Week High (Empirical Model Book Depth)
                 const lookback = Math.min(data.length, 252);
                 const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-lookback).map(d => d.high));
@@ -289,9 +301,42 @@ async function run() {
                 const dcr = (current.high - current.low) > 0 ? (current.close - current.low) / (current.high - current.low) : 0.5;
                 if (dcr < 0.45) return;
 
-                // 10. Performance & Volatility
+                // 10. Performance, Volatility & Timing Calibration
                 const stock3mo = calculatePerformance(data, Math.min(data.length - 1, 63)) || 0;
                 const adr = (data.slice(-20).reduce((sum, d) => sum + ((d.high - d.low) / d.close), 0) / Math.min(data.length, 20)) * 100;
+
+                // ADR-Normalized Stretch: Distance from 10-DMA must not exceed 0.70x ADR
+                const adrStretch = adr > 0 ? (dist10dma / adr) : 0;
+                if (adrStretch > 0.70) return;
+
+                // Base Pivot Analysis: Identify the highest high of the prior 10 sessions (excluding today)
+                const pivotLookback = Math.min(10, data.length - 1);
+                const recentPivot = Math.max(...data.slice(-pivotLookback - 1, -1).map(d => d.high));
+                const distFromPivot = ((current.close - recentPivot) / recentPivot) * 100;
+
+                // Reject if price has already exploded > 2.5% past the recent base pivot
+                if (distFromPivot > 2.5) return;
+
+                // Actionability Status:
+                // - READY_AT_PAD: Coiled within 2.2% of 10-DMA (lowest risk entry before explosion)
+                // - BREAKING_OUT: Within -0.5% to +2.5% of the pivot level (active breakout)
+                let timingStatus = "READY_AT_PAD";
+                let timingLabel = "🎯 Ready at Pad";
+                if (distFromPivot >= -0.5 && distFromPivot <= 2.5) {
+                    timingStatus = "BREAKING_OUT";
+                    timingLabel = "⚡ At Pivot";
+                } else if (dist10dma <= 2.2) {
+                    timingStatus = "READY_AT_PAD";
+                    timingLabel = "🎯 Ready at Pad";
+                } else {
+                    timingStatus = "COILING";
+                    timingLabel = "⏳ Coiling";
+                }
+
+                // Suggested Stop Loss: Below the 10-DMA or recent 3-day swing low (minimum risk floor)
+                const recent3Low = Math.min(...data.slice(-3).map(d => d.low));
+                const stopPrice = Math.max(recent3Low, dma10 * 0.985);
+                const stopPct = Math.max(1.5, Math.min(6.0, ((current.close - stopPrice) / current.close) * 100));
 
                 techMatches.push({
                     ticker,
@@ -307,7 +352,16 @@ async function run() {
                     setup_type: setupType,
                     is_ipo: isIpo,
                     adr,
-                    relative_strength_3mo: spy3mo !== null ? (stock3mo - spy3mo) : stock3mo
+                    relative_strength_3mo: spy3mo !== null ? (stock3mo - spy3mo) : stock3mo,
+                    dist_10dma: dist10dma,
+                    dist_21ema: dist21ema,
+                    adr_stretch: adrStretch,
+                    recent_pivot: recentPivot,
+                    dist_from_pivot: distFromPivot,
+                    timing_status: timingStatus,
+                    timing_label: timingLabel,
+                    suggested_stop: stopPrice,
+                    suggested_stop_pct: stopPct
                 });
             }
         }));
