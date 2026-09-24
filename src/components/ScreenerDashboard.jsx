@@ -238,12 +238,12 @@ export default function ScreenerDashboard() {
             <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
               <Clock className="w-3 h-3"/> Last Scan
               {scanStatus?.status === 'in_progress' && (
-                <span className="text-emerald-400 font-mono text-[9px] font-black animate-pulse flex items-center gap-1">
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-black animate-pulse flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> SCANNING
                 </span>
               )}
               {scanStatus?.status === 'queued' && (
-                <span className="text-amber-400 font-mono text-[9px] font-black">
+                <span className="text-amber-600 dark:text-amber-400 font-mono text-[9px] font-black">
                   ⏳ QUEUED
                 </span>
               )}
@@ -281,11 +281,11 @@ export default function ScreenerDashboard() {
               </>
             ) : scanStatus?.status === 'in_progress' ? (
               <>
-                <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" /> SCANNING...
+                <RefreshCw className="w-3 h-3 animate-spin text-emerald-600 dark:text-emerald-400" /> SCANNING...
               </>
             ) : scanStatus?.status === 'queued' ? (
               <>
-                <Clock className="w-3 h-3 animate-pulse text-amber-400" /> QUEUED...
+                <Clock className="w-3 h-3 animate-pulse text-amber-600 dark:text-amber-400" /> QUEUED...
               </>
             ) : scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure' ? (
               <>
@@ -312,11 +312,11 @@ export default function ScreenerDashboard() {
           <div className="flex items-start gap-3">
             <div className="mt-0.5">
               {scanFeedback.type === 'error' ? (
-                <AlertTriangle className="w-5 h-5 text-rose-400" />
+                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               ) : scanFeedback.type === 'success' ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
+                <RefreshCw className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
               )}
             </div>
             <div className="space-y-1">
@@ -378,7 +378,7 @@ export default function ScreenerDashboard() {
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               selectedTab === 'READY'
                 ? 'bg-emerald-600 text-white shadow ring-2 ring-emerald-400/40'
-                : 'bg-card border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                : 'bg-card border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -545,16 +545,16 @@ export default function ScreenerDashboard() {
                     <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/70 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         {isLiveReady ? (
-                          <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                             🎯 READY AT PAD
                           </span>
                         ) : isLiveExtended ? (
-                          <span className="flex items-center gap-1.5 text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-rose-500/20">
+                          <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-rose-500/20">
                             ⚠️ EXTENDED
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-blue-500/20">
+                          <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-blue-500/20">
                             ⚡ AT PIVOT
                           </span>
                         )}
@@ -563,7 +563,7 @@ export default function ScreenerDashboard() {
                         </span>
                       </div>
                       <div className="text-[10px] font-mono font-bold text-muted-foreground">
-                        Stop: <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className={stopPct <= 3.5 ? "text-emerald-400" : "text-amber-400"}>-{stopPct.toFixed(1)}%</span>)
+                        Stop: <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className={stopPct <= 3.5 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>-{stopPct.toFixed(1)}%</span>)
                       </div>
                     </div>
 
@@ -599,7 +599,7 @@ export default function ScreenerDashboard() {
                     <div className="space-y-2.5 mt-4 pt-4 border-t border-border/60 text-xs animate-in fade-in slide-in-from-top-2">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5"/> 10-DMA Pad Floor</span>
-                        <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
                           ${dma10.toFixed(2)} ({liveDist10 >= 0 ? '+' : ''}{liveDist10.toFixed(1)}% cushion)
                         </span>
                       </div>
