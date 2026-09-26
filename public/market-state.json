@@ -1,31 +1,5 @@
 {
-  "timestamp": "2026-09-24T23:59:00.018Z",
-  "total_scanned": 6146,
-  "matches": [
-    {
-      "ticker": "NTNX",
-      "price": 68.58999633789062,
-      "dma10": 68.37999954223633,
-      "ema21": 67.67000506314439,
-      "sma50": 63.77509994506836,
-      "base_depth": "-12.6%",
-      "spread_10_21": 1.0492011614738834,
-      "spread_10_50": 7.220529017021262,
-      "vol_ratio": 0.894046924168349,
-      "vol_status": "Dry-Up (89%)",
-      "setup_type": "Launchpad Coil",
-      "is_ipo": false,
-      "adr": 3.0458609404095496,
-      "relative_strength_3mo": 39.9222576546688,
-      "dist_10dma": 0.30710265729759517,
-      "dist_21ema": 1.359525943418762,
-      "adr_stretch": 0.1008262239497716,
-      "recent_pivot": 70.58999633789062,
-      "dist_from_pivot": -2.8332626487564485,
-      "timing_status": "READY_AT_PAD",
-      "timing_label": "🎯 Ready at Pad",
-      "suggested_stop": 67.94999694824219,
-      "suggested_stop_pct": 1.5
-    }
-  ]
+  "timestamp": "2026-09-26T00:02:30.590Z",
+  "total_scanned": 6115,
+  "matches": []
 }
