@@ -114,18 +114,46 @@ async function fetchAllUSTickers() {
     }
 }
 
+// Scan health accounting. "no_data" = Yahoo answered but has nothing usable
+// (delisted / unknown symbol); "fetch_failed" = network error, 429 or 5xx
+// after retries. Only fetch_failed counts toward the abort threshold.
+const stats = { ok: 0, no_data: 0, fetch_failed: 0, retries: 0 };
+const MAX_FETCH_FAILURE_RATE = 0.10;
+const MIN_UNIVERSE_SIZE = 1000;
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Retries network errors, 429 and 5xx with exponential backoff (1s, 2s).
+// Returns the Response, or null if every attempt failed.
+async function fetchWithRetry(url, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (res.status !== 429 && res.status < 500) return res;
+    } catch (e) {
+      // Network error: fall through to retry.
+    }
+    if (i < attempts - 1) {
+      stats.retries++;
+      await sleep(1000 * 2 ** i);
+    }
+  }
+  return null;
+}
+
 async function fetchYahooData(ticker) {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1y&interval=1d`;
-    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (!res.ok) return null;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=1y&interval=1d`;
+    const res = await fetchWithRetry(url);
+    if (!res) { stats.fetch_failed++; return null; }
+    if (res.status === 404) { stats.no_data++; return null; }
+    if (!res.ok) { stats.fetch_failed++; return null; }
     const json = await res.json();
-    if (!json.chart.result) return null;
+    if (!json.chart?.result) { stats.no_data++; return null; }
 
     const data = json.chart.result[0];
     const quotes = data.indicators.quote[0];
     const timestamps = data.timestamp;
-    if (!timestamps || timestamps.length === 0) return null;
+    if (!timestamps || timestamps.length === 0) { stats.no_data++; return null; }
 
     const history = [];
     for (let i = 0; i < timestamps.length; i++) {
@@ -140,8 +168,10 @@ async function fetchYahooData(ticker) {
             });
         }
     }
+    stats.ok++;
     return { history, meta: data.meta };
   } catch (e) {
+    stats.fetch_failed++;
     return null;
   }
 }
@@ -173,11 +203,20 @@ function calculatePerformance(data, daysAgo) {
 async function run() {
     console.log(`Fetching S&P 500 Market Benchmark (SPY)...`);
     const spyDataResult = await fetchYahooData('SPY');
-    if (!spyDataResult) return;
+    if (!spyDataResult) {
+        console.error('Aborting: could not fetch SPY benchmark. Previous market-state.json left untouched.');
+        process.exit(1);
+    }
     const spyData = spyDataResult.history;
     const spy3mo = calculatePerformance(spyData, 63);
 
     const tickers = await fetchAllUSTickers();
+    if (tickers.length < MIN_UNIVERSE_SIZE) {
+        console.error(`Aborting: ticker universe only has ${tickers.length} symbols (master list download failed?).`);
+        process.exit(1);
+    }
+    // Reset so the SPY benchmark fetch doesn't skew the universe stats.
+    Object.assign(stats, { ok: 0, no_data: 0, fetch_failed: 0, retries: 0 });
     console.log(`Starting Technical Scan on ${tickers.length} tickers...`);
 
     let techMatches = [];
@@ -368,6 +407,14 @@ async function run() {
         await new Promise(r => setTimeout(r, 150));
     }
 
+    const failureRate = stats.fetch_failed / tickers.length;
+    console.log(`\nFetch stats: ${JSON.stringify(stats)} (failure rate ${(failureRate * 100).toFixed(1)}%)`);
+    if (failureRate > MAX_FETCH_FAILURE_RATE) {
+        console.error(`Aborting: ${(failureRate * 100).toFixed(1)}% of price fetches failed (limit ${MAX_FETCH_FAILURE_RATE * 100}%). ` +
+            `Previous market-state.json left untouched.`);
+        process.exit(1);
+    }
+
     console.log(`\nTechnical Scan found ${techMatches.length} Model Book candidates.`);
     console.log(`Starting FUNDAMENTAL Validation phase...`);
 
@@ -438,6 +485,7 @@ async function run() {
     const output = {
         timestamp: new Date().toISOString(),
         total_scanned: tickers.length,
+        stats: { ...stats, failure_rate: Number(failureRate.toFixed(4)) },
         matches: finalMatches
     };
 
