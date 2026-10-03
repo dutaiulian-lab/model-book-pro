@@ -9,10 +9,16 @@ const HEALTH_BADGE = {
   error:    { label: 'Data Unavailable',     cls: 'text-rose-600 dark:text-rose-400' },
 };
 import ScreenerDashboard from './components/ScreenerDashboard';
+import TrackRecord from './components/TrackRecord';
 import { Target, Activity, ShieldAlert, Sun, Moon } from 'lucide-react';
 
 function App() {
   const [health, setHealth] = useState('loading');
+  const [view, setView] = useState(() => (window.location.hash === '#track' ? 'track' : 'screener'));
+  useEffect(() => {
+    const want = view === 'track' ? '#track' : '';
+    if (window.location.hash !== want) history.replaceState(null, '', want || window.location.pathname);
+  }, [view]);
   const badge = HEALTH_BADGE[health] || HEALTH_BADGE.loading;
 
   const [isDark, setIsDark] = useState(() => {
@@ -60,9 +66,28 @@ function App() {
         </div>
       </header>
 
+      {/* View switcher */}
+      <nav className="flex gap-1 bg-muted/40 border border-border/60 rounded-xl p-1 w-fit text-sm font-bold">
+        {[['screener', 'Screener'], ['track', 'Track Record']].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            className={`px-4 py-1.5 rounded-lg cursor-pointer transition-all ${
+              view === key ? 'bg-card text-foreground shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
       {/* Main Content */}
       <main>
-        <ScreenerDashboard onHealthChange={setHealth} />
+        {/* Kept mounted so scan polling and state survive tab switches. */}
+        <div className={view === 'screener' ? '' : 'hidden'}>
+          <ScreenerDashboard onHealthChange={setHealth} />
+        </div>
+        {view === 'track' && <TrackRecord />}
       </main>
     </div>
   );

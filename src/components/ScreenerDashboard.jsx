@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, Play, ExternalLink, X } from 'lucide-react';
 
 // Most recent weekday 21:30 UTC (scheduled scan time) that is at least 6h in
@@ -26,6 +26,37 @@ export default function ScreenerDashboard({ onHealthChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [livePrices, setLivePrices] = useState({});
+  const [pickDays, setPickDays] = useState(null);
+
+  // Scan-day history (public/pick-days.json) for NEW / Day N badges.
+  useEffect(() => {
+    if (!data?.as_of) return;
+    fetch(`/pick-days.json?t=${Date.now()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setPickDays(j?.days || null))
+      .catch(() => {});
+  }, [data?.as_of]);
+
+  const { streaks, dropped } = useMemo(() => {
+    if (!pickDays || !data?.as_of || !data.matches) return { streaks: {}, dropped: null };
+    const prior = Object.keys(pickDays).filter((d) => d < data.as_of).sort().reverse();
+    const streaks = {};
+    for (const m of data.matches) {
+      let n = 1;
+      for (const d of prior) {
+        if (!pickDays[d].tickers.includes(m.ticker)) break;
+        n++;
+      }
+      streaks[m.ticker] = n;
+    }
+    // Compare with the previous live scan only: backfill days use technical rules alone.
+    const prevLive = prior.find((d) => pickDays[d].source === 'live');
+    const current = new Set(data.matches.map((m) => m.ticker));
+    const dropped = prevLive
+      ? { date: prevLive, tickers: pickDays[prevLive].tickers.filter((t) => !current.has(t)) }
+      : null;
+    return { streaks, dropped };
+  }, [pickDays, data]);
   const dismissedRunUrlRef = useRef(
     (() => { try { return localStorage.getItem(DISMISSED_RUN_KEY); } catch { return null; } })()
   );
@@ -492,6 +523,11 @@ export default function ScreenerDashboard({ onHealthChange }) {
       </div>
 
       {/* SETUP CARDS GRID */}
+      {dropped && dropped.tickers.length > 0 && (
+        <div className="text-[11px] font-mono text-muted-foreground -mt-2">
+          Dropped since {dropped.date}: {dropped.tickers.join(', ')}
+        </div>
+      )}
       {filteredMatches.length === 0 ? (
         <div className="p-16 text-center border border-dashed border-border rounded-2xl bg-card/30 space-y-3">
           <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto text-muted-foreground">
@@ -582,6 +618,16 @@ export default function ScreenerDashboard({ onHealthChange }) {
 
                     {/* SECTOR & MICRO-TAGS */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
+                      {streaks[match.ticker] && (
+                        <span
+                          className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${
+                            streaks[match.ticker] === 1 ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400' : 'bg-muted text-muted-foreground'
+                          }`}
+                          title="Consecutive scan days this stock has passed the screen (backfilled days count the technical rules only)"
+                        >
+                          {streaks[match.ticker] === 1 ? '🆕 New' : `Day ${streaks[match.ticker]}`}
+                        </span>
+                      )}
                       {match.sector && match.sector !== "Unknown" && (
                         <span className="bg-muted text-muted-foreground text-[9px] font-bold uppercase px-2 py-0.5 rounded">
                           {match.sector}
