@@ -7,7 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import {
-    EXPIRE_CALENDAR_DAYS, computeOutcome, fetchDailyBars, isNewSignal, pickFields,
+    BARS_RANGE, EXPIRE_CALENDAR_DAYS, computeOutcome, fetchDailyBars, isNewSignal, pickFields,
     readJson, writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH,
 } from './lib/track-record.mjs';
 
@@ -50,14 +50,14 @@ async function main() {
     }
     const toRefresh = signals.filter(s => OPEN.has(s.outcome?.status));
     if (toRefresh.length) {
-        const spy = (await fetchDailyBars('SPY', '6mo'))?.bars;
+        const spy = (await fetchDailyBars('SPY', BARS_RANGE))?.bars;
         if (!spy) throw new Error('Could not fetch SPY');
         const spyByDate = new Map(spy.map(b => [b.date, b]));
         const tickers = [...new Set(toRefresh.map(s => s.ticker))];
         const barsByTicker = new Map();
         for (let i = 0; i < tickers.length; i += 10) {
             await Promise.all(tickers.slice(i, i + 10).map(async t => {
-                const res = await fetchDailyBars(t, '6mo');
+                const res = await fetchDailyBars(t, BARS_RANGE);
                 if (res) barsByTicker.set(t, res.bars);
             }));
         }

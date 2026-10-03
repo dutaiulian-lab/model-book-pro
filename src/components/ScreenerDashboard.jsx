@@ -558,8 +558,12 @@ export default function ScreenerDashboard({ onHealthChange }) {
               const isLiveExtended = liveDist10 > 3.5;
               const isLiveReady = liveDist10 <= 2.2 && liveDist10 >= -0.5;
 
+              // Trade plan from the screener: buy stop at the pivot, initial stop
+              // = lower of the structural stop and 5% below the fill, exit on a
+              // close below the 50-DMA. Older market-state files lack buy_stop.
+              const buyStop = match.buy_stop ?? match.recent_pivot ?? currentPrice;
               const stopPrice = match.suggested_stop || (dma10 * 0.985);
-              const stopPct = Math.max(1.0, ((currentPrice - stopPrice) / currentPrice) * 100);
+              const stopPct = match.suggested_stop_pct ?? Math.max(1.0, ((buyStop - stopPrice) / buyStop) * 100);
 
               const distanceRaw = ((currentPrice - ema21) / ema21) * 100;
               const distanceAbs = Math.abs(distanceRaw);
@@ -667,7 +671,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         </span>
                       </div>
                       <div className="text-[10px] font-mono font-bold text-muted-foreground">
-                        Stop: <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className={stopPct <= 3.5 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>-{stopPct.toFixed(1)}%</span>)
+                        Buy &gt; <span className="text-foreground">${buyStop.toFixed(2)}</span> · Stop <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className="text-amber-600 dark:text-amber-400">-{stopPct.toFixed(1)}%</span>)
                       </div>
                     </div>
 
@@ -708,11 +712,31 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Recommended Stop</span>
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Buy Stop (pivot, 5 sessions)</span>
                         <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
-                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% risk)
+                          ${buyStop.toFixed(2)}
                         </span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Initial Stop</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
+                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% from pivot)
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Exit</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
+                          Close below 50-DMA{match.sma50 ? ` ($${match.sma50.toFixed(2)})` : ''}
+                        </span>
+                      </div>
+                      {match.up_from_low52 != null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Prior Run-Up</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
+                            +{match.up_from_low52.toFixed(0)}% from 52-wk low
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Macro Regime</span>
                         <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase">

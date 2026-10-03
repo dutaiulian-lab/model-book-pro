@@ -15,11 +15,15 @@ const tone = (x) =>
 function statusText(o) {
   if (!o) return '—';
   switch (o.status) {
-    case 'pending': return 'Awaiting entry';
+    case 'pending': return 'Awaiting breakout';
+    case 'no_entry': return 'Not triggered';
     case 'open': return `Open · day ${o.days}`;
-    case 'skipped': return 'Skipped (gap below stop)';
+    case 'skipped': return 'Skipped';
     case 'expired': return 'Expired (no data)';
-    case 'closed': return o.exit_reason === 'stop' ? `Stopped · day ${o.exit_day}` : `Exited · day ${o.exit_day}`;
+    case 'closed':
+      if (o.exit_reason === 'stop') return `Stopped · day ${o.days}`;
+      if (o.exit_reason === 'time') return `Time exit · day ${o.days}`;
+      return `Below 50-DMA · day ${o.days}`;
     default: return o.status;
   }
 }
@@ -51,7 +55,8 @@ function BreakdownTable({ title, groups, labelFn = (k) => k }) {
               <th className="text-right font-bold py-2 px-2">Avg R</th>
               <th className="text-right font-bold py-2 px-2">Median R</th>
               <th className="text-right font-bold py-2 px-2">Profit factor</th>
-              <th className="text-right font-bold py-2 px-2">20d vs SPY</th>
+              <th className="text-right font-bold py-2 px-2" title="Average account return per closed trade at 1% risk, positions capped at 25%">Acct / trade</th>
+              <th className="text-right font-bold py-2 px-2" title="Entered trades that gained 30%+ within 60 sessions">Big winners</th>
               <th className="text-right font-bold py-2 pl-2">Stopped</th>
             </tr>
           </thead>
@@ -65,7 +70,8 @@ function BreakdownTable({ title, groups, labelFn = (k) => k }) {
                 <td className={`text-right py-2 px-2 font-bold ${tone(s.avg_r)}`}>{fmtR(s.avg_r)}</td>
                 <td className={`text-right py-2 px-2 ${tone(s.median_r)}`}>{fmtR(s.median_r)}</td>
                 <td className="text-right py-2 px-2">{s.profit_factor == null ? '—' : s.profit_factor.toFixed(2)}</td>
-                <td className={`text-right py-2 px-2 ${tone(s.avg_xs_20d)}`}>{signed(s.avg_xs_20d)}</td>
+                <td className={`text-right py-2 px-2 ${tone(s.avg_acct)}`}>{signed(s.avg_acct, 2)}</td>
+                <td className="text-right py-2 px-2">{fmtPct(s.big_win_rate)}</td>
                 <td className="text-right py-2 pl-2">{fmtPct(s.stop_rate)}</td>
               </tr>
             ))}
@@ -122,8 +128,9 @@ export default function TrackRecord() {
             <BarChart3 className="w-7 h-7 text-primary" /> Track Record
           </h2>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Every new pick is followed for {record.settings.hold_days} trading days. Entry: {record.settings.entry.toLowerCase()}.
-            Exit: {record.settings.exit.toLowerCase()}. A stock counts as a new signal after {record.settings.new_signal_lookback} scan days off the list.
+            Every new pick is traded mechanically. Entry: {record.settings.entry.toLowerCase()}.
+            Stop: {record.settings.stop?.toLowerCase()}. Exit: {record.settings.exit.toLowerCase()}.
+            A stock counts as a new signal after {record.settings.new_signal_lookback} scan days off the list.
           </p>
         </div>
         <div className="flex bg-muted/40 border border-border/60 rounded-xl p-1 text-xs font-bold self-stretch md:self-auto">
@@ -155,7 +162,7 @@ export default function TrackRecord() {
             <ul className="list-disc pl-4 space-y-0.5">
               <li>Fundamentals (EPS / revenue growth) and the earnings-date exclusion are not applied: historical data isn't available.</li>
               <li>Stocks delisted since then are missing from the universe, and those are mostly failures.</li>
-              <li>The rules were tuned on recent charts, so recent months are in-sample.</li>
+              <li>The current rules were chosen on Dec 2022 – Sep 2025 data, so this year is out-of-sample for the rule choice.</li>
             </ul>
             <div>Use it to compare setups and timing groups, not as proof the system works.</div>
           </div>
@@ -174,7 +181,7 @@ export default function TrackRecord() {
 
       {/* HEADLINE STATS */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Signals" value={o.signals} sub={`${o.closed} closed · ${o.open} open${o.skipped ? ` · ${o.skipped} skipped` : ''}`} />
+        <StatCard label="Signals" value={o.signals} sub={`${o.closed} closed · ${o.open} open · ${o.no_entry ?? 0} not triggered`} />
         <StatCard label="Win rate" value={fmtPct(o.win_rate)} sub="Closed trades with R > 0" />
         <StatCard
           label="Avg result"
@@ -184,8 +191,19 @@ export default function TrackRecord() {
           title="R = gain or loss in units of the initial risk (entry minus stop). Above 0 means the system makes money following its stops."
         />
         <StatCard label="Profit factor" value={o.profit_factor == null ? '—' : o.profit_factor.toFixed(2)} sub="Total won ÷ total lost (R)" />
-        <StatCard label="20-day vs SPY" value={signed(o.avg_xs_20d)} valueClass={tone(o.avg_xs_20d)} sub={`Avg ${signed(o.avg_ret_20d)} · n=${o.n_20d}`} title="Average 20-day return from entry minus SPY over the same days, ignoring stops." />
-        <StatCard label="Stopped out" value={fmtPct(o.stop_rate)} sub={`Broke pivot: ${fmtPct(o.breakout_rate)}`} />
+        <StatCard
+          label="Account / trade"
+          value={signed(o.avg_acct, 2)}
+          valueClass={tone(o.avg_acct)}
+          sub={`1% risk · avg hold ${o.avg_days ?? '—'} days`}
+          title="Average account return per closed trade, risking 1% of the account per trade with positions capped at 25%."
+        />
+        <StatCard
+          label="Big winners"
+          value={fmtPct(o.big_win_rate)}
+          sub={`Triggered ${fmtPct(o.trigger_rate)} · stopped ${fmtPct(o.stop_rate)}`}
+          title="Entered trades that gained 30% or more within 60 sessions of entry."
+        />
       </div>
 
       {/* BREAKDOWNS */}
@@ -218,7 +236,7 @@ export default function TrackRecord() {
                 <th className="text-right font-bold py-2 px-2">R</th>
                 <th className="text-right font-bold py-2 px-2">5d</th>
                 <th className="text-right font-bold py-2 px-2">20d</th>
-                <th className="text-right font-bold py-2 pl-2">20d vs SPY</th>
+                <th className="text-right font-bold py-2 pl-2" title="Best gain within 60 sessions of entry">Max 60d</th>
               </tr>
             </thead>
             <tbody>
@@ -235,12 +253,12 @@ export default function TrackRecord() {
                     <td className="py-1.5 px-2 whitespace-nowrap">{s.setup_type}</td>
                     <td className="py-1.5 px-2 whitespace-nowrap">{TIMING_LABELS[s.timing_status] || s.timing_status}</td>
                     <td className="text-right py-1.5 px-2">{out.entry != null ? out.entry.toFixed(2) : '—'}</td>
-                    <td className="text-right py-1.5 px-2 whitespace-nowrap">{s.stop != null ? `${s.stop.toFixed(2)}` : '—'}</td>
+                    <td className="text-right py-1.5 px-2 whitespace-nowrap">{(out.stop ?? s.stop) != null ? (out.stop ?? s.stop).toFixed(2) : '—'}</td>
                     <td className="py-1.5 px-2 whitespace-nowrap">{statusText(out)}</td>
                     <td className={`text-right py-1.5 px-2 font-bold ${tone(out.r)} ${out.status === 'open' ? 'opacity-60' : ''}`}>{fmtR(out.r)}</td>
                     <td className={`text-right py-1.5 px-2 ${tone(out.ret_5d)}`}>{signed(out.ret_5d)}</td>
                     <td className={`text-right py-1.5 px-2 ${tone(out.ret_20d)}`}>{signed(out.ret_20d)}</td>
-                    <td className={`text-right py-1.5 pl-2 ${tone(out.xs_20d)}`}>{signed(out.xs_20d)}</td>
+                    <td className={`text-right py-1.5 pl-2 ${tone(out.max_gain)}`}>{signed(out.max_gain)}</td>
                   </tr>
                 );
               })}
@@ -254,7 +272,7 @@ export default function TrackRecord() {
         )}
         <p className="text-[10px] text-muted-foreground mt-3">
           Open trades show R marked to the latest close (faded) and are excluded from the statistics until closed.
-          Results ignore commissions and slippage.
+          Results ignore commissions and slippage; buy-stop fills at the pivot will slip in practice.
         </p>
       </div>
     </div>

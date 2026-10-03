@@ -33,13 +33,15 @@ export function evaluateTechnicals(ticker, data, meta = {}, spy3mo = null) {
     if (!data || data.length < 30) return null;
     const current = data[data.length - 1];
 
-    // 1. Strict Liquidity Floor: Minimum $10 price and $20M/day institutional liquidity
+    // 1. Strict Liquidity Floor: Minimum $10 price and $50M/day institutional liquidity.
+    // Raised from $20M after the Oct 2026 rule research: $50M+ names did better
+    // in every test year (scratch research, train Dec 2022-Sep 2025).
     if (current.close < 10.0 || current.volume < 150000) return null;
 
     const volSma20 = calculateSMA(data, 20, 'volume');
     if (!volSma20) return null;
     const dollarVol20m = (volSma20 * current.close) / 1000000;
-    if (dollarVol20m < 20.0) return null; // Must trade >= $20M daily
+    if (dollarVol20m < 50.0) return null; // Must trade >= $50M daily
 
     // 2. Stage-2 Trend & IPO Leader Exception (< 200 bars)
     const isIpo = data.length < 200;
@@ -85,6 +87,13 @@ export function evaluateTechnicals(ticker, data, meta = {}, spy3mo = null) {
     const high52 = meta.fiftyTwoWeekHigh || Math.max(...data.slice(-lookback).map(d => d.high));
     const distanceFromHigh = ((high52 - current.close) / high52) * 100;
     if (distanceFromHigh > 35.0) return null;
+
+    // 4b. Prior Run-Up (Model Book superperformance precondition): price must be
+    // at least 100% above its 52-week low. The strongest single factor in the
+    // rule research: it roughly tripled the share of picks gaining 30%+.
+    const low52 = meta.fiftyTwoWeekLow || Math.min(...data.slice(-lookback).map(d => d.low));
+    const upFromLow52 = ((current.close - low52) / low52) * 100;
+    if (upFromLow52 < 100.0) return null;
 
     // 5. Volume Breakdown Trap (Prior 10 Sessions) - The 100% Failure Shield
     let trapTriggered = false;
@@ -172,10 +181,17 @@ export function evaluateTechnicals(ticker, data, meta = {}, spy3mo = null) {
         timingLabel = "⏳ Coiling";
     }
 
-    // Suggested Stop Loss: Below the 10-DMA or recent 3-day swing low (minimum risk floor)
+    // Trade plan (from the rule research):
+    //  - Entry: buy stop just above the pivot, valid for 5 sessions.
+    //  - Initial stop: the lower of the structural stop (3-day low / 10-DMA) and
+    //    5% below the fill. Tighter stops were hit by normal noise.
+    //  - Exit: first close below the 50-day SMA.
+    // suggested_stop assumes a fill at the pivot; the track record recomputes it
+    // from the actual fill.
     const recent3Low = Math.min(...data.slice(-3).map(d => d.low));
-    const stopPrice = Math.max(recent3Low, dma10 * 0.985);
-    const stopPct = Math.max(1.5, Math.min(6.0, ((current.close - stopPrice) / current.close) * 100));
+    const structStop = Math.max(recent3Low, dma10 * 0.985);
+    const stopPrice = Math.min(structStop, recentPivot * 0.95);
+    const stopPct = ((recentPivot - stopPrice) / recentPivot) * 100;
 
     return {
         ticker,
@@ -184,6 +200,7 @@ export function evaluateTechnicals(ticker, data, meta = {}, spy3mo = null) {
         ema21,
         sma50,
         base_depth: `-${distanceFromHigh.toFixed(1)}%`,
+        up_from_low52: upFromLow52,
         spread_10_21,
         spread_10_50,
         vol_ratio: volRatio,
@@ -199,6 +216,8 @@ export function evaluateTechnicals(ticker, data, meta = {}, spy3mo = null) {
         dist_from_pivot: distFromPivot,
         timing_status: timingStatus,
         timing_label: timingLabel,
+        buy_stop: recentPivot,
+        struct_stop: structStop,
         suggested_stop: stopPrice,
         suggested_stop_pct: stopPct
     };
