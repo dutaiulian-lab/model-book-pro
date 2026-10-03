@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, AlertTriangle, Info, ExternalLink } from 'lucide-react';
+import PortfolioPanel from './PortfolioPanel';
 
 const TIMING_LABELS = { AT_PIVOT: 'At Pivot (≤2%)', NEAR_PIVOT: 'Near Pivot', READY_AT_PAD: 'Ready at Pad', BREAKING_OUT: 'At Pivot', COILING: 'Coiling' };
 const MIN_LIVE_CLOSED = 20;
@@ -163,7 +164,7 @@ export default function TrackRecord() {
               <li>The rules are price-only; the EPS / revenue growth shown on cards is informational and not part of the tested rules.</li>
               <li>Stocks delisted since then are missing from the universe, and those are mostly failures.</li>
               <li>The rules were selected on 2007–2026 data, so this whole window is in-sample. Run walk-forward, the same selection procedure earned about 2.5%/yr from 2010 to 2026, well below SPY.</li>
-              <li>A position limit and cash constraints are not applied here; every setup counts as a trade.</li>
+              <li>The per-trade stats count every setup as a trade. The account panel applies sizing, cash limits and one position per ticker.</li>
             </ul>
             <div>Use it to compare setups and timing groups, not as proof the system works.</div>
           </div>
@@ -206,6 +207,9 @@ export default function TrackRecord() {
           title="Entered trades that gained 30% or more within 60 sessions of entry."
         />
       </div>
+
+      {/* ACCOUNT SIMULATION */}
+      <PortfolioPanel portfolio={record.portfolio} source={source} liveOverall={live} />
 
       {/* BREAKDOWNS */}
       <BreakdownTable title="By setup" groups={sum.by_setup} />

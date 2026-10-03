@@ -17,6 +17,7 @@
 //   - R = (exit - entry) / (entry - stop). Account return assumes 1% account
 //     risk per trade with positions capped at 25% of the account.
 import fs from 'fs';
+import { simulatePortfolio } from './portfolio.mjs';
 import path from 'path';
 import { RULES, RULES_VERSION, prepare, simulateTrade, parseChart } from './leader-rules.mjs';
 
@@ -120,6 +121,10 @@ export function computeOutcome(sig, bars, spyByDate, S = null) {
     const win60 = bars.slice(eb, Math.min(bars.length, eb + 60));
     o.max_gain = round(pct(Math.max(...win60.map(b => b.high)), entry));
     o.max_dd = round(pct(Math.min(...bars.slice(eb, endK + 1).map(b => b.low)), entry));
+    // Daily close vs the fill (%), entry day first; for a closed trade the last
+    // value is the exit return. Used by the account simulation (portfolio.mjs).
+    o.path = bars.slice(eb, endK + 1).map(b => round(pct(b.close, entry)));
+    if (tr.status === 'closed') o.path[o.path.length - 1] = round(tr.ret);
 
     if (tr.status === 'open') {
         o.status = 'open';
@@ -211,14 +216,28 @@ export function readJson(file, fallback) {
     }
 }
 
-export function writeTrackRecord(signals, days, extra = {}) {
+// One simulated account per source (see portfolio.mjs). `spy`: SPY daily bars
+// with adjclose, covering the backfill window.
+export function portfolios(signals, spy) {
+    const out = {};
+    for (const source of ['live', 'backfill']) {
+        out[source] = simulatePortfolio(signals.filter(s => s.source === source), spy);
+    }
+    return out;
+}
+
+// `spy` (optional): SPY bars for the account simulation. Without it the
+// previous `portfolio` in `extra` (if any) is kept.
+export function writeTrackRecord(signals, days, extra = {}, spy = null) {
     signals.sort((a, b) => (a.signal_date === b.signal_date
         ? a.ticker.localeCompare(b.ticker) : a.signal_date.localeCompare(b.signal_date)));
     const sortedDays = Object.fromEntries(Object.entries(days).sort());
+    const portfolio = spy?.length ? portfolios(signals, spy) : extra.portfolio;
     fs.writeFileSync(TRACK_RECORD_PATH, JSON.stringify({
         generated_at: new Date().toISOString(),
         settings: SETTINGS,
         ...extra,
+        ...(portfolio ? { portfolio } : {}),
         summary: summarize(signals),
         signals,
     }));

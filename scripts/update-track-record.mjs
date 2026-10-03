@@ -11,6 +11,7 @@ import {
 import { RULES_VERSION } from './lib/leader-rules.mjs';
 
 const OPEN = new Set(['pending', 'open']);
+const SPY_RANGE = '5y';
 
 async function main() {
     const statePath = path.join(process.cwd(), 'public', 'market-state.json');
@@ -68,9 +69,10 @@ async function main() {
         }
     }
     const toRefresh = signals.filter(s => s.source !== 'legacy' && OPEN.has(s.outcome?.status));
+    // SPY covers the backfill window too, for the account simulation.
+    const spy = (await fetchDailyBars('SPY', SPY_RANGE))?.bars;
+    if (!spy) throw new Error('Could not fetch SPY');
     if (toRefresh.length) {
-        const spy = (await fetchDailyBars('SPY', BARS_RANGE))?.bars;
-        if (!spy) throw new Error('Could not fetch SPY');
         const spyByDate = new Map(spy.map(b => [b.date, b]));
         const tickers = [...new Set(toRefresh.map(s => s.ticker))];
         const barsByTicker = new Map();
@@ -91,7 +93,7 @@ async function main() {
     }
 
     const { summary, signals: _s, generated_at, settings, ...extra } = record;
-    writeTrackRecord(signals, days, extra);
+    writeTrackRecord(signals, days, extra, spy);
     console.log(`Track record: ${signals.length} signals across ${Object.keys(days).length} scan days.`);
 }
 

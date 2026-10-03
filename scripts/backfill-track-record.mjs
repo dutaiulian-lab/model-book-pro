@@ -126,7 +126,7 @@ async function main() {
             generated_at: new Date().toISOString(), from: FROM, to: lastDate, universe: tickers.length,
             years: BACKFILL_YEARS, rules_version: prevRecord.settings?.rules_version,
         },
-    });
+    }, spy);
     const closed = signals.filter(s => s.outcome.status === 'closed');
     const avgR = closed.reduce((a, s) => a + s.outcome.r, 0) / (closed.length || 1);
     console.log(`Wrote ${signals.length} backfill signals (${closed.length} closed, avg R ${avgR.toFixed(3)}) over ${dates.length} sessions.`);

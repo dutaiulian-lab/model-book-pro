@@ -341,10 +341,14 @@ export function parseChart(data) {
     const ts = data.timestamp;
     if (!quotes || !ts || !ts.length) return null;
     const day = (t) => new Date(t * 1000).toISOString().slice(0, 10);
+    // Dividend- and split-adjusted close (total return), when Yahoo sends it.
+    const adj = data.indicators?.adjclose?.[0]?.adjclose;
     const history = [];
     for (let i = 0; i < ts.length; i++) {
         if (quotes.open[i] != null && quotes.close[i] != null && quotes.volume[i] != null && quotes.high[i] != null && quotes.low[i] != null) {
-            history.push({ date: day(ts[i]), open: quotes.open[i], high: quotes.high[i], low: quotes.low[i], close: quotes.close[i], volume: quotes.volume[i] });
+            const bar = { date: day(ts[i]), open: quotes.open[i], high: quotes.high[i], low: quotes.low[i], close: quotes.close[i], volume: quotes.volume[i] };
+            if (adj?.[i] != null) bar.adjclose = adj[i];
+            history.push(bar);
         }
     }
     const regular = data.meta?.currentTradingPeriod?.regular;
