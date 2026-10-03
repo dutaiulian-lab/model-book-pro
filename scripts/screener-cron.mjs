@@ -1,10 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 import YahooFinance from 'yahoo-finance2';
-import { evaluateTechnicals, calculatePerformance } from './lib/technicals.mjs';
+import { calculatePerformance } from './lib/technicals.mjs';
 import { fetchAllUSTickers } from './lib/universe.mjs';
+import {
+    RULES, WATCH, RULES_VERSION, FAMILY_LABELS, prepare, rsScore, dollarVol, inRankUniverse, detect,
+    countedSetups, passesBuyRules, passesWatch, bestSetup, initialStop, percentile, sma, splitFactors, parseChart,
+} from './lib/leader-rules.mjs';
 
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+
+const fmtPct = (x, d = 1) => (x == null || Number.isNaN(x) ? 'N/A' : `${x >= 0 ? '+' : ''}${x.toFixed(d)}%`);
 
 async function sendDiscordSummary(output, spy3mo) {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -14,8 +20,10 @@ async function sendDiscordSummary(output, spy3mo) {
     }
 
     const matches = output.matches || [];
+    const watch = output.watchlist || [];
     const count = matches.length;
     const isZero = count === 0;
+    const regimeOn = output.regime?.spy_above_200;
     const color = isZero ? 0x64748b : 0x10b981; // Slate gray if 0, Emerald green if matches
 
     const fields = [
@@ -25,43 +33,49 @@ async function sendDiscordSummary(output, spy3mo) {
             inline: true
         },
         {
-            name: "🎯 Model Book Leaders",
-            value: isZero ? "0 Stocks (Cash Posture)" : `${count} Qualified Setups`,
+            name: "🎯 Buy Setups (F6)",
+            value: isZero ? "0 (Cash Posture)" : `${count} Active Buy-Stops`,
             inline: true
         },
         {
-            name: "📊 S&P 500 (3M Perf)",
-            value: spy3mo !== null && spy3mo !== undefined ? `${spy3mo >= 0 ? "+" : ""}${spy3mo.toFixed(1)}%` : "N/A",
+            name: "📊 Market Regime",
+            value: `${regimeOn ? '🟢 SPY > 200-day' : '🔴 SPY < 200-day (no new buys)'} · 3M ${fmtPct(spy3mo)}`,
             inline: true
         }
     ];
 
     if (isZero) {
         fields.push({
-            name: "🛡️ Institutional Regime Guidance",
-            value: "No stocks passed the strict Model Book Dual-Filter (Stage-2 / IPO Base + Smashed 10/21 MA + VCP Dry-Up + Breakdown Shield). Capital preservation active.",
+            name: "🛡️ Guidance",
+            value: regimeOn
+                ? "No RS-90+ liquid leader has an untriggered setup (Coil / Tight Range / Base / High Tight Flag) today. Capital preservation."
+                : "SPY is below its 200-day SMA: the rules take no new buys. Watchlist only.",
             inline: false
         });
     } else {
-        const topMatches = matches.slice(0, 8);
-        topMatches.forEach((m, idx) => {
-            const badge = m.setup_type === 'Launchpad Coil' ? '🟢 COIL' : (m.setup_type === 'Power Trend Flag' ? '🚀 FLAG' : '🌟 IPO');
-            const timing = m.timing_label || '🎯 Ready at Pad';
-            const dist10 = m.dist_10dma !== undefined ? `${m.dist_10dma >= 0 ? '+' : ''}${m.dist_10dma.toFixed(1)}%` : '<2.5%';
-            const stopStr = m.suggested_stop ? `$${m.suggested_stop.toFixed(2)} (-${m.suggested_stop_pct?.toFixed(1)}%)` : 'Tight MA';
+        matches.slice(0, 8).forEach((m, idx) => {
+            const stopStr = m.suggested_stop ? `$${m.suggested_stop.toFixed(2)} (-${m.suggested_stop_pct?.toFixed(1)}%)` : 'N/A';
             fields.push({
-                name: `${idx + 1}. [${badge}] ${m.ticker} · $${m.price?.toFixed(2)} [${timing}]`,
-                value: `📉 Base: **${m.base_depth}** | 🎯 10-DMA: **${dist10}** | 🛡️ Stop: **${stopStr}** | 3M RS: **+${m.relative_strength_3mo?.toFixed(1)}%** | EPS: **+${((m.eps_growth || 0) * 100).toFixed(0)}%**`,
+                name: `${idx + 1}. [${m.setup_type}] ${m.ticker} · $${m.price?.toFixed(2)} · RS ${m.rs_rank?.toFixed(0)}`,
+                value: `🎯 Buy-stop **$${m.buy_stop?.toFixed(2)}** (${fmtPct(m.dist_from_pivot)} away, ${m.sessions_left}d left) | 🛡️ Stop **${stopStr}** | ` +
+                    `52w: **${fmtPct(m.up_from_low52, 0)}** off low, **${m.base_depth}** off high${m.earnings_soon ? ' | ⚠️ earnings ' + m.earnings_date : ''}`,
                 inline: false
             });
         });
         if (matches.length > 8) {
             fields.push({
                 name: "➕ Additional Setups",
-                value: `Plus ${matches.length - 8} more candidates on the live dashboard.`,
+                value: `Plus ${matches.length - 8} more on the live dashboard.`,
                 inline: false
             });
         }
+    }
+    if (watch.length) {
+        fields.push({
+            name: `👀 Leader Watchlist (${watch.length}, not buy signals)`,
+            value: watch.slice(0, 12).map(w => `${w.ticker} (${w.family}, RS ${w.rs_rank.toFixed(0)})`).join(' · '),
+            inline: false
+        });
     }
 
     const payload = {
@@ -69,16 +83,16 @@ async function sendDiscordSummary(output, spy3mo) {
         avatar_url: "https://assets.marketleaders.trade/favicon.ico",
         embeds: [
             {
-                title: isZero 
-                    ? "🛡️ Daily Market Screener: 0 Setups (Capital Preservation)" 
-                    : `🚀 Daily Market Screener: ${count} Model Book Leaders Detected!`,
+                title: isZero
+                    ? "🛡️ Daily Market Screener: 0 Buy Setups"
+                    : `🚀 Daily Market Screener: ${count} Leader Buy Setups`,
                 description: isZero
-                    ? "The evening institutional scan has completed across all US equities. No candidates passed the Model Book criteria today."
-                    : `The evening scan found **${count} stocks** coiling at actionable institutional launchpads (Stage-2 / IPO Base + Smashed Moving Averages + Volume Dry-Up).`,
+                    ? "The evening scan has completed across all US equities. No stock passed the F6 leader rules today."
+                    : `**${count} market leaders** (RS ≥ ${RULES.rsMin}, top ${100 - RULES.dvPctMin}% liquidity, ≥ +${RULES.upLow52Min}% off the 52-week low) have an active buy-stop for tomorrow.`,
                 color,
                 fields,
                 footer: {
-                    text: "Model Book Pro · Institutional O'Neil / Minervini / Qullamaggie Engine"
+                    text: `Model Book Pro · rules ${RULES_VERSION}`
                 },
                 timestamp: new Date().toISOString()
             }
@@ -107,6 +121,7 @@ async function sendDiscordSummary(output, spy3mo) {
 const stats = { ok: 0, no_data: 0, fetch_failed: 0, retries: 0 };
 const MAX_FETCH_FAILURE_RATE = 0.10;
 const MIN_UNIVERSE_SIZE = 1000;
+const WATCHLIST_MAX = 40;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // Retries network errors, 429 and 5xx with exponential backoff (1s, 2s).
@@ -127,47 +142,24 @@ async function fetchWithRetry(url, attempts = 3) {
   return null;
 }
 
+// Two years of daily bars: the rules need a 252-session RS window, the
+// 200-day SMA and its 20-day slope, and the 52-week range.
 async function fetchYahooData(ticker) {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=1y&interval=1d`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=2y&interval=1d&events=split`;
     const res = await fetchWithRetry(url);
     if (!res) { stats.fetch_failed++; return null; }
     if (res.status === 404) { stats.no_data++; return null; }
     if (!res.ok) { stats.fetch_failed++; return null; }
     const json = await res.json();
-    if (!json.chart?.result) { stats.no_data++; return null; }
-
-    const data = json.chart.result[0];
-    const quotes = data.indicators.quote[0];
-    const timestamps = data.timestamp;
-    if (!timestamps || timestamps.length === 0) { stats.no_data++; return null; }
-
-    const history = [];
-    for (let i = 0; i < timestamps.length; i++) {
-        if (quotes.close[i] !== null && quotes.volume[i] !== null && quotes.high[i] !== null && quotes.low[i] !== null) {
-            history.push({
-                date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
-                open: quotes.open[i],
-                high: quotes.high[i],
-                low: quotes.low[i],
-                close: quotes.close[i],
-                volume: quotes.volume[i]
-            });
-        }
-    }
-    // While the regular session is open, Yahoo's last daily bar is partial
-    // (low volume, unfinished range), which makes the dry-up / contraction
-    // filters pass trivially. Exclude it so intraday scans use the last close.
-    const regular = data.meta?.currentTradingPeriod?.regular;
-    const lastTs = timestamps[timestamps.length - 1];
-    if (regular && Date.now() / 1000 < regular.end && lastTs >= regular.start &&
-        history.length > 0 &&
-        history[history.length - 1].date === new Date(lastTs * 1000).toISOString().split('T')[0]) {
-        history.pop();
-    }
-
+    const data = json.chart?.result?.[0];
+    if (!data) { stats.no_data++; return null; }
+    // parseChart also drops today's partial bar while the session is open, so
+    // intraday runs use the last close.
+    const parsed = parseChart(data);
+    if (!parsed || !parsed.history.length) { stats.no_data++; return null; }
     stats.ok++;
-    return { history, meta: data.meta };
+    return { ...parsed, meta: data.meta };
   } catch (e) {
     stats.fetch_failed++;
     return null;
@@ -192,17 +184,117 @@ async function quoteSummaryWithRetry(ticker, attempts = 3) {
     }
 }
 
+// Pass 1 for one ticker. Keeps only what pass 2 needs (the full prepared
+// series for ~6,000 tickers would not fit comfortably in memory):
+//   recent:  RS score and dollar volume for the last few sessions, if the
+//            stock is in the ranking universe (feeds the percentiles);
+//   setups:  counted setups from the last 5 sessions whose buy-stop has not
+//            triggered yet (still actionable tomorrow);
+//   watch:   today's raw setups including power gaps (watchlist);
+//   snap:    display values for the dashboard card.
+function scanTicker(ticker, history, splits, meta, spyDates) {
+    if (meta?.instrumentType && meta.instrumentType !== 'EQUITY') return null;
+    if (history.length < 30) return null;
+    // New issue if the first bar is more than 5 sessions after SPY's first bar
+    // (same convention as the research data set).
+    const ipoStart = spyDates.length > 5 && history[0].date > spyDates[5];
+    const dates = history.map(b => b.date);
+    const S = prepare(history, { ipoStart, factor: splitFactors(dates, splits) });
+    const n = S.n;
+    const recent = {};
+    for (let k = Math.max(0, n - RULES.entryWindow); k < n; k++) {
+        if (inRankUniverse(S, k)) recent[S.dates[k]] = { rs: rsScore(S, k), dv: dollarVol(S, k) };
+    }
+    const pack = (st, s) => {
+        let struct = st.structStop;
+        // Non-coil stops ratchet down to the lows printed while waiting for the fill.
+        if (st.fam !== 'RANGE') for (let q = s + 1; q < n; q++) struct = Math.min(struct, S.l[q] * 0.995);
+        return {
+            s, date: S.dates[s], fam: st.fam, pivot: st.pivot, structStop: struct, trap: st.trap || 0,
+            baseDepth: st.baseDepth, baseLen: st.baseLen, gapPct: st.gapPct, feats: st.feats, rsScore: rsScore(S, s),
+        };
+    };
+    const setups = countedSetups(S, 30, n - 1)
+        .filter(st => st.s >= n - RULES.entryWindow && st.eb < 0)
+        .map(st => pack(st, st.s));
+    const today = detect(S, n - 1, { withGap: true });
+    const watch = today ? today.cands.map(cd => pack({ ...cd, feats: today.feats }, n - 1)) : [];
+    if (!setups.length && !watch.length) return { recent };
+    const k = n - 1;
+    const snap = {
+        price: S.c[k], dma10: S.sma10[k], ema21: S.ema21[k], sma50: S.sma50[k],
+        adr: S.adrS[k] * 100, vol_ratio: S.v[k] / S.vol20[k],
+        perf63: n > 63 ? (S.c[k] / S.c[k - 63] - 1) * 100 : NaN,
+        is_ipo: ipoStart && k < 252, ipo_date: ipoStart ? S.dates[0] : null,
+    };
+    return { recent, setups, watch, snap, n };
+}
+
+function buildMatch(ticker, r, st, ranks, spy3mo) {
+    const { snap, n } = r;
+    const f = st.feats;
+    const pivot = st.pivot;
+    const stop = initialStop(pivot, st.structStop);
+    const distPivot = (snap.price / pivot - 1) * 100;
+    const atPivot = distPivot >= -2;
+    return {
+        ticker,
+        family: st.fam,
+        setup_type: FAMILY_LABELS[st.fam],
+        signal_date: st.date,
+        sessions_left: st.s + RULES.entryWindow - (n - 1),
+        price: snap.price,
+        dma10: snap.dma10,
+        ema21: snap.ema21,
+        sma50: snap.sma50,
+        rs_rank: ranks.rs,
+        dv_rank: ranks.dvPct,
+        dollar_volume: f.dv,
+        base_depth: `-${f.depth52.toFixed(1)}%`,
+        depth_52w: f.depth52,
+        up_from_low52: f.upLow52,
+        setup_depth: st.baseDepth,
+        setup_length: st.baseLen,
+        spread_10_21: Math.abs(snap.dma10 - snap.ema21) / snap.ema21 * 100,
+        vol_ratio: snap.vol_ratio,
+        vol_status: `Vol ${(snap.vol_ratio * 100).toFixed(0)}% of 20d`,
+        is_ipo: snap.is_ipo,
+        ipo_date: snap.ipo_date,
+        adr: snap.adr,
+        relative_strength_3mo: spy3mo !== null && !Number.isNaN(snap.perf63) ? snap.perf63 - spy3mo : snap.perf63,
+        dist_10dma: (snap.price / snap.dma10 - 1) * 100,
+        dist_21ema: (snap.price / snap.ema21 - 1) * 100,
+        recent_pivot: pivot,
+        buy_stop: pivot,
+        dist_from_pivot: distPivot,
+        timing_status: atPivot ? 'AT_PIVOT' : 'NEAR_PIVOT',
+        timing_label: atPivot ? '🎯 At Pivot' : '⏳ Near Pivot',
+        struct_stop: st.structStop,
+        suggested_stop: stop,
+        suggested_stop_pct: (pivot - stop) / pivot * 100,
+    };
+}
+
 async function run() {
     console.log(`Fetching S&P 500 Market Benchmark (SPY)...`);
     const spyDataResult = await fetchYahooData('SPY');
-    if (!spyDataResult) {
+    if (!spyDataResult || spyDataResult.history.length < 220) {
         console.error('Aborting: could not fetch SPY benchmark. Previous market-state.json left untouched.');
         process.exit(1);
     }
     const spyData = spyDataResult.history;
     const spy3mo = calculatePerformance(spyData, 63);
     const asOf = spyData[spyData.length - 1].date;
-    console.log(`Scanning as of the ${asOf} close.`);
+    const spyDates = spyData.map(b => b.date);
+    const spyC = Float64Array.from(spyData, b => b.close);
+    const spy200 = sma(spyC, 200);
+    const spyAbove = new Map(spyDates.map((d, k) => [d, spyC[k] > spy200[k]]));
+    const regime = {
+        spy_above_200: !!spyAbove.get(asOf),
+        spy_close: spyC[spyC.length - 1],
+        spy_sma200: spy200[spy200.length - 1],
+    };
+    console.log(`Scanning as of the ${asOf} close. SPY ${regime.spy_above_200 ? 'above' : 'BELOW'} its 200-day SMA.`);
 
     // Scheduled runs on market holidays would just republish the previous
     // session (and re-post to Discord). Manual runs always proceed.
@@ -228,7 +320,7 @@ async function run() {
     Object.assign(stats, { ok: 0, no_data: 0, fetch_failed: 0, retries: 0 });
     console.log(`Starting Technical Scan on ${tickers.length} tickers...`);
 
-    let techMatches = [];
+    const results = new Map();
     const batchSize = 25;
     for (let i = 0; i < tickers.length; i += batchSize) {
         const batch = tickers.slice(i, i + batchSize);
@@ -236,10 +328,12 @@ async function run() {
 
         await Promise.all(batch.map(async (ticker) => {
             const result = await fetchYahooData(ticker);
-            // Must have at least 30 trading days of history
-            if (result && result.history.length >= 30) {
-                const match = evaluateTechnicals(ticker, result.history, result.meta, spy3mo);
-                if (match) techMatches.push(match);
+            if (!result) return;
+            try {
+                const r = scanTicker(ticker, result.history, result.splits, result.meta, spyDates);
+                if (r) results.set(ticker, r);
+            } catch (e) {
+                console.log(`[SCAN ERROR] ${ticker}: ${e.message}`);
             }
         }));
         await new Promise(r => setTimeout(r, 150));
@@ -253,103 +347,142 @@ async function run() {
         process.exit(1);
     }
 
-    console.log(`\nTechnical Scan found ${techMatches.length} Model Book candidates.`);
-    console.log(`Starting FUNDAMENTAL Validation phase...`);
+    // Percentile universes per date (liquid US equities that day).
+    const rsBy = new Map(), dvBy = new Map();
+    for (const r of results.values()) {
+        for (const [d, x] of Object.entries(r.recent)) {
+            if (!rsBy.has(d)) { rsBy.set(d, []); dvBy.set(d, []); }
+            if (!Number.isNaN(x.rs)) rsBy.get(d).push(x.rs);
+            dvBy.get(d).push(x.dv);
+        }
+    }
+    for (const a of rsBy.values()) a.sort((x, y) => x - y);
+    for (const a of dvBy.values()) a.sort((x, y) => x - y);
+    const universeToday = dvBy.get(asOf)?.length || 0;
+    console.log(`Ranking universe today: ${universeToday} liquid equities.`);
+    if (universeToday < 500) {
+        console.error(`Aborting: ranking universe for ${asOf} only has ${universeToday} stocks. Previous market-state.json left untouched.`);
+        process.exit(1);
+    }
+    const ranksFor = (st) => ({
+        rs: percentile(rsBy.get(st.date) || [], st.rsScore),
+        dvPct: percentile(dvBy.get(st.date) || [], st.feats.dv),
+    });
 
-    let finalMatches = [];
+    const techMatches = [];
+    const watchlist = [];
+    for (const [ticker, r] of results) {
+        if (!r.setups && !r.watch) continue;
+        const buys = (r.setups || []).map(st => ({ st, ranks: ranksFor(st) }))
+            .filter(x => passesBuyRules(x.st, x.ranks, !!spyAbove.get(x.st.date)));
+        if (buys.length) {
+            const best = bestSetup(buys.map(x => x.st));
+            const m = buildMatch(ticker, r, best, buys.find(x => x.st === best).ranks, spy3mo);
+            // Every qualifying setup is tracked separately in the track record
+            // (as in the research); the card shows the one that triggers first.
+            m.setups = buys.map(x => ({
+                family: x.st.fam, setup_type: FAMILY_LABELS[x.st.fam], signal_date: x.st.date,
+                pivot: x.st.pivot, struct_stop: x.st.structStop, suggested_stop: initialStop(x.st.pivot, x.st.structStop),
+                rs_rank: x.ranks.rs, dv_rank: x.ranks.dvPct,
+            }));
+            techMatches.push(m);
+            continue;
+        }
+        const w = (r.watch || []).map(st => ({ st, ranks: ranksFor(st) })).filter(x => passesWatch(x.st, x.ranks));
+        if (w.length) {
+            const best = bestSetup(w.map(x => x.st));
+            const ranks = w.find(x => x.st === best).ranks;
+            watchlist.push({
+                ...buildMatch(ticker, r, best, ranks, spy3mo),
+                gap_pct: best.gapPct ?? null,
+                why_not_buy: whyNotBuy(best, ranks, regime.spy_above_200),
+            });
+        }
+    }
+    techMatches.sort((a, b) => b.rs_rank - a.rs_rank);
+    watchlist.sort((a, b) => b.rs_rank - a.rs_rank);
+    watchlist.splice(WATCHLIST_MAX);
+
+    console.log(`\nTechnical Scan found ${techMatches.length} F6 buy setups and ${watchlist.length} watchlist leaders.`);
+    console.log(`Fundamentals / earnings lookup (informational; the tested rules are price-only)...`);
+
+    // Fundamentals are shown on the card and flag earnings risk, but do not
+    // filter: the 20-year study could not test them (no point-in-time data), and
+    // the track record must follow exactly the rules that were tested.
+    const finalMatches = [];
     const fundStats = { checked: techMatches.length, failed: 0 };
     for (const match of techMatches) {
         try {
             const summary = await quoteSummaryWithRetry(match.ticker);
-            const epsGrowth = summary?.financialData?.earningsGrowth || 0;
-            const revGrowth = summary?.financialData?.revenueGrowth || 0;
-
-            const shortPercent = summary?.defaultKeyStatistics?.shortPercentOfFloat || 0;
-            const floatShares = summary?.defaultKeyStatistics?.floatShares || 0;
-            const sector = summary?.summaryProfile?.sector || "Unknown";
-            const industry = summary?.summaryProfile?.industry || "Unknown";
-
-            let earningsRisk = false;
+            const epsGrowth = summary?.financialData?.earningsGrowth ?? null;
+            const revGrowth = summary?.financialData?.revenueGrowth ?? null;
             let earningsDateStr = "Unknown";
-            if (summary?.calendarEvents?.earnings?.earningsDate && summary.calendarEvents.earnings.earningsDate.length > 0) {
-                const ed = new Date(summary.calendarEvents.earnings.earningsDate[0]);
+            let earningsSoon = false;
+            const ed0 = summary?.calendarEvents?.earnings?.earningsDate?.[0];
+            if (ed0) {
+                const ed = new Date(ed0);
                 earningsDateStr = ed.toISOString().split('T')[0];
-
-                const today = new Date();
-                const diffTime = ed - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                // Exclude if earnings are in the next 7 days
-                if (diffDays >= 0 && diffDays <= 7) {
-                    earningsRisk = true;
-                    console.log(`Skipping ${match.ticker} - Earnings in ${diffDays} days (${earningsDateStr})`);
-                }
+                const diffDays = Math.ceil((ed - new Date()) / (1000 * 60 * 60 * 24));
+                earningsSoon = diffDays >= 0 && diffDays <= 7;
             }
-
-            // MODEL BOOK FUNDAMENTAL CRITERIA:
-            // 1. Standard: >= 20% EPS Growth OR >= 20% Revenue Growth
-            // 2. IPO / Hypergrowth exception: If IPO or high relative strength (RS > 50%), allow if sales > 15%
-            const passesFundamentals = (epsGrowth >= 0.20 || revGrowth >= 0.20) || (match.is_ipo && (revGrowth >= 0.15 || match.relative_strength_3mo > 40));
-
-            if (passesFundamentals) {
-                if (!earningsRisk) {
-                    finalMatches.push({
-                        ...match,
-                        eps_growth: epsGrowth,
-                        rev_growth: revGrowth,
-                        short_percent: shortPercent,
-                        float_shares: floatShares,
-                        sector: sector,
-                        industry: industry,
-                        earnings_date: earningsDateStr
-                    });
-                }
-                console.log(`[PASS] ${match.ticker} (${match.setup_type}) - EPS: ${(epsGrowth*100).toFixed(1)}%, Rev: ${(revGrowth*100).toFixed(1)}%`);
-            } else {
-                console.log(`[REJECTED] ${match.ticker} - Failed Fundamental Test (EPS: ${(epsGrowth*100).toFixed(1)}%, Rev: ${(revGrowth*100).toFixed(1)}%)`);
-            }
+            finalMatches.push({
+                ...match,
+                eps_growth: epsGrowth,
+                rev_growth: revGrowth,
+                growth_ok: (epsGrowth ?? 0) >= 0.20 || (revGrowth ?? 0) >= 0.20,
+                short_percent: summary?.defaultKeyStatistics?.shortPercentOfFloat || 0,
+                float_shares: summary?.defaultKeyStatistics?.floatShares || 0,
+                sector: summary?.summaryProfile?.sector || "Unknown",
+                industry: summary?.summaryProfile?.industry || "Unknown",
+                earnings_date: earningsDateStr,
+                earnings_soon: earningsSoon,
+            });
+            console.log(`[F6] ${match.ticker} (${match.setup_type}) RS ${match.rs_rank.toFixed(0)} - EPS: ${epsGrowth == null ? 'n/a' : (epsGrowth * 100).toFixed(1) + '%'}, Rev: ${revGrowth == null ? 'n/a' : (revGrowth * 100).toFixed(1) + '%'}${earningsSoon ? ' - EARNINGS ' + earningsDateStr : ''}`);
         } catch (e) {
             fundStats.failed++;
             console.log(`[FUNDAMENTALS ERROR] ${match.ticker}: ${e.name}: ${String(e.message).slice(0, 200)}`);
-            // If fundamentals cannot be fetched, preserve if technical setup is an A+ Launchpad Coil
-            if (match.setup_type === 'Launchpad Coil' && match.relative_strength_3mo > 30) {
-                finalMatches.push(match);
-                console.log(`[PRESERVED] ${match.ticker} - Pure Technical A+ Coil (No fundamentals available)`);
-            } else {
-                console.log(`[SKIP] ${match.ticker} - Could not fetch fundamentals.`);
-            }
+            finalMatches.push({ ...match, eps_growth: null, rev_growth: null, earnings_date: "Unknown", sector: "Unknown", industry: "Unknown" });
         }
         await new Promise(r => setTimeout(r, 300));
     }
-
-    // yahoo-finance2's quoteSummary breaks periodically (crumb/cookie changes).
-    // If most lookups fail, the result would silently be "coils only".
-    const fundFailureRate = fundStats.checked ? fundStats.failed / fundStats.checked : 0;
     console.log(`Fundamentals: ${fundStats.failed}/${fundStats.checked} lookups failed.`);
-    if (fundStats.checked >= 5 && fundFailureRate > 0.5) {
-        console.error(`Aborting: ${(fundFailureRate * 100).toFixed(0)}% of fundamentals lookups failed. ` +
-            `Previous market-state.json left untouched.`);
-        process.exit(1);
-    }
 
     const output = {
         timestamp: new Date().toISOString(),
         as_of: asOf,
+        rules_version: RULES_VERSION,
+        rules: RULES,
+        watch_rules: WATCH,
+        regime,
         total_scanned: tickers.length,
+        ranking_universe: universeToday,
         stats: {
             ...stats,
             failure_rate: Number(failureRate.toFixed(4)),
             fundamentals_checked: fundStats.checked,
             fundamentals_failed: fundStats.failed,
         },
-        matches: finalMatches
+        matches: finalMatches,
+        watchlist,
     };
 
     if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
-    console.log(`Saved results. Found ${finalMatches.length} stocks that passed BOTH Technicals and Fundamentals.`);
+    console.log(`Saved results: ${finalMatches.length} buy setups, ${watchlist.length} watchlist leaders.`);
 
     await sendDiscordSummary(output, spy3mo);
+}
+
+// Short reason a watchlist leader is not a buy signal.
+function whyNotBuy(st, ranks, regimeOn) {
+    const f = st.feats;
+    if (!RULES.families.includes(st.fam)) return st.fam === 'GAP' ? 'Power gap (watch for a setup)' : 'Setup not in buy rules';
+    if (!regimeOn) return 'SPY below 200-day';
+    if (!(ranks.rs >= RULES.rsMin)) return `RS ${ranks.rs.toFixed(0)} < ${RULES.rsMin}`;
+    if (!(ranks.dvPct >= RULES.dvPctMin)) return `Liquidity rank ${ranks.dvPct.toFixed(0)} < ${RULES.dvPctMin}`;
+    if (f.upLow52 < RULES.upLow52Min) return `Only +${f.upLow52.toFixed(0)}% off 52w low`;
+    if (f.depth52 > RULES.depth52Max) return `${f.depth52.toFixed(0)}% below 52w high`;
+    return 'Repeat setup (de-duplicated)';
 }
 
 run();

@@ -1,93 +1,135 @@
-// One-off backfill of the track record: replays the screener's technical rules
-// for every trading day of the past year, using the same 1-year window of
-// daily bars the live scan would have seen on that day.
+// Backfill of the track record: replays the F6 leader rules (lib/leader-rules.mjs)
+// over the last BACKFILL_YEARS years, exactly as the research did:
+//   - setups are detected and de-duplicated per ticker over its full history;
+//   - RS and liquidity ranks are percentiles across the liquid US equity
+//     universe of that day;
+//   - every qualifying setup is one signal, traded with the shared trade model.
 //
-// Limitations (shown in the dashboard too): fundamentals and earnings dates are
-// not available historically, so those filters are skipped; and today's ticker
-// list omits stocks delisted since, which flatters results.
+// Limitations (shown in the dashboard too): today's ticker list omits stocks
+// delisted since, which flatters results; fundamentals and earnings dates are not
+// used (the rules are price-only).
 //
-// Usage: node scripts/backfill-track-record.mjs
-import { evaluateTechnicals } from './lib/technicals.mjs';
+// Usage: node scripts/backfill-track-record.mjs [years=3]
 import { fetchAllUSTickers } from './lib/universe.mjs';
 import {
-    NEW_SIGNAL_LOOKBACK, computeOutcome, fetchDailyBars, pickFields, readJson,
+    RULES, prepare, rsScore, dollarVol, inRankUniverse, countedSetups, passesBuyRules, initialStop,
+    percentile, sma, splitFactors, FAMILY_LABELS,
+} from './lib/leader-rules.mjs';
+import {
+    computeOutcome, fetchDailyBars, pickFields, readJson, signalId,
     writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH,
 } from './lib/track-record.mjs';
 
+const BACKFILL_YEARS = Number(process.argv[2] || 3);
+// History fetched per ticker: the backfill window plus 2 years of warm-up
+// (252-session RS window, 200-day SMA slope, 52-week range).
+const FETCH_RANGE = `${Math.ceil(BACKFILL_YEARS + 2)}y`;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const minusOneYear = (date) => `${Number(date.slice(0, 4)) - 1}${date.slice(4)}`;
+const minusYears = (date, y) => `${Number(date.slice(0, 4)) - y}${date.slice(4)}`;
 
 async function main() {
-    const spy = (await fetchDailyBars('SPY', '2y'))?.bars;
+    const spy = (await fetchDailyBars('SPY', FETCH_RANGE))?.bars;
     if (!spy?.length) throw new Error('Could not fetch SPY');
     const spyByDate = new Map(spy.map(b => [b.date, b]));
-    // Signal days: every SPY session with a full year of history before it.
-    const firstFull = spy.find(b => b.date > minusOneYear(spy[spy.length - 1].date) && minusOneYear(b.date) >= spy[0].date);
-    const dates = spy.filter(b => b.date >= firstFull.date).map(b => b.date);
-    const dateIdx = new Map(dates.map((d, i) => [d, i]));
-    // SPY 3-month performance on each day, as the live scan computes it.
-    const spy3mo = new Map();
-    for (const d of dates) {
-        const win = spy.filter(b => b.date > minusOneYear(d) && b.date <= d);
-        const past = win[win.length - 1 - 63];
-        if (past) spy3mo.set(d, ((win[win.length - 1].close - past.close) / past.close) * 100);
-    }
-    console.log(`Backfilling ${dates.length} sessions: ${dates[0]} .. ${dates[dates.length - 1]}`);
+    const spyDates = spy.map(b => b.date);
+    const spyC = Float64Array.from(spy, b => b.close);
+    const spy200 = sma(spyC, 200);
+    const spyAbove = new Map(spyDates.map((d, k) => [d, spyC[k] > spy200[k]]));
+    const lastDate = spyDates[spyDates.length - 1];
+    const FROM = spyDates.find(d => d > minusYears(lastDate, BACKFILL_YEARS));
+    const dates = spyDates.filter(d => d >= FROM);
+    console.log(`Backfilling ${dates.length} sessions: ${FROM} .. ${lastDate} (fetching ${FETCH_RANGE} per ticker)`);
 
     const tickers = await fetchAllUSTickers();
     if (tickers.length < 1000) throw new Error(`Universe too small (${tickers.length})`);
 
-    const days = Object.fromEntries(dates.map(d => [d, { source: 'backfill', tickers: [] }]));
-    const signals = [];
-    let fetched = 0, failed = 0;
+    // Pass 1: per ticker, rank inputs for every day, and candidate setups that
+    // pass every rule except the ranks (outcome computed while bars are in hand).
+    const rsBy = new Map(dates.map(d => [d, []])), dvBy = new Map(dates.map(d => [d, []]));
+    const cands = [];
+    let fetched = 0, failed = 0, skippedType = 0;
     const batchSize = 25;
     for (let i = 0; i < tickers.length; i += batchSize) {
-        if (i % 500 === 0) console.log(`progress ${i}/${tickers.length}, signals so far ${signals.length}`);
+        if (i % 500 === 0) console.log(`progress ${i}/${tickers.length}, candidates so far ${cands.length}`);
         await Promise.all(tickers.slice(i, i + batchSize).map(async (ticker) => {
-            const res = await fetchDailyBars(ticker, '2y');
+            const res = await fetchDailyBars(ticker, FETCH_RANGE);
             if (!res) { failed++; return; }
             fetched++;
+            if (res.meta?.instrumentType && res.meta.instrumentType !== 'EQUITY') { skippedType++; return; }
             const bars = res.bars;
-            const matchDays = new Set();
-            const matches = [];
-            let lo = 0;
-            for (let k = 0; k < bars.length; k++) {
-                const d = bars[k].date;
-                if (!dateIdx.has(d)) continue;
-                const startDate = minusOneYear(d);
-                while (lo < k && bars[lo].date <= startDate) lo++;
-                const m = evaluateTechnicals(ticker, bars.slice(lo, k + 1), {}, spy3mo.get(d) ?? null);
-                if (m) { matchDays.add(d); matches.push([d, m]); }
+            if (bars.length < 60) return;
+            const S = prepare(bars, {
+                ipoStart: spyDates.length > 5 && bars[0].date > spyDates[5],
+                factor: splitFactors(bars.map(b => b.date), res.splits),
+            });
+            for (let k = 0; k < S.n; k++) {
+                const d = S.dates[k];
+                if (d < FROM || !rsBy.has(d) || !inRankUniverse(S, k)) continue;
+                const sc = rsScore(S, k);
+                if (!Number.isNaN(sc)) rsBy.get(d).push(sc);
+                dvBy.get(d).push(dollarVol(S, k));
             }
-            for (const [d, m] of matches) {
-                days[d].tickers.push(ticker);
-                const di = dateIdx.get(d);
-                const prior = dates.slice(Math.max(0, di - NEW_SIGNAL_LOOKBACK), di);
-                if (prior.some(p => matchDays.has(p))) continue;
-                const sig = { id: `${ticker}|${d}|backfill`, source: 'backfill', signal_date: d, ...pickFields(m) };
-                sig.outcome = computeOutcome(sig, bars, spyByDate);
-                signals.push(sig);
+            for (const st of countedSetups(S, 30, S.n - 1)) {
+                const d = S.dates[st.s];
+                if (d < FROM) continue;
+                // All rules except the two ranks (use 100 so only they can fail later).
+                if (!passesBuyRules(st, { rs: 100, dvPct: 100 }, !!spyAbove.get(d))) continue;
+                const c = S.c[st.s];
+                const m = {
+                    ticker, family: st.fam, setup_type: FAMILY_LABELS[st.fam], price: c,
+                    timing_status: c >= st.pivot * 0.98 ? 'AT_PIVOT' : 'NEAR_PIVOT',
+                    recent_pivot: st.pivot, struct_stop: st.structStop,
+                    suggested_stop: initialStop(st.pivot, st.structStop),
+                    suggested_stop_pct: RULES.stopMaxPct, up_from_low52: st.feats.upLow52,
+                    relative_strength_3mo: null,
+                };
+                m.suggested_stop_pct = (st.pivot - m.suggested_stop) / st.pivot * 100;
+                const sig = { id: signalId(ticker, d, st.fam), source: 'backfill', signal_date: d, ...pickFields(m, d) };
+                sig.outcome = computeOutcome(sig, bars, spyByDate, S);
+                // Days the live screener would have listed it (until it triggers).
+                const lastListed = Math.min(S.n - 1, st.s + RULES.entryWindow - 1, st.eb >= 0 ? st.eb - 1 : Infinity);
+                const listed = S.dates.slice(st.s, lastListed + 1);
+                cands.push({ sig, rsScore: rsScore(S, st.s), dv: st.feats.dv, listed });
             }
         }));
         await sleep(150);
     }
-    console.log(`Fetched ${fetched}, failed ${failed}.`);
+    console.log(`Fetched ${fetched}, failed ${failed}, non-equity ${skippedType}; ${cands.length} pre-rank candidates.`);
     if (failed / tickers.length > 0.1) throw new Error('Too many fetch failures; not writing.');
+
+    for (const a of rsBy.values()) a.sort((x, y) => x - y);
+    for (const a of dvBy.values()) a.sort((x, y) => x - y);
+
+    const days = Object.fromEntries(dates.map(d => [d, { source: 'backfill', tickers: [] }]));
+    const signals = [];
+    for (const c of cands) {
+        const d = c.sig.signal_date;
+        const ranks = { rs: percentile(rsBy.get(d), c.rsScore), dvPct: percentile(dvBy.get(d), c.dv) };
+        if (!(ranks.rs >= RULES.rsMin) || !(ranks.dvPct >= RULES.dvPctMin)) continue;
+        c.sig.rs_rank = Number(ranks.rs.toFixed(1));
+        c.sig.dv_rank = Number(ranks.dvPct.toFixed(1));
+        signals.push(c.sig);
+        for (const ld of c.listed) if (days[ld] && !days[ld].tickers.includes(c.sig.ticker)) days[ld].tickers.push(c.sig.ticker);
+    }
 
     // Keep any live history; replace previous backfill data.
     const prevRecord = readJson(TRACK_RECORD_PATH, { signals: [] });
     const prevDays = readJson(PICK_DAYS_PATH, { days: {} }).days;
-    const liveSignals = prevRecord.signals.filter(s => s.source === 'live');
+    const keptSignals = prevRecord.signals.filter(s => s.source !== 'backfill');
     const liveDays = Object.fromEntries(Object.entries(prevDays).filter(([, v]) => v.source === 'live'));
     for (const d of Object.keys(days)) {
         days[d].tickers.sort();
         if (liveDays[d]) delete days[d];
     }
-    writeTrackRecord([...signals, ...liveSignals], { ...days, ...liveDays }, {
-        backfill: { generated_at: new Date().toISOString(), from: dates[0], to: dates[dates.length - 1], universe: tickers.length },
+    writeTrackRecord([...signals, ...keptSignals], { ...days, ...liveDays }, {
+        backfill: {
+            generated_at: new Date().toISOString(), from: FROM, to: lastDate, universe: tickers.length,
+            years: BACKFILL_YEARS, rules_version: prevRecord.settings?.rules_version,
+        },
     });
-    const closed = signals.filter(s => s.outcome.status === 'closed').length;
-    console.log(`Wrote ${signals.length} backfill signals (${closed} closed) over ${dates.length} sessions.`);
+    const closed = signals.filter(s => s.outcome.status === 'closed');
+    const avgR = closed.reduce((a, s) => a + s.outcome.r, 0) / (closed.length || 1);
+    console.log(`Wrote ${signals.length} backfill signals (${closed.length} closed, avg R ${avgR.toFixed(3)}) over ${dates.length} sessions.`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

@@ -1,15 +1,14 @@
-// Daily track record update, run by the workflow right after the screener.
-//  1. Records today's live picks (public/market-state.json) and a dated copy
-//     in public/history/.
-//  2. Refreshes the outcome of every signal still inside its holding window.
-//  3. Rewrites public/track-record.json and public/pick-days.json.
-// Safe to re-run: picks for the same as_of date are replaced, not duplicated.
+// Daily track-record update, run after the screener:
+//   1. records today's picks (pick-days.json + a dated copy of market-state.json);
+//   2. adds every qualifying setup not seen before as a live signal;
+//   3. refreshes outcomes of signals still waiting for a fill or still open.
 import fs from 'fs';
 import path from 'path';
 import {
-    BARS_RANGE, EXPIRE_CALENDAR_DAYS, computeOutcome, fetchDailyBars, isNewSignal, pickFields,
+    BARS_RANGE, EXPIRE_CALENDAR_DAYS, computeOutcome, fetchDailyBars, pickFields, signalId,
     readJson, writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH,
 } from './lib/track-record.mjs';
+import { RULES_VERSION } from './lib/leader-rules.mjs';
 
 const OPEN = new Set(['pending', 'open']);
 
@@ -19,19 +18,39 @@ async function main() {
     const record = readJson(TRACK_RECORD_PATH, { signals: [] });
     const days = readJson(PICK_DAYS_PATH, { days: {} }).days;
     let signals = record.signals;
+    // Live signals recorded under older rule sets keep their last outcome but are
+    // no longer refreshed or counted.
+    for (const s of signals) if (s.source === 'live' && !s.family) s.source = 'legacy';
 
     if (state?.as_of && Array.isArray(state.matches)) {
         const asOf = state.as_of;
         days[asOf] = { source: 'live', tickers: state.matches.map(m => m.ticker).sort() };
-        signals = signals.filter(s => !(s.source === 'live' && s.signal_date === asOf));
+        // Re-running on the same day replaces that day's additions.
+        signals = signals.filter(s => !(s.source === 'live' && s.first_listed === asOf));
+        // Backfilled copies of the same setup are kept separately (different source).
+        const known = new Set(signals.filter(s => s.source === 'live').map(s => s.id));
         let added = 0;
         for (const m of state.matches) {
-            if (!isNewSignal(m.ticker, asOf, days, 'live')) continue;
-            signals.push({
-                id: `${m.ticker}|${asOf}|live`, source: 'live', signal_date: asOf,
-                ...pickFields(m), outcome: { status: 'pending' },
-            });
-            added++;
+            const setups = m.setups?.length ? m.setups : [{
+                family: m.family, setup_type: m.setup_type, signal_date: m.signal_date, pivot: m.recent_pivot,
+                struct_stop: m.struct_stop, suggested_stop: m.suggested_stop, rs_rank: m.rs_rank, dv_rank: m.dv_rank,
+            }];
+            for (const st of setups) {
+                if (!st.family || !st.signal_date) continue;
+                const id = signalId(m.ticker, st.signal_date, st.family);
+                if (known.has(id)) continue;
+                known.add(id);
+                const fields = pickFields({
+                    ...m, family: st.family, setup_type: st.setup_type, recent_pivot: st.pivot, struct_stop: st.struct_stop,
+                    suggested_stop: st.suggested_stop, suggested_stop_pct: (st.pivot - st.suggested_stop) / st.pivot * 100,
+                    rs_rank: st.rs_rank, dv_rank: st.dv_rank,
+                }, asOf);
+                signals.push({
+                    id, source: 'live', signal_date: st.signal_date, first_listed: asOf,
+                    rules: state.rules_version || RULES_VERSION, ...fields, outcome: { status: 'pending' },
+                });
+                added++;
+            }
         }
         const histDir = path.join(process.cwd(), 'public', 'history');
         fs.mkdirSync(histDir, { recursive: true });
@@ -44,11 +63,11 @@ async function main() {
     // Refresh signals still inside their holding window.
     const cutoff = new Date(Date.now() - EXPIRE_CALENDAR_DAYS * 86400e3).toISOString().slice(0, 10);
     for (const s of signals) {
-        if (OPEN.has(s.outcome?.status) && s.signal_date < cutoff) {
+        if (s.source !== 'legacy' && OPEN.has(s.outcome?.status) && s.signal_date < cutoff) {
             s.outcome = { ...s.outcome, status: 'expired' };
         }
     }
-    const toRefresh = signals.filter(s => OPEN.has(s.outcome?.status));
+    const toRefresh = signals.filter(s => s.source !== 'legacy' && OPEN.has(s.outcome?.status));
     if (toRefresh.length) {
         const spy = (await fetchDailyBars('SPY', BARS_RANGE))?.bars;
         if (!spy) throw new Error('Could not fetch SPY');

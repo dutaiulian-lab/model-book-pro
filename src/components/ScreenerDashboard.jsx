@@ -268,16 +268,21 @@ export default function ScreenerDashboard({ onHealthChange }) {
   const timestamp = data?.timestamp || new Date().toISOString();
   const totalScanned = data?.total_scanned || 6000;
 
-  const coilCount = matches.filter(m => m.setup_type === 'Launchpad Coil').length;
-  const flagCount = matches.filter(m => m.setup_type === 'Power Trend Flag').length;
-  const ipoCount = matches.filter(m => m.setup_type === 'IPO Base Pivot' || m.is_ipo).length;
-  const readyCount = matches.filter(m => m.timing_status === 'READY_AT_PAD' || (m.dist_10dma !== undefined && m.dist_10dma <= 2.2)).length;
+  const watchlist = data?.watchlist || [];
+  const regime = data?.regime;
+  const regimeOff = regime && regime.spy_above_200 === false;
+  const FAMILY_TABS = [
+    ['RANGE', 'Launchpad Coils', 'emerald'],
+    ['TIGHT', 'Tight Ranges', 'sky'],
+    ['BASE', 'Base Breakouts', 'blue'],
+    ['HTF', 'High Tight Flags', 'purple'],
+  ];
+  const famCount = (f) => matches.filter(m => m.family === f).length;
+  const readyCount = matches.filter(m => m.timing_status === 'AT_PIVOT').length;
 
   const filteredMatches = matches.filter(m => {
-    if (selectedTab === 'READY') return m.timing_status === 'READY_AT_PAD' || (m.dist_10dma !== undefined && m.dist_10dma <= 2.2);
-    if (selectedTab === 'COIL') return m.setup_type === 'Launchpad Coil';
-    if (selectedTab === 'FLAG') return m.setup_type === 'Power Trend Flag';
-    if (selectedTab === 'IPO') return m.setup_type === 'IPO Base Pivot' || m.is_ipo;
+    if (selectedTab === 'READY') return m.timing_status === 'AT_PIVOT';
+    if (FAMILY_TABS.some(([f]) => f === selectedTab)) return m.family === selectedTab;
     return true;
   });
 
@@ -449,6 +454,25 @@ export default function ScreenerDashboard({ onHealthChange }) {
         </div>
       )}
 
+      {/* MARKET REGIME & RULES */}
+      {regime && (
+        <div className={`p-3.5 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+          regimeOff ? 'bg-rose-500/10 border-rose-500/30' : 'bg-emerald-500/5 border-emerald-500/20'
+        }`}>
+          <div className="font-bold text-foreground">
+            {regimeOff
+              ? '🔴 SPY closed below its 200-day SMA: the rules take no new buys. Watchlist only.'
+              : '🟢 SPY above its 200-day SMA: new buys allowed.'}
+            <span className="font-mono font-normal text-muted-foreground ml-2">
+              SPY ${regime.spy_close?.toFixed(2)} vs 200-day ${regime.spy_sma200?.toFixed(2)}
+            </span>
+          </div>
+          <div className="text-[11px] text-muted-foreground" title={data?.rules_version ? `Rules ${data.rules_version}` : ''}>
+            Leaders: RS ≥ {data?.rules?.rsMin ?? 90} · top {100 - (data?.rules?.dvPctMin ?? 85)}% liquidity · ≥ +{data?.rules?.upLow52Min ?? 100}% off 52w low · ≤ {data?.rules?.depth52Max ?? 35}% off high
+          </div>
+        </div>
+      )}
+
       {/* FILTER TABS & TOOLBAR */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -469,43 +493,24 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 ? 'bg-emerald-600 text-white shadow ring-2 ring-emerald-400/40'
                 : 'bg-card border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
             }`}
+            title="Closed within 2% of the buy stop"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            🎯 Ready at Pad ({readyCount})
+            🎯 At Pivot ({readyCount})
           </button>
-          <button
-            onClick={() => setSelectedTab('COIL')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              selectedTab === 'COIL'
-                ? 'bg-emerald-600 text-white shadow'
-                : 'bg-card border border-border text-muted-foreground hover:text-emerald-500'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            Launchpad Coils ({coilCount})
-          </button>
-          <button
-            onClick={() => setSelectedTab('FLAG')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              selectedTab === 'FLAG'
-                ? 'bg-blue-600 text-white shadow'
-                : 'bg-card border border-border text-muted-foreground hover:text-blue-500'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-            Power Trend Flags ({flagCount})
-          </button>
-          <button
-            onClick={() => setSelectedTab('IPO')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              selectedTab === 'IPO'
-                ? 'bg-purple-600 text-white shadow'
-                : 'bg-card border border-border text-muted-foreground hover:text-purple-500'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-            IPO Base Pivots ({ipoCount})
-          </button>
+          {FAMILY_TABS.map(([fam, label]) => (
+            <button
+              key={fam}
+              onClick={() => setSelectedTab(fam)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                selectedTab === fam
+                  ? 'bg-foreground text-background shadow'
+                  : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {label} ({famCount(fam)})
+            </button>
+          ))}
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -535,8 +540,9 @@ export default function ScreenerDashboard({ onHealthChange }) {
           </div>
           <h3 className="text-base font-bold text-foreground">No Setups in this Category Today</h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Our institutional filter rejects loose patterns, false breakdowns, and declining trends. 
-            Cash is an active position until the textbook Model Book setup presents itself.
+            {regimeOff
+              ? 'SPY is below its 200-day SMA, so the rules take no new buys. Leaders still setting up are on the watchlist below.'
+              : 'No RS-90+ liquid leader has an untriggered setup in this category. Cash is a position.'}
           </p>
         </div>
       ) : (
@@ -545,8 +551,9 @@ export default function ScreenerDashboard({ onHealthChange }) {
             const sorted = [...filteredMatches].sort((a, b) => {
               const priceA = livePrices[a.ticker] || a.price;
               const priceB = livePrices[b.ticker] || b.price;
-              const distA = Math.abs((priceA - a.ema21) / a.ema21);
-              const distB = Math.abs((priceB - b.ema21) / b.ema21);
+              const pivA = a.buy_stop ?? a.ema21, pivB = b.buy_stop ?? b.ema21;
+              const distA = Math.abs((priceA - pivA) / pivA);
+              const distB = Math.abs((priceB - pivB) / pivB);
               return distA - distB;
             });
 
@@ -555,8 +562,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
               const ema21 = match.ema21;
               const dma10 = match.dma10 || match.price;
               const liveDist10 = dma10 > 0 ? ((currentPrice - dma10) / dma10) * 100 : (match.dist_10dma || 0);
-              const isLiveExtended = liveDist10 > 3.5;
-              const isLiveReady = liveDist10 <= 2.2 && liveDist10 >= -0.5;
 
               // Trade plan from the screener: buy stop at the pivot, initial stop
               // = lower of the structural stop and 5% below the fill, exit on a
@@ -573,15 +578,18 @@ export default function ScreenerDashboard({ onHealthChange }) {
               if (isBelowEMA) proximityColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
               else if (distanceAbs < 1.5) proximityColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
 
-              let badgeBg = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-              let badgeIcon = "🟢";
-              if (match.setup_type === 'Power Trend Flag') {
-                badgeBg = "bg-blue-500/10 text-blue-500 border-blue-500/20";
-                badgeIcon = "🚀";
-              } else if (match.setup_type === 'IPO Base Pivot' || match.is_ipo) {
-                badgeBg = "bg-purple-500/10 text-purple-500 border-purple-500/20";
-                badgeIcon = "🌟";
-              }
+              const BADGES = {
+                RANGE: ['bg-emerald-500/10 text-emerald-500 border-emerald-500/20', '🟢'],
+                TIGHT: ['bg-sky-500/10 text-sky-500 border-sky-500/20', '🎯'],
+                BASE: ['bg-blue-500/10 text-blue-500 border-blue-500/20', '🏗️'],
+                HTF: ['bg-purple-500/10 text-purple-500 border-purple-500/20', '🚀'],
+              };
+              const [badgeBg, badgeIcon] = BADGES[match.family] || BADGES.RANGE;
+              const liveDistPivot = buyStop > 0 ? ((currentPrice - buyStop) / buyStop) * 100 : 0;
+              const isTriggered = liveDistPivot > 0;
+              const isAtPivot = !isTriggered && liveDistPivot >= -2;
+              const fmtRank = (x) => (x == null ? 'n/a' : x.toFixed(0));
+              const fmtGrowth = (x) => (x == null ? 'n/a' : `${x >= 0 ? '+' : ''}${(x * 100).toFixed(0)}%`);
 
               return (
                 <div
@@ -652,22 +660,22 @@ export default function ScreenerDashboard({ onHealthChange }) {
                     {/* TIMING & RISK LAUNCHPAD METER */}
                     <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/70 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        {isLiveReady ? (
+                        {isTriggered ? (
+                          <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-amber-500/20" title="Live price is above the buy stop">
+                            ⚡ TRIGGERED
+                          </span>
+                        ) : isAtPivot ? (
                           <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                            🎯 READY AT PAD
-                          </span>
-                        ) : isLiveExtended ? (
-                          <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-rose-500/20">
-                            ⚠️ EXTENDED
+                            🎯 AT PIVOT
                           </span>
                         ) : (
                           <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-blue-500/20">
-                            ⚡ AT PIVOT
+                            ⏳ NEAR PIVOT
                           </span>
                         )}
                         <span className="font-mono text-muted-foreground text-[11px]">
-                          {liveDist10 >= 0 ? `+${liveDist10.toFixed(1)}%` : `${liveDist10.toFixed(1)}%`} vs 10-DMA
+                          {liveDistPivot >= 0 ? `+${liveDistPivot.toFixed(1)}%` : `${liveDistPivot.toFixed(1)}%`} vs pivot
                         </span>
                       </div>
                       <div className="text-[10px] font-mono font-bold text-muted-foreground">
@@ -677,29 +685,30 @@ export default function ScreenerDashboard({ onHealthChange }) {
 
                     {/* KEY METRICS SUMMARY ROW */}
                     <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-border/50 text-center">
-                      <div className="bg-muted/20 rounded-lg p-1.5">
-                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Base</div>
-                        <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">{match.base_depth}</div>
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="IBD-style relative strength percentile (weighted 3/6/9/12-month return) across liquid US stocks">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">RS Rank</div>
+                        <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">{fmtRank(match.rs_rank)}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-1.5">
-                        <div className="text-[9px] uppercase font-bold text-muted-foreground">10-DMA</div>
-                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">
-                          {liveDist10 >= 0 ? `+${liveDist10.toFixed(1)}%` : `${liveDist10.toFixed(1)}%`}
-                        </div>
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="20-day dollar volume percentile">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Liquidity</div>
+                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">{fmtRank(match.dv_rank)}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-1.5">
-                        <div className="text-[9px] uppercase font-bold text-muted-foreground">10/21 MA</div>
-                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">
-                          {match.spread_10_21 ? `${match.spread_10_21.toFixed(1)}%` : '<2.5%'}
-                        </div>
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="Distance below the 52-week high">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Off High</div>
+                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">{match.base_depth}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-1.5">
-                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Volume</div>
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="Gain from the 52-week low">
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground">Run-Up</div>
                         <div className="text-xs font-mono font-bold text-primary mt-0.5">
-                          {match.vol_status || 'Dry-Up'}
+                          {match.up_from_low52 != null ? `+${match.up_from_low52.toFixed(0)}%` : 'n/a'}
                         </div>
                       </div>
                     </div>
+                    {match.earnings_soon && (
+                      <div className="mt-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                        ⚠️ Earnings {match.earnings_date}: a gap can jump the stop
+                      </div>
+                    )}
                   </div>
 
                   {/* EXPANDABLE DEEP-DIVE METRICS */}
@@ -712,7 +721,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Buy Stop (pivot, 5 sessions)</span>
+                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Buy Stop (valid {match.sessions_left ?? 5} more session{match.sessions_left === 1 ? '' : 's'})</span>
                         <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
                           ${buyStop.toFixed(2)}
                         </span>
@@ -720,13 +729,13 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Initial Stop</span>
                         <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
-                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% from pivot)
+                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% from pivot, clamped 3-8%)
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Exit</span>
                         <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
-                          Close below 50-DMA{match.sma50 ? ` ($${match.sma50.toFixed(2)})` : ''}
+                          Close below 50-DMA{match.sma50 ? ` ($${match.sma50.toFixed(2)})` : ''}; 21-EMA once +20%
                         </span>
                       </div>
                       {match.up_from_low52 != null && (
@@ -738,9 +747,10 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Macro Regime</span>
+                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Setup</span>
                         <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase">
-                          {match.is_ipo ? 'IPO Launchpad' : 'Stage-2 Stacked'}
+                          {match.setup_type}{match.is_ipo ? ' · IPO' : ''}{match.signal_date ? ` · ${match.signal_date}` : ''}
+                          {match.setup_depth != null ? ` · ${match.setup_depth.toFixed(1)}% deep, ${match.setup_length}d` : ''}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -752,7 +762,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> 3-Mo RS vs SPY</span>
                         <span className="font-mono font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded text-[10px]">
-                          +{match.relative_strength_3mo?.toFixed(1)}%
+                          {match.relative_strength_3mo >= 0 ? '+' : ''}{match.relative_strength_3mo?.toFixed(1)}%
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -764,13 +774,13 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5"/> EPS Growth (YoY)</span>
                         <span className="font-mono font-bold text-emerald-500">
-                          +{((match.eps_growth || 0) * 100).toFixed(0)}%
+                          {fmtGrowth(match.eps_growth)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Sales Growth (YoY)</span>
                         <span className="font-mono font-bold text-blue-500">
-                          +{((match.rev_growth || 0) * 100).toFixed(0)}%
+                          {fmtGrowth(match.rev_growth)}
                         </span>
                       </div>
                       {match.earnings_date && match.earnings_date !== "Unknown" && (
@@ -785,6 +795,46 @@ export default function ScreenerDashboard({ onHealthChange }) {
               );
             });
           })()}
+        </div>
+      )}
+
+      {/* LEADER WATCHLIST (not buy signals) */}
+      {watchlist.length > 0 && (
+        <div className="bg-card border border-border/80 rounded-2xl p-5 shadow-sm space-y-3">
+          <div>
+            <h3 className="text-sm font-black text-foreground">👀 Leader Watchlist ({watchlist.length})</h3>
+            <p className="text-[11px] text-muted-foreground">
+              RS ≥ {data?.watch_rules?.rsMin ?? 90} stocks with a setup or power gap today that miss a buy rule. Not buy signals:
+              in the 20-year test this looser list caught more Model Book leaders but lost money when traded.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-[10px] uppercase text-muted-foreground text-left">
+                  <th className="py-1 pr-3">Ticker</th><th className="pr-3">Setup</th><th className="pr-3 text-right">Price</th>
+                  <th className="pr-3 text-right">Pivot</th><th className="pr-3 text-right">RS</th><th className="pr-3 text-right">Liq.</th>
+                  <th className="pr-3 text-right">Run-up</th><th className="pr-3">Why not a buy</th>
+                </tr>
+              </thead>
+              <tbody>
+                {watchlist.map((w) => (
+                  <tr key={w.ticker} className="border-t border-border/50">
+                    <td className="py-1.5 pr-3 font-bold">
+                      <a href={`https://www.tradingview.com/chart/?symbol=${w.ticker}`} target="_blank" rel="noreferrer" className="hover:underline">{w.ticker}</a>
+                    </td>
+                    <td className="pr-3">{w.setup_type}{w.gap_pct != null ? ` +${w.gap_pct.toFixed(0)}%` : ''}</td>
+                    <td className="pr-3 text-right font-mono">${w.price?.toFixed(2)}</td>
+                    <td className="pr-3 text-right font-mono">${w.buy_stop?.toFixed(2)}</td>
+                    <td className="pr-3 text-right font-mono">{w.rs_rank?.toFixed(0)}</td>
+                    <td className="pr-3 text-right font-mono">{w.dv_rank?.toFixed(0)}</td>
+                    <td className="pr-3 text-right font-mono">{w.up_from_low52 != null ? `+${w.up_from_low52.toFixed(0)}%` : ''}</td>
+                    <td className="pr-3 text-muted-foreground">{w.why_not_buy}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

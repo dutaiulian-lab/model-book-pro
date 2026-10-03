@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, AlertTriangle, Info, ExternalLink } from 'lucide-react';
 
-const TIMING_LABELS = { READY_AT_PAD: 'Ready at Pad', BREAKING_OUT: 'At Pivot', COILING: 'Coiling' };
+const TIMING_LABELS = { AT_PIVOT: 'At Pivot (≤2%)', NEAR_PIVOT: 'Near Pivot', READY_AT_PAD: 'Ready at Pad', BREAKING_OUT: 'At Pivot', COILING: 'Coiling' };
 const MIN_LIVE_CLOSED = 20;
 const PAGE = 100;
 
@@ -128,9 +128,9 @@ export default function TrackRecord() {
             <BarChart3 className="w-7 h-7 text-primary" /> Track Record
           </h2>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Every new pick is traded mechanically. Entry: {record.settings.entry.toLowerCase()}.
+            Every qualifying setup is traded mechanically (rules {record.settings.rules_version}). Entry: {record.settings.entry.toLowerCase()}.
             Stop: {record.settings.stop?.toLowerCase()}. Exit: {record.settings.exit.toLowerCase()}.
-            A stock counts as a new signal after {record.settings.new_signal_lookback} scan days off the list.
+            {record.settings.signal || `A stock counts as a new signal after ${record.settings.new_signal_lookback} scan days off the list`}.
           </p>
         </div>
         <div className="flex bg-muted/40 border border-border/60 rounded-xl p-1 text-xs font-bold self-stretch md:self-auto">
@@ -157,12 +157,13 @@ export default function TrackRecord() {
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <div className="font-bold">
-              Simulated: today's technical rules replayed over {record.backfill?.from} to {record.backfill?.to}. Expect these numbers to look better than live results.
+              Simulated: today's rules replayed over {record.backfill?.from} to {record.backfill?.to}. Expect these numbers to look better than live results.
             </div>
             <ul className="list-disc pl-4 space-y-0.5">
-              <li>Fundamentals (EPS / revenue growth) and the earnings-date exclusion are not applied: historical data isn't available.</li>
+              <li>The rules are price-only; the EPS / revenue growth shown on cards is informational and not part of the tested rules.</li>
               <li>Stocks delisted since then are missing from the universe, and those are mostly failures.</li>
-              <li>The current rules were chosen on Dec 2022 – Sep 2025 data, so this year is out-of-sample for the rule choice.</li>
+              <li>The rules were selected on 2007–2026 data, so this whole window is in-sample. Run walk-forward, the same selection procedure earned about 2.5%/yr from 2010 to 2026, well below SPY.</li>
+              <li>A position limit and cash constraints are not applied here; every setup counts as a trade.</li>
             </ul>
             <div>Use it to compare setups and timing groups, not as proof the system works.</div>
           </div>
@@ -209,6 +210,7 @@ export default function TrackRecord() {
       {/* BREAKDOWNS */}
       <BreakdownTable title="By setup" groups={sum.by_setup} />
       <BreakdownTable title="By timing status" groups={sum.by_timing} labelFn={(k) => TIMING_LABELS[k] || k} />
+      {sum.by_year && <BreakdownTable title="By year" groups={sum.by_year} />}
       <BreakdownTable title="By signal month" groups={sum.by_month} />
 
       {/* SIGNALS */}
@@ -243,7 +245,7 @@ export default function TrackRecord() {
               {signals.slice(0, shown).map((s) => {
                 const out = s.outcome || {};
                 return (
-                  <tr key={s.id} className="border-b border-border/30 last:border-0">
+                  <tr key={`${s.source}|${s.id}`} className="border-b border-border/30 last:border-0">
                     <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">{s.signal_date}</td>
                     <td className="py-1.5 px-2 font-bold">
                       <a href={`https://www.tradingview.com/chart/?symbol=${s.ticker}`} target="_blank" rel="noreferrer" className="text-foreground hover:text-primary inline-flex items-center gap-1">

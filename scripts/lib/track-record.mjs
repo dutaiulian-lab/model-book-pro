@@ -1,58 +1,62 @@
 // Track record: turns daily screener picks into "signals" and measures what
 // happened next, so the screener's rules can be judged on evidence.
 //
-// Trade model (the plan the rule research selected; mechanical on purpose):
-//   - A ticker becomes a new signal on the first scan day it appears after
-//     being absent for NEW_SIGNAL_LOOKBACK scan days.
-//   - Entry: buy stop at the pivot (prior 10-day high), valid for ENTRY_WINDOW
-//     sessions after the signal. Fills at the pivot, or at the open if the
-//     stock gaps above it. No break within the window = "not triggered".
-//   - Initial stop: the lower of the structural stop and 5% below the fill.
-//     On the entry day only a close below the stop counts (the intraday low
-//     may have come before the breakout); afterwards any touch exits, at the
-//     stop or at the open if it gaps through.
-//   - Exit: the first close below the 50-day SMA, or the close of session
-//     MAX_HOLD_DAYS.
+// Trade model (the plan the 20-year rule study selected; mechanical on purpose,
+// implemented once in lib/leader-rules.mjs simulateTrade):
+//   - A signal is one setup: ticker + setup day + setup family. The screener
+//     lists it every day its buy stop is live, but it is recorded once.
+//   - Entry: buy stop at the pivot, valid ENTRY_WINDOW sessions after the
+//     setup day. Fills at the pivot, or at the open if the stock gaps above it.
+//     No break within the window = "not triggered".
+//   - Initial stop: the structural stop (for non-coil setups lowered to any
+//     low printed while waiting), clamped to 3%-8% below the fill. On the entry
+//     day only a close below the stop counts; afterwards any touch exits, at
+//     the stop or at the open if it gaps through.
+//   - Exit: the first close below the 50-day SMA; once a close is >= 20% above
+//     the fill, the first close below the 21-day EMA instead. Max 252 sessions.
 //   - R = (exit - entry) / (entry - stop). Account return assumes 1% account
 //     risk per trade with positions capped at 25% of the account.
 import fs from 'fs';
 import path from 'path';
+import { RULES, RULES_VERSION, prepare, simulateTrade, parseChart } from './leader-rules.mjs';
 
-export const ENTRY_WINDOW = 5;
-export const MIN_STOP_PCT = 5;
-export const EXIT_SMA = 50;
-export const MAX_HOLD_DAYS = 120;
+export const ENTRY_WINDOW = RULES.entryWindow;
+export const MAX_HOLD_DAYS = RULES.maxHold;
 export const HORIZONS = [1, 5, 10, 20];
 export const BIG_WIN_PCT = 30;
-export const NEW_SIGNAL_LOOKBACK = 5;
 // Live signals stop being refreshed after this many calendar days (covers the
-// entry window plus the maximum hold).
-export const EXPIRE_CALENDAR_DAYS = 200;
-// Bars needed before the signal for the exit SMA, plus the forward window.
-export const BARS_RANGE = '1y';
+// entry window plus the 252-session maximum hold).
+export const EXPIRE_CALENDAR_DAYS = 400;
+// Bars needed before the signal for the exit averages, plus the forward window.
+export const BARS_RANGE = '2y';
 
 export const TRACK_RECORD_PATH = path.join(process.cwd(), 'public', 'track-record.json');
 export const PICK_DAYS_PATH = path.join(process.cwd(), 'public', 'pick-days.json');
 
 export const SETTINGS = {
-    entry: `Buy stop at the pivot, valid ${ENTRY_WINDOW} sessions`,
-    stop: `Lower of the structural stop and ${MIN_STOP_PCT}% below the fill`,
-    exit: `First close below the ${EXIT_SMA}-day SMA, or session ${MAX_HOLD_DAYS}`,
+    entry: `Buy stop at the pivot, valid ${ENTRY_WINDOW} sessions after the setup day`,
+    stop: `Structural stop clamped to ${RULES.stopMinPct}%-${RULES.stopMaxPct}% below the fill`,
+    exit: `First close below the 50-day SMA (21-day EMA once up ${RULES.trailAfterGainPct}%), or session ${MAX_HOLD_DAYS}`,
     sizing: '1% account risk per trade, position capped at 25%',
+    signal: 'Each setup (ticker, setup day, family) counts once',
     entry_window: ENTRY_WINDOW,
     max_hold_days: MAX_HOLD_DAYS,
-    new_signal_lookback: NEW_SIGNAL_LOOKBACK,
-    rules_version: '2026-10 (C)',
+    rules_version: RULES_VERSION,
 };
 
 const round = (x, d = 2) => (x == null || !Number.isFinite(x) ? null : Number(x.toFixed(d)));
 const pct = (a, b) => ((a - b) / b) * 100;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-// Fields kept from a screener match when it becomes a signal.
-export function pickFields(m) {
+export const signalId = (ticker, signalDate, family) => `${ticker}|${signalDate}|${family}`;
+
+// Fields kept from a screener match when it becomes a signal. ref_date /
+// ref_close let outcomes be rescaled if the stock splits later (Yahoo bars are
+// split-adjusted, the stored pivot is not).
+export function pickFields(m, refDate) {
     return {
         ticker: m.ticker,
+        family: m.family,
         setup_type: m.setup_type,
         timing_status: m.timing_status,
         price: round(m.price, 4),
@@ -61,77 +65,49 @@ export function pickFields(m) {
         stop: round(m.suggested_stop, 4),
         stop_pct: round(m.suggested_stop_pct),
         up_from_low52: round(m.up_from_low52, 1),
+        rs_rank: round(m.rs_rank, 1),
+        dv_rank: round(m.dv_rank, 1),
         rs_3mo: round(m.relative_strength_3mo, 1),
+        ref_date: refDate,
+        ref_close: round(m.price, 4),
     };
-}
-
-// True if `ticker` was absent from the previous NEW_SIGNAL_LOOKBACK scan days
-// of the same source.
-export function isNewSignal(ticker, date, days, source) {
-    const prior = Object.keys(days)
-        .filter(d => d < date && days[d].source === source)
-        .sort()
-        .slice(-NEW_SIGNAL_LOOKBACK);
-    return !prior.some(d => days[d].tickers.includes(ticker));
 }
 
 // Account return (% of account) for a trade returning `retPct` with `riskPct`
 // between entry and stop: 1% risk, position capped at 25%.
 export const accountReturn = (retPct, riskPct) => retPct * Math.min(1 / riskPct, 0.25);
 
-// `bars`: the ticker's daily bars, oldest first, including at least
-// EXIT_SMA - 1 sessions before the signal for the exit SMA.
-// `spyByDate`: Map date -> SPY bar.
-export function computeOutcome(sig, bars, spyByDate) {
-    const start = bars.findIndex(b => b.date > sig.signal_date);
-    if (start < 0) return { status: 'pending' };
-    const pivot = sig.pivot;
-    const structStop = sig.struct_stop ?? sig.stop;
+// `bars`: the ticker's daily bars, oldest first, including at least 50
+// sessions before the signal for the exit SMA. `spyByDate`: Map date -> SPY bar.
+// `S` (optional): prepare(bars), when the caller already has it.
+export function computeOutcome(sig, bars, spyByDate, S = null) {
+    const s = bars.findIndex(b => b.date === sig.signal_date);
+    if (s < 0) {
+        return bars.length && bars[bars.length - 1].date < sig.signal_date
+            ? { status: 'pending' } : { status: 'skipped', note: 'Signal date not in price history' };
+    }
+    let pivot = sig.pivot;
+    let structStop = sig.struct_stop ?? sig.stop;
     if (!(pivot > 0) || !(structStop > 0)) return { status: 'skipped', note: 'Missing pivot or stop' };
+    // Rescale for splits after the signal.
+    const ri = sig.ref_date ? bars.findIndex(b => b.date === sig.ref_date) : -1;
+    if (ri >= 0 && sig.ref_close > 0) {
+        const k = bars[ri].close / sig.ref_close;
+        if (Math.abs(k - 1) > 0.03) { pivot *= k; structStop *= k; }
+    }
+    S ||= prepare(bars);
+    const tr = simulateTrade(S, s, pivot, structStop, sig.family || 'RANGE');
+    if (tr.status === 'no_entry') return { status: 'no_entry', note: `Pivot not broken within ${ENTRY_WINDOW} sessions` };
+    if (tr.status === 'pending') return { status: 'pending', days_waiting: tr.days_waiting };
 
-    // Entry: first session within the window whose high clears the pivot.
-    let eb = -1;
-    for (let k = start; k < Math.min(bars.length, start + ENTRY_WINDOW); k++) {
-        if (bars[k].high > pivot) { eb = k; break; }
-    }
-    if (eb < 0) {
-        return bars.length - start >= ENTRY_WINDOW
-            ? { status: 'no_entry', note: `Pivot not broken within ${ENTRY_WINDOW} sessions` }
-            : { status: 'pending', days_waiting: bars.length - start };
-    }
-    const entry = Math.max(bars[eb].open, pivot);
-    const stop = Math.min(structStop, entry * (1 - MIN_STOP_PCT / 100));
-    const risk = entry - stop;
+    const eb = tr.eb, entry = tr.entry;
     const o = {
-        entry_date: bars[eb].date, entry: round(entry, 4), stop: round(stop, 4),
-        risk_pct: round((risk / entry) * 100), breakout_day: eb - start + 1,
+        entry_date: bars[eb].date, entry: round(entry, 4), stop: round(tr.stop, 4),
+        risk_pct: round(tr.risk_pct), breakout_day: eb - s,
     };
-
-    const smaAt = (k) => {
-        if (k < EXIT_SMA - 1) return null;
-        let s = 0;
-        for (let j = k - EXIT_SMA + 1; j <= k; j++) s += bars[j].close;
-        return s / EXIT_SMA;
-    };
-    const last = Math.min(bars.length - 1, eb + MAX_HOLD_DAYS - 1);
-    let exit = null, xk = -1;
-    for (let k = eb; k <= last; k++) {
-        const b = bars[k];
-        if (k === eb ? b.close < stop : b.low <= stop) {
-            exit = k === eb ? b.close : Math.min(stop, b.open);
-            o.exit_reason = 'stop';
-            xk = k;
-            break;
-        }
-        const sma = smaAt(k);
-        if (k > eb && sma != null && b.close < sma) {
-            exit = b.close; o.exit_reason = `sma${EXIT_SMA}`; xk = k;
-            break;
-        }
-        if (k === eb + MAX_HOLD_DAYS - 1) { exit = b.close; o.exit_reason = 'time'; xk = k; }
-    }
-    const endK = xk >= 0 ? xk : last;
+    const endK = tr.status === 'closed' ? tr.xj : tr.last;
     o.days = endK - eb + 1;
+    if (tr.trail21) o.trailing = 'ema21';
 
     const spyEntry = spyByDate.get(bars[eb].date)?.open;
     for (const h of HORIZONS) {
@@ -145,18 +121,19 @@ export function computeOutcome(sig, bars, spyByDate) {
     o.max_gain = round(pct(Math.max(...win60.map(b => b.high)), entry));
     o.max_dd = round(pct(Math.min(...bars.slice(eb, endK + 1).map(b => b.low)), entry));
 
-    if (exit === null) {
-        const mark = bars[bars.length - 1].close;
+    if (tr.status === 'open') {
         o.status = 'open';
-        o.mark = round(mark, 4);
-        o.r = round((mark - entry) / risk);
+        o.mark = round(tr.mark, 4);
+        o.r = round(tr.r);
+        o.ret = round(pct(tr.mark, entry));
         return o;
     }
     o.status = 'closed';
-    o.exit_date = bars[xk].date;
-    o.exit = round(exit, 4);
-    o.r = round((exit - entry) / risk);
-    o.ret = round(pct(exit, entry));
+    o.exit_reason = tr.reason;
+    o.exit_date = bars[tr.xj].date;
+    o.exit = round(tr.exit, 4);
+    o.r = round(tr.r);
+    o.ret = round(tr.ret);
     o.acct = round(accountReturn(o.ret, o.risk_pct), 3);
     return o;
 }
@@ -218,6 +195,7 @@ export function summarize(signals) {
         out[source] = {
             overall: stats(s),
             by_setup: groupStats(s, x => x.setup_type),
+            by_year: groupStats(s, x => x.signal_date.slice(0, 4)),
             by_timing: groupStats(s, x => x.timing_status),
             by_month: groupStats(s, x => x.signal_date.slice(0, 7)),
         };
@@ -247,35 +225,22 @@ export function writeTrackRecord(signals, days, extra = {}) {
     fs.writeFileSync(PICK_DAYS_PATH, JSON.stringify({ days: sortedDays }));
 }
 
-// Daily bars from Yahoo's chart API, oldest first. Drops today's partial bar
-// while the regular session is open (same rule as the screener).
+// Daily bars from Yahoo's chart API, oldest first, plus split events. Drops
+// today's partial bar while the regular session is open (same rule as the
+// screener). `range` ('2y') or { period1, period2 } in epoch seconds.
 export async function fetchDailyBars(ticker, range, attempts = 3) {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
+    const span = typeof range === 'string' ? `range=${range}` : `period1=${range.period1}&period2=${range.period2}`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?${span}&interval=1d&events=split`;
     for (let i = 0; i < attempts; i++) {
         try {
             const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
             if (res.status === 429 || res.status >= 500) throw new Error(`HTTP ${res.status}`);
             if (!res.ok) return null;
             const data = (await res.json()).chart?.result?.[0];
-            const ts = data?.timestamp;
-            if (!ts?.length) return null;
-            const q = data.indicators.quote[0];
-            const bars = [];
-            for (let j = 0; j < ts.length; j++) {
-                if (q.close[j] !== null && q.volume[j] !== null && q.high[j] !== null && q.low[j] !== null) {
-                    bars.push({
-                        date: new Date(ts[j] * 1000).toISOString().split('T')[0],
-                        open: q.open[j], high: q.high[j], low: q.low[j], close: q.close[j], volume: q.volume[j],
-                    });
-                }
-            }
-            const regular = data.meta?.currentTradingPeriod?.regular;
-            const lastTs = ts[ts.length - 1];
-            if (regular && Date.now() / 1000 < regular.end && lastTs >= regular.start && bars.length &&
-                bars[bars.length - 1].date === new Date(lastTs * 1000).toISOString().split('T')[0]) {
-                bars.pop();
-            }
-            return { bars, meta: data.meta };
+            if (!data) return null;
+            const parsed = parseChart(data);
+            if (!parsed || !parsed.history.length) return null;
+            return { bars: parsed.history, splits: parsed.splits, meta: data.meta };
         } catch (e) {
             if (i === attempts - 1) return null;
             await sleep(1000 * 2 ** i);
