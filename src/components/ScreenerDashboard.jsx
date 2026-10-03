@@ -300,10 +300,16 @@ export default function ScreenerDashboard({ onHealthChange }) {
             <div className={`text-xs font-mono font-bold mt-0.5 ${isStale ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
               {new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
             </div>
+            {data?.as_of && (
+              <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                as of {data.as_of} close
+              </div>
+            )}
             {data?.stats && (
               <div
                 className={`text-[10px] font-mono mt-0.5 ${data.stats.fetch_failed > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
-                title={`Fetched OK: ${data.stats.ok} · No data: ${data.stats.no_data} · Failed: ${data.stats.fetch_failed} · Retries: ${data.stats.retries}`}
+                title={`Fetched OK: ${data.stats.ok} · No data: ${data.stats.no_data} · Failed: ${data.stats.fetch_failed} · Retries: ${data.stats.retries}` +
+                  (data.stats.fundamentals_checked != null ? ` · Fundamentals failed: ${data.stats.fundamentals_failed}/${data.stats.fundamentals_checked}` : '')}
               >
                 {data.stats.ok.toLocaleString()} ok · {data.stats.fetch_failed.toLocaleString()} failed
               </div>
