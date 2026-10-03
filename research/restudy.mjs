@@ -72,7 +72,7 @@ if (!flag('--skip-build')) {
 // ---------- 5: analysis ----------
 lap('analysis');
 const L = await import('./lib.mjs');
-const { T, C, N, mask, yearly, summarize, portfolio, simulatePortfolio, tradesFor, recall, BOOK, spyYear, YEARS, comboIdx } = L;
+const { T, C, N, mask, yearly, summarize, portfolio, simulatePortfolio, tradesFor, recall, BOOK, spyYear, YEARS, comboIdx, idleReturns, yearSpan } = L;
 const { toRules } = await import('./select.mjs');
 const cache = v8.deserialize(fs.readFileSync(path.join(DATA, 'cache.bin')));
 const current = JSON.parse(fs.readFileSync(RULES_PATH, 'utf8'));
@@ -143,6 +143,32 @@ const nY = oos.length;
 const oosCagr = (eq ** (1 / nY) - 1) * 100, spyCagr = (spyEq ** (1 / nY) - 1) * 100;
 const last5 = oos.slice(-5);
 const cagrOf = (rows, k) => (rows.reduce((a, r) => a * (1 + r[k] / 100), 1) ** (1 / rows.length) - 1) * 100;
+
+// Idle cash in SPY (rules.json idleCash). The same out-of-sample picks, with
+// idle cash earning SPY under the rule: conservative (SPY sold at the prior
+// close to fund a fill) and optimistic (at the fill-day close). Daily drawdowns
+// are on realized equity chained across years.
+const IDLE_CFG = current.idleCash?.mode && current.idleCash.mode !== 'none' ? current.idleCash : { mode: 'spy200band', band: 3 };
+const idleRet = idleReturns(IDLE_CFG);
+function oosChain(opts) {
+    let e = 1, pk = 1, dd = 0;
+    const rows = [];
+    for (const r of oos) {
+        const s = sel[r.year];
+        const spec = { ...s.spec, depth52Max: s.spec.depth52Max ?? Infinity };
+        const p = simulatePortfolio(tradesFor(mask(spec), s.combo, `${r.year}-01-01`, `${r.year}-12-31`), { ...opts, span: yearSpan(r.year) });
+        for (const v of p.curve) { const q = e * v / 100; pk = Math.max(pk, q); dd = Math.max(dd, 1 - q / pk); }
+        const ret = (p.final / 100 - 1) * 100;
+        e *= 1 + ret / 100;
+        rows.push({ year: r.year, ret, in_setups: p.inSetups, in_spy: p.inSpy });
+    }
+    return { rows, cagr: (e ** (1 / rows.length) - 1) * 100, dailyDD: dd * 100, last5: cagrOf(rows.slice(-5), 'ret'), beat: rows.filter((x, i) => x.ret > oos[i].spy).length };
+}
+const idleOos = {
+    cash: oosChain({}),
+    spy: oosChain({ idleRet }),
+    spyOpt: oosChain({ idleRet, preFill: true }),
+};
 
 // Proposal and comparison.
 const pick = sel[YEAR];
@@ -275,10 +301,22 @@ if (changed) {
 }
 md.push('> The selection procedure itself is the thing being trusted here. Its record below is out of sample', `> (each year chosen only from earlier years). Merge the PR only if you accept that record.`, '');
 md.push('## Out-of-sample record of the procedure', '');
-md.push(`${FIRST_TEST_YEAR}-${oos[oos.length - 1].year}: **${f1(oosCagr)}%/yr** vs SPY ${f1(spyCagr)}%/yr (price only), worst year-end drawdown ${f1(ddMax * 100)}%. Last 5 years: ${f1(cagrOf(last5, 'ret'))}%/yr vs SPY ${f1(cagrOf(last5, 'spy'))}%/yr.`, '');
+md.push(`${FIRST_TEST_YEAR}-${oos[oos.length - 1].year}: **${f1(oosCagr)}%/yr** vs SPY ${f1(spyCagr)}%/yr (price only), worst year-end drawdown ${f1(ddMax * 100)}% (daily, realized: ${f1(idleOos.cash.dailyDD)}%). Last 5 years: ${f1(cagrOf(last5, 'ret'))}%/yr vs SPY ${f1(cagrOf(last5, 'spy'))}%/yr. Idle cash left in cash; see Idle cash in SPY below.`, '');
 md.push('| Year | Procedure | SPY | Trades | Rules picked (trained on earlier years) |', '|---|---|---|---|---|');
 for (const r of oos) md.push(`| ${r.year}${r.partial ? ' (YTD)' : ''} | ${sgn(r.ret)}% | ${sgn(r.spy)}% | ${r.trades} | ${r.pick} |`);
 md.push('', `Pick for ${YEAR}: ${pick.pick} (training CAGR ${f1(pick.train.cagr)}%, max drawdown ${f1(pick.train.maxDD)}%).`, '');
+md.push('## Idle cash in SPY', '');
+md.push(`Rule (rules.json idleCash): ${IDLE_CFG.mode === 'always' ? 'idle cash always in SPY' : `idle cash in SPY while SPY is above its 200-day SMA, to cash below -${IDLE_CFG.band}%, back above +${IDLE_CFG.band}%`}. Same out-of-sample picks as above; daily max drawdown on realized equity.`, '');
+md.push('| Idle cash | CAGR | Last 5 years | Daily max DD | Years ahead of SPY | Avg in setups / in SPY |', '|---|---|---|---|---|---|');
+const avgOf = (rows, k) => rows.reduce((a, r) => a + r[k], 0) / rows.length;
+for (const [name, o] of [['In cash', idleOos.cash], ['In SPY (conservative: SPY sold at the prior close)', idleOos.spy], ['In SPY (optimistic: SPY sold at the fill-day close)', idleOos.spyOpt]]) {
+    md.push(`| ${name} | ${f1(o.cagr)}% | ${f1(o.last5)}% | ${f1(o.dailyDD)}% | ${o.beat}/${o.rows.length} | ${f1(avgOf(o.rows, 'in_setups'))}% / ${f1(avgOf(o.rows, 'in_spy'))}% |`);
+}
+md.push(`| SPY buy and hold (price) | ${f1(spyCagr)}% | ${f1(cagrOf(last5, 'spy'))}% | | | |`, '');
+md.push('| Year | ' + oos.map(r => String(r.year)).join(' | ') + ' |', '|' + '---|'.repeat(oos.length + 1));
+md.push('| Cash | ' + idleOos.cash.rows.map(r => sgn(r.ret)).join(' | ') + ' |');
+md.push('| SPY (cons.) | ' + idleOos.spy.rows.map(r => sgn(r.ret)).join(' | ') + ' |', '');
+
 md.push(`## Current vs proposed, 2007-${lastYear} (in sample)`, '');
 md.push('| Rules | Trades | Win | Avg R | PF | Positive years | Avg R without top 1% | Last 3 years avg R (n) | Account CAGR p10 / median / p90 | Median max DD | Model Book leaders flagged / caught |', '|---|---|---|---|---|---|---|---|---|---|---|');
 md.push(evRow(`Current ${current.version}`, evCur));
@@ -315,6 +353,7 @@ fs.writeFileSync(`${reportBase}.md`, md.join('\n') + '\n');
 fs.writeFileSync(`${reportBase}.json`, JSON.stringify({
     date: TODAY, year: YEAR, data_to: lastDate, changed, diffs, current, proposal, pick: { pick: pick.pick, train: pick.train },
     oos: { rows: oos, cagr: oosCagr, spy_cagr: spyCagr, max_year_end_dd: ddMax * 100 },
+    idle_cash: { rule: IDLE_CFG, cash: idleOos.cash, spy_conservative: idleOos.spy, spy_optimistic: idleOos.spyOpt },
     families: famRows.map(r => ({ fam: r.fam, in_buy: r.inBuy, n: r.s.n, avg_r: r.s.avgR, pos_years: r.pos, years: r.active, last3_avg_r: r.r3.avgR, last3_n: r.r3.n })),
     survivorship: { delisted_included: cache.sources?.eodhdDelisted ?? 0, coverage: Object.fromEntries(STUDY_YEARS.filter(y => WB[y]).map(y => [y, covOf(y)])), proposed: stressNew, current: stressCur },
 }, null, 1));
@@ -330,6 +369,7 @@ if (flag('--apply') && changed) {
         trackFamilies: notBuy,
         trackNote: notBuy.length ? `under these filters in the ${TODAY} re-study, ${notBuy.map(famNote).join('; ')}.` : '',
         ...Object.fromEntries(FIELDS.filter(k => k !== 'families').map(k => [k, proposal[k]])),
+        ...(current.idleCash ? { idleCash: current.idleCash, idleCashNote: current.idleCashNote } : {}),
     };
     fs.writeFileSync(RULES_PATH, JSON.stringify(next, null, 2) + '\n');
     lap(`wrote ${path.relative(REPO, RULES_PATH)} (${next.version})`);

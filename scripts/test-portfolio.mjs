@@ -57,5 +57,20 @@ const sig = (ticker, signal_date, entry_date, risk_pct, path, status, rs_rank = 
     assert.equal(r.stats.max_dd, 10);
 }
 
+// Idle cash in SPY: one 20% position (flat path); the other 80% of equity is
+// parked in SPY (+1/session) from the session after an "on" close.
+//  Day 1: fill 20,000, cash 80,000 x 101/100 = 80,800 -> 100,800.
+//  Day 5: cash 80,000 x 105/100 = 84,000 -> 104,000.
+{
+    const idle = new Map(spy.map(b => [b.date, { on: true }]));
+    const r = simulatePortfolio([sig('IDL', '2025-01-02', '2025-01-03', 5, [0], 'open')], spy, { idle });
+    assert.deepEqual(r.daily.equity, [100, 100.8, 101.6, 102.4, 103.2, 104]);
+    assert.equal(r.daily.spy_share[1], round1(80800 / 100800 * 100));
+    // Off on the day-2 close: day 3 earns nothing on cash.
+    idle.set('2025-01-06', { on: false });
+    const r2 = simulatePortfolio([sig('IDL', '2025-01-02', '2025-01-03', 5, [0], 'open')], spy, { idle });
+    assert.equal(r2.daily.equity[3], r2.daily.equity[2]);
+}
+
 function round1(x) { return Number(x.toFixed(1)); }
 console.log('portfolio tests passed');

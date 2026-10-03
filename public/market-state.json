@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-03T07:45:51.215Z",
+  "timestamp": "2026-10-03T08:13:18.360Z",
   "as_of": "2026-10-02",
   "rules_version": "2026-10 (F6b)",
   "rules": {
@@ -55,6 +55,14 @@
     "spy_above_50": true,
     "breadth_50": 27.5,
     "spy_close": 769.6400146484375
+  },
+  "idle_cash": {
+    "mode": "spy200band",
+    "band": 3,
+    "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
+    "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
+    "on": true,
+    "spy_vs_200": 6.82
   },
   "total_scanned": 6234,
   "ranking_universe": 2860,

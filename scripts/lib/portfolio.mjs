@@ -16,6 +16,11 @@
 //     its exit return). Each session of a path is the next SPY session.
 //   - The benchmark is SPY total return (dividend-adjusted close), indexed to
 //     the same start date.
+//   - Idle cash (opts.idle: Map date -> { on }, from leader-rules idleCashByDate):
+//     on sessions after a close where `on` is true, the cash left after that
+//     session's fills earns SPY's total return for the session (SPY is sold to
+//     fund buys; exit proceeds arrive at the close). Without opts.idle cash
+//     earns nothing.
 export const PORTFOLIO = { START: 100000, RISK_PCT: 1, MAX_POS_PCT: 25, MIN_FILL_FRAC: 0.5 };
 
 const round = (x, d = 2) => (x == null || !Number.isFinite(x) ? null : Number(x.toFixed(d)));
@@ -77,7 +82,9 @@ export function simulatePortfolio(signals, spy, opts = {}) {
         list.sort((a, b) => (b.rs_rank ?? 0) - (a.rs_rank ?? 0) || a.ticker.localeCompare(b.ticker));
     }
 
+    const spyTR = cal.map(b => b.adjclose ?? b.close);
     let cash = P.START;
+    const spyShare = [];
     let held = [];
     let prevEquity = P.START;
     const equity = [], exposure = [], positions = [];
@@ -93,6 +100,11 @@ export function simulatePortfolio(signals, spy, opts = {}) {
             cash -= amt;
             held.push({ t, cost: amt, k0: k });
             taken++;
+        }
+        let parked = 0;
+        if (k > 0 && P.idle?.get(dates[k - 1])?.on && cash > 0) {
+            cash *= spyTR[k] / spyTR[k - 1];
+            parked = cash;
         }
         let value = 0;
         const still = [];
@@ -113,6 +125,7 @@ export function simulatePortfolio(signals, spy, opts = {}) {
         const eq = cash + value;
         equity.push(eq);
         exposure.push(eq > 0 ? (value / eq) * 100 : 0);
+        spyShare.push(eq > 0 ? (parked / eq) * 100 : 0);
         positions.push(held.length);
         prevEquity = eq;
     }
@@ -122,7 +135,6 @@ export function simulatePortfolio(signals, spy, opts = {}) {
         pnl.push({ id: p.t.id, ticker: p.t.ticker, pnl: p.cost * (path[j] / 100), open: true });
     }
 
-    const spyTR = cal.map(b => b.adjclose ?? b.close);
     const last = dates.length - 1;
     const months = monthlyReturns(dates, equity);
     const worst = months.reduce((w, m) => (!w || m.ret < w.ret ? m : w), null);
@@ -141,6 +153,7 @@ export function simulatePortfolio(signals, spy, opts = {}) {
         spy_max_dd: round(maxDrawdown(spyTR)),
         worst_month: worst ? { month: worst.month, ret: round(worst.ret) } : null,
         avg_exposure: round(exposure.reduce((a, x) => a + x, 0) / exposure.length, 1),
+        avg_spy_share: round(spyShare.reduce((a, x) => a + x, 0) / spyShare.length, 1),
         pct_days_flat: round((positions.filter(n => n === 0).length / positions.length) * 100, 1),
         max_positions: Math.max(...positions),
         trades_taken: taken, skipped_cash: skippedCash, skipped_held: skippedHeld, resized,
@@ -156,6 +169,7 @@ export function simulatePortfolio(signals, spy, opts = {}) {
             equity: equity.map(v => round((v / P.START) * 100)),
             spy: spyTR.map(v => round((v / spyTR[0]) * 100)),
             exposure: exposure.map(v => round(v, 1)),
+            spy_share: spyShare.map(v => round(v, 1)),
         },
     };
 }

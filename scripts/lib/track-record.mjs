@@ -26,6 +26,7 @@ import { simulatePortfolio } from './portfolio.mjs';
 import path from 'path';
 import {
     RULES, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, simulateTrade, parseChart,
+    IDLE, idleCashByDate, idleCashText,
 } from './leader-rules.mjs';
 
 export const ENTRY_WINDOW = RULES.entryWindow;
@@ -49,6 +50,7 @@ export const SETTINGS = {
     families: RULES.families.map(f => FAMILY_LABELS[f]),
     tracked_families: RULES.trackFamilies.map(f => FAMILY_LABELS[f]),
     sizing: '1% account risk per trade, position capped at 25%',
+    idle_cash: idleCashText(),
     signal: 'Each setup (ticker, setup day, family) counts once',
     entry_window: ENTRY_WINDOW,
     max_hold_days: MAX_HOLD_DAYS,
@@ -236,11 +238,22 @@ export function readJson(file, fallback) {
 }
 
 // One simulated account per source (see portfolio.mjs). `spy`: SPY daily bars
-// with adjclose, covering the backfill window.
+// with adjclose, covering the backfill window (plus 200 sessions for the idle-
+// cash SMA). The account follows the idle-cash rule (rules.json idleCash); the
+// same account with idle cash left in cash is reported as stats.cash_only.
 export function portfolios(signals, spy) {
     const out = {};
+    const idle = IDLE.mode === 'none' ? null : idleCashByDate(spy.map(b => b.date), spy.map(b => b.close));
     for (const source of ['live', 'backfill']) {
-        out[source] = simulatePortfolio(signals.filter(s => s.source === source && !isTracked(s)), spy);
+        const list = signals.filter(s => s.source === source && !isTracked(s));
+        const p = simulatePortfolio(list, spy, idle ? { idle } : {});
+        if (p && idle) {
+            const c = simulatePortfolio(list, spy);
+            p.stats.cash_only = { cagr: c.stats.cagr, total_return: c.stats.total_return, max_dd: c.stats.max_dd, end_equity: c.stats.end_equity };
+            p.daily.equity_cash_only = c.daily.equity;
+        }
+        if (p) p.stats.idle_cash = { mode: IDLE.mode, band: IDLE.band, text: idleCashText(), note: IDLE.note };
+        out[source] = p;
     }
     return out;
 }

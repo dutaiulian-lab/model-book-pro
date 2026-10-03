@@ -135,6 +135,7 @@ export default function TrackRecord() {
             {record.settings.market ? ` Market filter: ${record.settings.market}.` : ''}
             {record.settings.families ? ` Buy setups: ${record.settings.families.join(', ')}.` : ''}
             {record.settings.tracked_families?.length ? ` Tracked separately (not counted here): ${record.settings.tracked_families.join(', ')}.` : ''}
+            {record.settings.idle_cash ? ` Account: ${record.settings.idle_cash.replace(/^Idle cash: /, 'idle cash ')}.` : ''}
           </p>
         </div>
         <div className="flex bg-muted/40 border border-border/60 rounded-xl p-1 text-xs font-bold self-stretch md:self-auto">
@@ -145,7 +146,7 @@ export default function TrackRecord() {
             <button
               key={key}
               onClick={() => { setSource(key); setShown(PAGE); }}
-              className={`flex-1 px-3 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 px-3 py-2 rounded-lg transition-all cursor-pointer sm:whitespace-nowrap ${
                 source === key ? 'bg-card text-foreground shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -166,7 +167,7 @@ export default function TrackRecord() {
             <ul className="list-disc pl-4 space-y-0.5">
               <li>The rules are price-only; the EPS / revenue growth shown on cards is informational and not part of the tested rules.</li>
               <li>Stocks delisted since then are missing from the universe, and those are mostly failures.</li>
-              <li>The rules were selected on 2007–2026 data, so this whole window is in-sample. Run walk-forward (each year picked only from earlier years), the selection procedure earned about 8.6%/yr from 2010 to 2026 vs 12.0% for SPY. See research/reports for the yearly re-study.</li>
+              <li>The rules were selected on 2007–2026 data, so this whole window is in-sample. Run walk-forward (each year picked only from earlier years), the selection procedure earned about 8.6%/yr from 2010 to 2026 with idle cash in cash, and about 10.8-12.2%/yr with idle cash parked in SPY under the 200-day rule (depending on when SPY is sold to fund a buy), vs 12.0% for SPY. See research/reports for the yearly re-study.</li>
               <li>The per-trade stats count every setup as a trade. The account panel applies sizing, cash limits and one position per ticker.</li>
             </ul>
             <div>Use it to compare setups and timing groups, not as proof the system works.</div>

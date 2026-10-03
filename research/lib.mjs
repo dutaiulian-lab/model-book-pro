@@ -110,29 +110,49 @@ export function portfolio(m, combo, from = '0000', to = '9999', { riskPct = 1, m
     return simulatePortfolio(tradesFor(m, combo, from, to, order), { riskPct, maxPos, maxOpen });
 }
 // trades: [{ e, x (global date indices), ret %, risk %, tid, key, r? }].
-export function simulatePortfolio(trades, { riskPct = 1, maxPos = 0.25, maxOpen = Infinity } = {}) {
+// opts.idleRet: Float64Array by global date index, the SPY return earned that
+// session by idle cash (0 when idle cash is in cash), see idleReturns().
+// opts.span [ga, gb]: simulate from session ga (and at least to gb); idle cash
+// earns idleRet only inside the span. Default span: first entry..last exit.
+// opts.preFill: idle cash earns the session's SPY return before that session's
+// fills (optimistic: SPY sold at the fill-day close); default after the fills
+// (conservative: SPY sold at the prior close, as in scripts/lib/portfolio.mjs).
+// Equity is realized (positions at cost until they exit); `curve` is that
+// equity per session inside the span.
+export function simulatePortfolio(trades, { riskPct = 1, maxPos = 0.25, maxOpen = Infinity, idleRet = null, span = null, preFill = false } = {}) {
     const byEntry = new Map();
     let g0 = Infinity, g1 = -Infinity;
     for (const tr of trades) {
         (byEntry.get(tr.e) || byEntry.set(tr.e, []).get(tr.e)).push(tr);
         g0 = Math.min(g0, tr.e); g1 = Math.max(g1, tr.x);
     }
-    let equity = 100, peak = 100, maxDD = 0, taken = 0, skipped = 0;
+    if (span) { g0 = Math.min(g0, span[0]); g1 = Math.max(g1, span[1]); }
+    if (g0 === Infinity) return { taken: 0, final: 100, cagr: 0, maxDD: 0, yr: {}, curve: [] };
+    const [fa, fb] = span || [g0, g1];
+    let equity = 100, peak = 100, maxDD = 0, taken = 0, skipped = 0, inSetups = 0, inSpy = 0, nDays = 0;
     let open = [];
     const held = new Set();
     const yEq = {};
     const takenRows = [];
-    if (g0 === Infinity) return { taken: 0, final: 100, cagr: 0, maxDD: 0, yr: {} };
+    const curve = [];
     for (let gi = g0; gi <= g1; gi++) {
         const y = T.dates[gi].slice(0, 4);
         if (!(y in yEq)) yEq[y] = { start: equity };
         const todays = (byEntry.get(gi) || []).sort((a, b) => (b.key ?? -1e9) - (a.key ?? -1e9));
         let used = open.reduce((s, p) => s + p.cost, 0);
+        if (preFill && gi >= fa && gi <= fb && idleRet) equity += Math.max(0, equity - used) * idleRet[gi];
         for (const t of todays) {
             if (held.has(t.tid) || open.length >= maxOpen) { skipped++; continue; }
             const size = Math.min(equity * riskPct / 100 / (t.risk / 100), equity * maxPos);
             if (size > equity - used + 1e-9) { skipped++; continue; }
             open.push({ ...t, cost: size }); used += size; held.add(t.tid); taken++; takenRows.push(t.r);
+        }
+        const inside = gi >= fa && gi <= fb;
+        if (inside) {
+            const idle = Math.max(0, equity - used);
+            const r = idleRet && !preFill ? idleRet[gi] : 0;
+            equity += idle * r;
+            nDays++; inSetups += used / equity; if (idleRet?.on?.[gi]) inSpy += idle / equity;
         }
         const still = [];
         for (const p of open) {
@@ -142,10 +162,49 @@ export function simulatePortfolio(trades, { riskPct = 1, maxPos = 0.25, maxOpen 
         peak = Math.max(peak, equity);
         maxDD = Math.max(maxDD, (peak - equity) / peak * 100);
         yEq[y].end = equity;
+        if (inside) curve.push(equity);
     }
     const days = g1 - g0 + 1, yrs = days / 252;
     const yr = Object.fromEntries(Object.entries(yEq).map(([y, e]) => [y, (e.end / e.start - 1) * 100]));
-    return { taken, skipped, final: equity, cagr: (Math.pow(equity / 100, 1 / yrs) - 1) * 100, maxDD, yrs, yr, takenRows };
+    return {
+        taken, skipped, final: equity, cagr: (Math.pow(equity / 100, 1 / yrs) - 1) * 100, maxDD, yrs, yr, takenRows, curve,
+        inSetups: nDays ? inSetups / nDays * 100 : 0, inSpy: nDays ? inSpy / nDays * 100 : 0,
+    };
+}
+
+// Daily SPY return earned by idle cash under an idle-cash rule (rules.json
+// idleCash; same state machine as scripts/lib/leader-rules.mjs idleCashByDate):
+// the state after close g-1 decides session g. Returns Float64Array by global
+// date index with an `on` Uint8Array attached.
+export function idleReturns(idle = { mode: 'none' }) {
+    const G = T.dates.length;
+    const c = new Float64Array(G).fill(NaN);
+    { const { i, c: cc } = T.spy; for (let k = 0; k < i.length; k++) c[i[k]] = cc[k]; }
+    for (let g = 1; g < G; g++) if (Number.isNaN(c[g])) c[g] = c[g - 1];
+    const s200 = new Float64Array(G).fill(NaN);
+    { let s = 0, n = 0; for (let g = 0; g < G; g++) { if (Number.isNaN(c[g])) continue; s += c[g]; n++; if (n > 200) s -= c[g - 200]; if (n >= 200) s200[g] = s / 200; } }
+    const out = new Float64Array(G), on = new Uint8Array(G);
+    let st = null;
+    for (let g = 1; g < G; g++) {
+        const k = g - 1, vs = Number.isNaN(s200[k]) ? NaN : (c[k] / s200[k] - 1) * 100;
+        if (idle.mode === 'always') st = true;
+        else if (idle.mode !== 'spy200band') st = false;
+        else if (Number.isNaN(vs)) st = null;
+        else if (st === null) st = vs > 0;
+        else if (st && vs < -(idle.band ?? 3)) st = false;
+        else if (!st && vs > (idle.band ?? 3)) st = true;
+        if (st && !Number.isNaN(c[g]) && !Number.isNaN(c[k])) { out[g] = c[g] / c[k] - 1; on[g] = 1; }
+    }
+    out.on = on;
+    return out;
+}
+
+// Session index range [first, last] of a calendar year (clipped to the data).
+export function yearSpan(y) {
+    const a = T.dates.findIndex(d => d >= `${y}-01-01`);
+    let b = T.dates.findIndex(d => d > `${y}-12-31`);
+    if (b < 0) b = T.dates.length;
+    return [a, b - 1];
 }
 
 // SPY return per calendar year.

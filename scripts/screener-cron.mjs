@@ -6,7 +6,7 @@ import { fetchAllUSTickers } from './lib/universe.mjs';
 import {
     RULES, WATCH, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, rsScore, dollarVol,
     inRankUniverse, detect, countedSetups, passesBuyRules, passesTrackRules, passesWatch, bestSetup, initialStop,
-    percentile, regimeOn, spyRegimeByDate, splitFactors, parseChart,
+    percentile, regimeOn, spyRegimeByDate, splitFactors, parseChart, IDLE, idleCashByDate, idleCashText,
 } from './lib/leader-rules.mjs';
 
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
@@ -46,6 +46,16 @@ async function sendDiscordSummary(output, spy3mo) {
             inline: true
         }
     ];
+    if (output.idle_cash && output.idle_cash.mode !== 'none') {
+        const ic = output.idle_cash;
+        fields.push({
+            name: "💵 Idle cash",
+            value: ic.on
+                ? `Hold SPY with cash not in setups (SPY ${fmtPct(ic.spy_vs_200)} vs 200-day). Sell SPY to fund buys.`
+                : `Keep idle cash in cash (SPY ${fmtPct(ic.spy_vs_200)} vs 200-day; back to SPY above +${ic.band}%).`,
+            inline: false
+        });
+    }
 
     if (isZero) {
         fields.push({
@@ -378,6 +388,13 @@ async function run() {
         spy_close: spyC[spyC.length - 1],
     };
     console.log(`Market filter (${regime.rule_text}): ${regime.on ? 'ON' : 'OFF'}; breadth ${regime.breadth_50}% above 50-day.`);
+    const idleToday = idleCashByDate(spyDates, spyC).get(asOf);
+    const idle_cash = {
+        mode: IDLE.mode, band: IDLE.band, rule_text: idleCashText(), note: IDLE.note,
+        on: !!idleToday?.on,
+        spy_vs_200: Number.isFinite(idleToday?.vs200) ? Number(idleToday.vs200.toFixed(2)) : null,
+    };
+    console.log(`${idle_cash.rule_text}: ${idle_cash.on ? 'HOLD SPY' : 'CASH'} (SPY ${idle_cash.spy_vs_200}% vs 200-day).`);
     for (const a of rsBy.values()) a.sort((x, y) => x - y);
     for (const a of dvBy.values()) a.sort((x, y) => x - y);
     const universeToday = dvBy.get(asOf)?.length || 0;
@@ -497,6 +514,7 @@ async function run() {
         },
         watch_rules: WATCH,
         regime,
+        idle_cash,
         total_scanned: tickers.length,
         ranking_universe: universeToday,
         stats: {

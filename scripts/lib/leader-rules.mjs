@@ -41,6 +41,12 @@
 //          21-day EMA / 10-day SMA; c50be c50 with the stop raised to breakeven
 //          at +2R; c50part c50 selling 1/3 at +3R (stop to breakeven);
 //          t20 sell after 20 sessions. Max 252 sessions.
+//
+// Idle cash (rules.json idleCash): cash not in setups is parked in SPY and SPY
+// is sold to fund new buys. spy200band: hold SPY while SPY is above its 200-day
+// SMA; switch to cash when SPY closes more than `band`% below it and back to
+// SPY when it closes more than `band`% above it (avoids whipsaws). always: always
+// hold SPY. none: idle cash stays in cash.
 import fs from 'fs';
 
 const CFG = JSON.parse(fs.readFileSync(new URL('./rules.json', import.meta.url), 'utf8'));
@@ -50,6 +56,9 @@ export const REGIMES = ['none', 'spy50', 'spy200', 'breadth50'];
 for (const [k, list] of [['stop', STOP_TYPES], ['exit', EXIT_TYPES], ['regime', REGIMES]]) {
     if (!list.includes(CFG[k])) throw new Error(`rules.json: unsupported ${k} "${CFG[k]}"`);
 }
+export const IDLE_MODES = ['none', 'always', 'spy200band'];
+export const IDLE = { mode: CFG.idleCash?.mode ?? 'none', band: CFG.idleCash?.band ?? 3, note: CFG.idleCashNote || '' };
+if (!IDLE_MODES.includes(IDLE.mode)) throw new Error(`rules.json: unsupported idleCash.mode "${IDLE.mode}"`);
 export const RULES_VERSION = CFG.version;
 export const RULES = {
     rsMin: CFG.rsMin, dvPctMin: CFG.dvPctMin, dvMin: CFG.dvMinM * 1e6, priceMin: CFG.priceMin,
@@ -82,6 +91,12 @@ export const EXIT_TEXT = {
     t20: 'Sell after 20 sessions',
 };
 
+export function idleCashText(idle = IDLE) {
+    if (idle.mode === 'always') return 'Idle cash: always held in SPY';
+    if (idle.mode === 'spy200band') return `Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -${idle.band}%, back above +${idle.band}%)`;
+    return 'Idle cash: stays in cash';
+}
+
 // Market regime check. mkt: { spy200, spy50, breadth } for the signal day, or a
 // boolean (SPY above its 200-day; legacy callers).
 export function regimeOn(mkt) {
@@ -98,6 +113,26 @@ export function regimeOn(mkt) {
 export function spyRegimeByDate(dates, closes) {
     const c = Float64Array.from(closes), s200 = sma(c, 200), s50 = sma(c, 50);
     return new Map(dates.map((d, k) => [d, { spy200: c[k] > s200[k], spy50: c[k] > s50[k], breadth: NaN }]));
+}
+
+// Idle-cash state after each close: Map date -> { on, vs200 } where `on` means
+// idle cash is held in SPY during the NEXT session and vs200 is SPY's % distance
+// from its 200-day SMA. Before 200 sessions of history the state is off.
+export function idleCashByDate(dates, closes, idle = IDLE) {
+    const c = Float64Array.from(closes), s200 = sma(c, 200);
+    const out = new Map();
+    let on = null;
+    for (let k = 0; k < dates.length; k++) {
+        const vs200 = Number.isNaN(s200[k]) ? NaN : (c[k] / s200[k] - 1) * 100;
+        if (idle.mode === 'always') on = true;
+        else if (idle.mode === 'none') on = false;
+        else if (Number.isNaN(vs200)) on = null;
+        else if (on === null) on = vs200 > 0;
+        else if (on && vs200 < -idle.band) on = false;
+        else if (!on && vs200 > idle.band) on = true;
+        out.set(dates[k], { on: !!on, vs200 });
+    }
+    return out;
 }
 
 export const FAMILY_LABELS = {

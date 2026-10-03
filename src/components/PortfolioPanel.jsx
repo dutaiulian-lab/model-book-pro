@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Wallet } from 'lucide-react';
 
 // Account simulation panel for the Track Record tab: equity curve vs SPY total
@@ -23,12 +23,26 @@ function Stat({ label, value, sub, valueClass = 'text-foreground', title }) {
 }
 
 // Plain SVG chart: equity and SPY (indexed to 100) on top, account drawdown below.
+function useNarrow(query = '(max-width: 639px)') {
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia?.(query);
+    if (!m) return undefined;
+    const on = () => setNarrow(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, [query]);
+  return narrow;
+}
+
 function EquityChart({ daily }) {
   const [hover, setHover] = useState(null);
-  const W = 900, H = 260, DD_H = 70, PAD_L = 44, PAD_R = 12, PAD_T = 10, GAP = 18;
+  // Narrow screens: a smaller viewBox so the 10px labels stay readable.
+  const narrow = useNarrow();
+  const W = narrow ? 360 : 900, H = narrow ? 200 : 260, DD_H = narrow ? 50 : 70, PAD_L = narrow ? 34 : 44, PAD_R = 8, PAD_T = 10, GAP = 18;
   const n = daily.dates.length;
   const geo = useMemo(() => {
-    const all = [...daily.equity, ...daily.spy].filter((v) => v != null);
+    const all = [...daily.equity, ...daily.spy, ...(daily.equity_cash_only || [])].filter((v) => v != null);
     const lo = Math.min(...all), hi = Math.max(...all);
     const span = hi - lo || 1;
     const yMin = lo - span * 0.05, yMax = hi + span * 0.05;
@@ -44,9 +58,9 @@ function EquityChart({ daily }) {
     const step = (yMax - yMin) / 4;
     for (let i = 0; i <= 4; i++) ticks.push(yMin + step * i);
     // One date label per ~quarter of the width.
-    const xLabels = [0, Math.floor(n / 3), Math.floor((2 * n) / 3), n - 1].filter((k, i, a) => a.indexOf(k) === i);
-    return { x, y, yDD, dd, ddMax, eq: line(daily.equity), spy: line(daily.spy), ddArea, ticks, xLabels };
-  }, [daily, n]);
+    const xLabels = (narrow ? [0, n - 1] : [0, Math.floor(n / 3), Math.floor((2 * n) / 3), n - 1]).filter((k, i, a) => a.indexOf(k) === i);
+    return { x, y, yDD, dd, ddMax, eq: line(daily.equity), spy: line(daily.spy), cashOnly: daily.equity_cash_only ? line(daily.equity_cash_only) : null, ddArea, ticks, xLabels };
+  }, [daily, n, W, H, DD_H, PAD_L]);
 
   const onMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -58,7 +72,7 @@ function EquityChart({ daily }) {
 
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H + GAP + DD_H + 18}`} className="w-full h-auto select-none" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${W} ${H + GAP + DD_H + 18}`} className="w-full h-auto select-none touch-pan-y" onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHover(null); }}>
         {geo.ticks.map((t) => (
           <g key={t}>
             <line x1={PAD_L} x2={W - PAD_R} y1={geo.y(t)} y2={geo.y(t)} className="stroke-border" strokeWidth="0.5" />
@@ -67,6 +81,7 @@ function EquityChart({ daily }) {
         ))}
         <line x1={PAD_L} x2={W - PAD_R} y1={geo.y(100)} y2={geo.y(100)} className="stroke-muted-foreground" strokeWidth="0.6" strokeDasharray="3 3" />
         <path d={geo.spy} fill="none" stroke="#94a3b8" strokeWidth="1.5" />
+        {geo.cashOnly && <path d={geo.cashOnly} fill="none" stroke="#10b981" strokeWidth="1.2" strokeDasharray="4 3" strokeOpacity="0.7" />}
         <path d={geo.eq} fill="none" stroke="#10b981" strokeWidth="2" />
         <text x={PAD_L - 6} y={H + GAP + 4} textAnchor="end" className="fill-muted-foreground" fontSize="10">0%</text>
         <text x={PAD_L - 6} y={H + GAP + DD_H} textAnchor="end" className="fill-muted-foreground" fontSize="10">-{geo.ddMax.toFixed(0)}%</text>
@@ -84,7 +99,7 @@ function EquityChart({ daily }) {
           </g>
         )}
       </svg>
-      <div className="absolute top-1 left-14 flex flex-wrap gap-3 text-[11px] font-mono bg-card/80 rounded px-2 py-1">
+      <div className="mt-1 sm:mt-0 sm:absolute sm:top-1 sm:left-14 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] font-mono bg-card/80 rounded px-2 py-1">
         {h != null ? (
           <>
             <span className="text-muted-foreground">{daily.dates[h]}</span>
@@ -96,6 +111,7 @@ function EquityChart({ daily }) {
         ) : (
           <>
             <span className="text-emerald-600 dark:text-emerald-400">━ Account</span>
+            {daily.equity_cash_only && <span className="text-emerald-600/70 dark:text-emerald-400/70">┅ Idle cash in cash</span>}
             <span className="text-slate-500">━ SPY total return</span>
             <span className="text-rose-500">▆ Account drawdown</span>
           </>
@@ -170,6 +186,7 @@ export default function PortfolioPanel({ portfolio, source, liveOverall }) {
           <p className="text-[11px] text-muted-foreground mt-0.5 max-w-3xl">
             ${s.rules.start.toLocaleString()} start, {s.rules.risk_pct}% risk per trade, positions capped at {s.rules.max_pos_pct}%, one position per ticker,
             same-day fills by RS rank. Signals are skipped when cash runs out. Marked to the close daily; SPY includes dividends. {s.from} to {s.to}.
+            {s.idle_cash && s.idle_cash.mode !== 'none' && ` ${s.idle_cash.text}.`}
           </p>
         </div>
       </div>
@@ -179,7 +196,10 @@ export default function PortfolioPanel({ portfolio, source, liveOverall }) {
           label={annual ? 'Account CAGR' : 'Account return'}
           value={signed(annual ? s.cagr : s.total_return)}
           valueClass={pctTone(annual ? s.cagr : s.total_return)}
-          sub={`Total ${signed(s.total_return)} · $${s.end_equity.toLocaleString()}`}
+          sub={s.cash_only
+            ? `Idle cash in cash: ${signed(annual ? s.cash_only.cagr : s.cash_only.total_return)}`
+            : `Total ${signed(s.total_return)} · $${s.end_equity.toLocaleString()}`}
+          title={s.cash_only ? `Total ${signed(s.total_return)} · $${s.end_equity.toLocaleString()}. Same trades with idle cash left in cash: total ${signed(s.cash_only.total_return)}, max drawdown -${s.cash_only.max_dd?.toFixed(1)}%.` : undefined}
         />
         <Stat
           label={annual ? 'SPY CAGR' : 'SPY return'}
@@ -192,8 +212,10 @@ export default function PortfolioPanel({ portfolio, source, liveOverall }) {
         <Stat
           label="Invested"
           value={`${s.avg_exposure.toFixed(0)}%`}
-          sub={`Flat ${s.pct_days_flat.toFixed(0)}% of days · max ${s.max_positions} pos.`}
-          title="Average share of equity in positions"
+          sub={s.avg_spy_share != null && s.idle_cash && s.idle_cash.mode !== 'none'
+            ? `+ ${s.avg_spy_share.toFixed(0)}% in SPY · max ${s.max_positions} pos.`
+            : `Flat ${s.pct_days_flat.toFixed(0)}% of days · max ${s.max_positions} pos.`}
+          title="Average share of equity in setups (and in SPY under the idle-cash rule)"
         />
         <Stat
           label="Top-5 trades"

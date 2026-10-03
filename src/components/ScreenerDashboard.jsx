@@ -270,6 +270,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
 
   const watchlist = data?.watchlist || [];
   const regime = data?.regime;
+  const idle = data?.idle_cash;
   const tracked = data?.tracked || [];
   const rules = data?.rules;
   const regimeOff = regime && (regime.on != null ? regime.on === false : regime.spy_above_200 === false);
@@ -312,8 +313,8 @@ export default function ScreenerDashboard({ onHealthChange }) {
         </div>
 
         {/* METRICS SUMMARY WIDGET */}
-        <div className="flex items-center gap-4 bg-muted/30 border border-border/60 rounded-xl p-3.5 self-stretch md:self-auto justify-between md:justify-end">
-          <div className="text-left">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-muted/30 border border-border/60 rounded-xl p-3.5 self-stretch md:self-auto justify-between md:justify-end">
+          <div className="text-left whitespace-nowrap">
             <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5">
               <Clock className="w-3 h-3"/> Last Scan
               {scanStatus?.status === 'in_progress' && (
@@ -472,6 +473,17 @@ export default function ScreenerDashboard({ onHealthChange }) {
               {regime.spy_sma200 != null ? ` vs 200-day $${regime.spy_sma200.toFixed(2)}` : ` · ${regime.spy_above_200 ? 'above' : 'below'} 200-day`}
               {regime.breadth_50 != null ? ` · ${regime.breadth_50.toFixed(0)}% of stocks above 50-day` : ''}
             </span>
+            {idle && idle.mode !== 'none' && (
+              <div className="font-normal mt-1 text-foreground/90" title={idle.note || ''}>
+                {idle.on
+                  ? '💵 Idle cash: hold SPY with the money not in setups; sell SPY to fund new buys.'
+                  : '💵 Idle cash: keep it in cash (SPY is in a downtrend).'}
+                <span className="font-mono text-muted-foreground ml-2">
+                  SPY {idle.spy_vs_200 != null ? `${idle.spy_vs_200 >= 0 ? '+' : ''}${idle.spy_vs_200.toFixed(1)}%` : '—'} vs 200-day
+                  {idle.mode === 'spy200band' ? (idle.on ? ` · to cash below -${idle.band}%` : ` · back to SPY above +${idle.band}%`) : ''}
+                </span>
+              </div>
+            )}
           </div>
           <div className="text-[11px] text-muted-foreground" title={data?.rules_version ? `Rules ${data.rules_version}` : ''}>
             Leaders: RS ≥ {rules?.rsMin ?? 90}
@@ -667,7 +679,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                     </div>
 
                     {/* TIMING & RISK LAUNCHPAD METER */}
-                    <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/70 flex items-center justify-between text-xs">
+                    <div className="mt-3 p-2.5 rounded-xl bg-muted/40 border border-border/70 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs">
                       <div className="flex items-center gap-2">
                         {isTriggered ? (
                           <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-amber-500/20" title="Live price is above the buy stop">
@@ -683,11 +695,11 @@ export default function ScreenerDashboard({ onHealthChange }) {
                             ⏳ NEAR PIVOT
                           </span>
                         )}
-                        <span className="font-mono text-muted-foreground text-[11px]">
+                        <span className="font-mono text-muted-foreground text-[11px] whitespace-nowrap">
                           {liveDistPivot >= 0 ? `+${liveDistPivot.toFixed(1)}%` : `${liveDistPivot.toFixed(1)}%`} vs pivot
                         </span>
                       </div>
-                      <div className="text-[10px] font-mono font-bold text-muted-foreground">
+                      <div className="text-[10px] font-mono font-bold text-muted-foreground whitespace-nowrap">
                         Buy &gt; <span className="text-foreground">${buyStop.toFixed(2)}</span> · Stop <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className="text-amber-600 dark:text-amber-400">-{stopPct.toFixed(1)}%</span>)
                       </div>
                     </div>
@@ -835,7 +847,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                     <td className="py-1.5 pr-3 font-bold">
                       <a href={`https://www.tradingview.com/chart/?symbol=${w.ticker}`} target="_blank" rel="noreferrer" className="hover:underline">{w.ticker}</a>
                     </td>
-                    <td className="pr-3">{w.setup_type}</td>
+                    <td className="pr-3 whitespace-nowrap">{w.setup_type}</td>
                     <td className="pr-3 text-right font-mono">${w.price?.toFixed(2)}</td>
                     <td className="pr-3 text-right font-mono">${w.buy_stop?.toFixed(2)}</td>
                     <td className="pr-3 text-right font-mono">{w.suggested_stop != null ? `$${w.suggested_stop.toFixed(2)}` : ''}</td>
@@ -876,7 +888,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                     <td className="py-1.5 pr-3 font-bold">
                       <a href={`https://www.tradingview.com/chart/?symbol=${w.ticker}`} target="_blank" rel="noreferrer" className="hover:underline">{w.ticker}</a>
                     </td>
-                    <td className="pr-3">{w.setup_type}{w.gap_pct != null ? ` +${w.gap_pct.toFixed(0)}%` : ''}</td>
+                    <td className="pr-3 whitespace-nowrap">{w.setup_type}{w.gap_pct != null ? ` +${w.gap_pct.toFixed(0)}%` : ''}</td>
                     <td className="pr-3 text-right font-mono">${w.price?.toFixed(2)}</td>
                     <td className="pr-3 text-right font-mono">${w.buy_stop?.toFixed(2)}</td>
                     <td className="pr-3 text-right font-mono">{w.rs_rank?.toFixed(0)}</td>

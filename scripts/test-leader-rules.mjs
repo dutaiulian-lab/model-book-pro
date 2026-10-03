@@ -1,7 +1,7 @@
 // Unit tests for the configurable trade model in lib/leader-rules.mjs.
 //   node scripts/test-leader-rules.mjs
 import assert from 'assert';
-import { initialStop, simulateTrade, regimeOn, RULES } from './lib/leader-rules.mjs';
+import { initialStop, simulateTrade, regimeOn, RULES, idleCashByDate } from './lib/leader-rules.mjs';
 
 const near = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
 let n = 0;
@@ -121,6 +121,21 @@ test(`regime filter (${RULES.regime})`, () => {
         assert.equal(regimeOn({ spy200: false, spy50: true, breadth: 60 }), false);
         assert.equal(regimeOn(false), false); // legacy boolean
     }
+});
+
+test('idle cash: SPY 200-day with a 3% band', () => {
+    const closes = [...Array(199).fill(100), 101, 98, 95, 102, 105];
+    const dates = closes.map((_, k) => `d${String(k).padStart(3, '0')}`);
+    const st = idleCashByDate(dates, closes, { mode: 'spy200band', band: 3 });
+    assert.equal(st.get('d198').on, false);   // < 200 sessions: no SMA yet
+    assert.equal(st.get('d199').on, true);    // first state: above the SMA
+    assert.equal(st.get('d200').on, true);    // -2%: inside the band, stays in SPY
+    assert.equal(st.get('d201').on, false);   // -5%: to cash
+    assert.equal(st.get('d202').on, false);   // +2%: inside the band, stays in cash
+    assert.equal(st.get('d203').on, true);    // +5%: back to SPY
+    assert(near(st.get('d203').vs200, (105 / ((195 * 100 + 101 + 98 + 95 + 102 + 105) / 200) - 1) * 100));
+    assert.equal(idleCashByDate(dates, closes, { mode: 'always' }).get('d000').on, true);
+    assert.equal(idleCashByDate(dates, closes, { mode: 'none' }).get('d203').on, false);
 });
 
 console.log(`\nAll ${n} tests passed.`);
