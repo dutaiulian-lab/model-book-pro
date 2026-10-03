@@ -104,7 +104,7 @@ export default function TrackRecord() {
     if (!record) return [];
     const q = query.trim().toUpperCase();
     return record.signals
-      .filter((s) => s.source === source && (!q || s.ticker.startsWith(q)))
+      .filter((s) => s.source === source && s.tier !== 'track' && (!q || s.ticker.startsWith(q)))
       .sort((a, b) => b.signal_date.localeCompare(a.signal_date) || a.ticker.localeCompare(b.ticker));
   }, [record, source, query]);
 
@@ -132,6 +132,9 @@ export default function TrackRecord() {
             Every qualifying setup is traded mechanically (rules {record.settings.rules_version}). Entry: {record.settings.entry.toLowerCase()}.
             Stop: {record.settings.stop?.toLowerCase()}. Exit: {record.settings.exit.toLowerCase()}.
             {record.settings.signal || `A stock counts as a new signal after ${record.settings.new_signal_lookback} scan days off the list`}.
+            {record.settings.market ? ` Market filter: ${record.settings.market}.` : ''}
+            {record.settings.families ? ` Buy setups: ${record.settings.families.join(', ')}.` : ''}
+            {record.settings.tracked_families?.length ? ` Tracked separately (not counted here): ${record.settings.tracked_families.join(', ')}.` : ''}
           </p>
         </div>
         <div className="flex bg-muted/40 border border-border/60 rounded-xl p-1 text-xs font-bold self-stretch md:self-auto">
@@ -163,7 +166,7 @@ export default function TrackRecord() {
             <ul className="list-disc pl-4 space-y-0.5">
               <li>The rules are price-only; the EPS / revenue growth shown on cards is informational and not part of the tested rules.</li>
               <li>Stocks delisted since then are missing from the universe, and those are mostly failures.</li>
-              <li>The rules were selected on 2007–2026 data, so this whole window is in-sample. Run walk-forward, the same selection procedure earned about 2.5%/yr from 2010 to 2026, well below SPY.</li>
+              <li>The rules were selected on 2007–2026 data, so this whole window is in-sample. Run walk-forward (each year picked only from earlier years), the selection procedure earned about 8.6%/yr from 2010 to 2026 vs 12.0% for SPY. See research/reports for the yearly re-study.</li>
               <li>The per-trade stats count every setup as a trade. The account panel applies sizing, cash limits and one position per ticker.</li>
             </ul>
             <div>Use it to compare setups and timing groups, not as proof the system works.</div>
@@ -216,6 +219,12 @@ export default function TrackRecord() {
       <BreakdownTable title="By timing status" groups={sum.by_timing} labelFn={(k) => TIMING_LABELS[k] || k} />
       {sum.by_year && <BreakdownTable title="By year" groups={sum.by_year} />}
       <BreakdownTable title="By signal month" groups={sum.by_month} />
+      {Object.keys(record.summary.tracked?.[source]?.by_setup || {}).length > 0 && (
+        <BreakdownTable
+          title={`Tracked separately, not buy signals (${record.settings.tracked_families?.join(', ') || 'other families'})`}
+          groups={record.summary.tracked[source].by_setup}
+        />
+      )}
 
       {/* SIGNALS */}
       <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5">

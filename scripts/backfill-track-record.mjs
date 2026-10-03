@@ -1,9 +1,12 @@
-// Backfill of the track record: replays the F6 leader rules (lib/leader-rules.mjs)
+// Backfill of the track record: replays the active leader rules (lib/rules.json
+// via lib/leader-rules.mjs)
 // over the last BACKFILL_YEARS years, exactly as the research did:
 //   - setups are detected and de-duplicated per ticker over its full history;
 //   - RS and liquidity ranks are percentiles across the liquid US equity
 //     universe of that day;
-//   - every qualifying setup is one signal, traded with the shared trade model.
+//   - market breadth (for the breadth50 regime) is measured over that universe;
+//   - every qualifying setup is one signal, traded with the shared trade model;
+//     setups of separately tracked families are recorded with tier 'track'.
 //
 // Limitations (shown in the dashboard too): today's ticker list omits stocks
 // delisted since, which flatters results; fundamentals and earnings dates are not
@@ -12,8 +15,8 @@
 // Usage: node scripts/backfill-track-record.mjs [years=3]
 import { fetchAllUSTickers } from './lib/universe.mjs';
 import {
-    RULES, prepare, rsScore, dollarVol, inRankUniverse, countedSetups, passesBuyRules, initialStop,
-    percentile, sma, splitFactors, FAMILY_LABELS,
+    RULES, RULES_VERSION, prepare, rsScore, dollarVol, inRankUniverse, countedSetups, passesBuyRules,
+    passesTrackRules, initialStop, percentile, spyRegimeByDate, splitFactors, FAMILY_LABELS,
 } from './lib/leader-rules.mjs';
 import {
     computeOutcome, fetchDailyBars, pickFields, readJson, signalId,
@@ -32,9 +35,7 @@ async function main() {
     if (!spy?.length) throw new Error('Could not fetch SPY');
     const spyByDate = new Map(spy.map(b => [b.date, b]));
     const spyDates = spy.map(b => b.date);
-    const spyC = Float64Array.from(spy, b => b.close);
-    const spy200 = sma(spyC, 200);
-    const spyAbove = new Map(spyDates.map((d, k) => [d, spyC[k] > spy200[k]]));
+    const mktByDate = spyRegimeByDate(spyDates, spy.map(b => b.close));
     const lastDate = spyDates[spyDates.length - 1];
     const FROM = spyDates.find(d => d > minusYears(lastDate, BACKFILL_YEARS));
     const dates = spyDates.filter(d => d >= FROM);
@@ -46,6 +47,9 @@ async function main() {
     // Pass 1: per ticker, rank inputs for every day, and candidate setups that
     // pass every rule except the ranks (outcome computed while bars are in hand).
     const rsBy = new Map(dates.map(d => [d, []])), dvBy = new Map(dates.map(d => [d, []]));
+    const breadthBy = new Map(dates.map(d => [d, { n: 0, up: 0 }]));
+    // Pre-filter: every rule except the ranks and the market filter.
+    const OPEN_MKT = { spy200: true, spy50: true, breadth: 100 }, TOP = { rs: 100, dvPct: 100 };
     const cands = [];
     let fetched = 0, failed = 0, skippedType = 0;
     const batchSize = 25;
@@ -68,12 +72,13 @@ async function main() {
                 const sc = rsScore(S, k);
                 if (!Number.isNaN(sc)) rsBy.get(d).push(sc);
                 dvBy.get(d).push(dollarVol(S, k));
+                if (!Number.isNaN(S.sma50[k])) { const b = breadthBy.get(d); b.n++; if (S.c[k] > S.sma50[k]) b.up++; }
             }
             for (const st of countedSetups(S, 30, S.n - 1)) {
                 const d = S.dates[st.s];
                 if (d < FROM) continue;
-                // All rules except the two ranks (use 100 so only they can fail later).
-                if (!passesBuyRules(st, { rs: 100, dvPct: 100 }, !!spyAbove.get(d))) continue;
+                const tier = passesBuyRules(st, TOP, OPEN_MKT) ? 'buy' : passesTrackRules(st, TOP, OPEN_MKT) ? 'track' : null;
+                if (!tier) continue;
                 const c = S.c[st.s];
                 const m = {
                     ticker, family: st.fam, setup_type: FAMILY_LABELS[st.fam], price: c,
@@ -81,7 +86,7 @@ async function main() {
                     recent_pivot: st.pivot, struct_stop: st.structStop,
                     suggested_stop: initialStop(st.pivot, st.structStop),
                     suggested_stop_pct: RULES.stopMaxPct, up_from_low52: st.feats.upLow52,
-                    relative_strength_3mo: null,
+                    relative_strength_3mo: null, tier,
                 };
                 m.suggested_stop_pct = (st.pivot - m.suggested_stop) / st.pivot * 100;
                 const sig = { id: signalId(ticker, d, st.fam), source: 'backfill', signal_date: d, ...pickFields(m, d) };
@@ -89,7 +94,7 @@ async function main() {
                 // Days the live screener would have listed it (until it triggers).
                 const lastListed = Math.min(S.n - 1, st.s + RULES.entryWindow - 1, st.eb >= 0 ? st.eb - 1 : Infinity);
                 const listed = S.dates.slice(st.s, lastListed + 1);
-                cands.push({ sig, rsScore: rsScore(S, st.s), dv: st.feats.dv, listed });
+                cands.push({ sig, st: { fam: st.fam, trap: st.trap, feats: st.feats }, tier, rsScore: rsScore(S, st.s), dv: st.feats.dv, listed });
             }
         }));
         await sleep(150);
@@ -105,10 +110,13 @@ async function main() {
     for (const c of cands) {
         const d = c.sig.signal_date;
         const ranks = { rs: percentile(rsBy.get(d), c.rsScore), dvPct: percentile(dvBy.get(d), c.dv) };
-        if (!(ranks.rs >= RULES.rsMin) || !(ranks.dvPct >= RULES.dvPctMin)) continue;
+        const b = breadthBy.get(d);
+        const mkt = { ...mktByDate.get(d), breadth: b?.n ? b.up / b.n * 100 : NaN };
+        if (!(c.tier === 'buy' ? passesBuyRules : passesTrackRules)(c.st, ranks, mkt)) continue;
         c.sig.rs_rank = Number(ranks.rs.toFixed(1));
         c.sig.dv_rank = Number(ranks.dvPct.toFixed(1));
         signals.push(c.sig);
+        if (c.tier === 'track') continue;
         for (const ld of c.listed) if (days[ld] && !days[ld].tickers.includes(c.sig.ticker)) days[ld].tickers.push(c.sig.ticker);
     }
 
@@ -124,10 +132,10 @@ async function main() {
     writeTrackRecord([...signals, ...keptSignals], { ...days, ...liveDays }, {
         backfill: {
             generated_at: new Date().toISOString(), from: FROM, to: lastDate, universe: tickers.length,
-            years: BACKFILL_YEARS, rules_version: prevRecord.settings?.rules_version,
+            years: BACKFILL_YEARS, rules_version: RULES_VERSION,
         },
     }, spy);
-    const closed = signals.filter(s => s.outcome.status === 'closed');
+    const closed = signals.filter(s => s.outcome.status === 'closed' && s.tier !== 'track');
     const avgR = closed.reduce((a, s) => a + s.outcome.r, 0) / (closed.length || 1);
     console.log(`Wrote ${signals.length} backfill signals (${closed.length} closed, avg R ${avgR.toFixed(3)}) over ${dates.length} sessions.`);
 }

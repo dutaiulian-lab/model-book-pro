@@ -270,13 +270,17 @@ export default function ScreenerDashboard({ onHealthChange }) {
 
   const watchlist = data?.watchlist || [];
   const regime = data?.regime;
-  const regimeOff = regime && regime.spy_above_200 === false;
+  const tracked = data?.tracked || [];
+  const rules = data?.rules;
+  const regimeOff = regime && (regime.on != null ? regime.on === false : regime.spy_above_200 === false);
+  const regimeText = regime?.rule_text || 'SPY above its 200-day SMA';
+  // Tabs for the families that are buy rules today (rules.json via market-state).
   const FAMILY_TABS = [
     ['RANGE', 'Launchpad Coils', 'emerald'],
     ['TIGHT', 'Tight Ranges', 'sky'],
     ['BASE', 'Base Breakouts', 'blue'],
     ['HTF', 'High Tight Flags', 'purple'],
-  ];
+  ].filter(([f]) => !rules?.families || rules.families.includes(f));
   const famCount = (f) => matches.filter(m => m.family === f).length;
   const readyCount = matches.filter(m => m.timing_status === 'AT_PIVOT').length;
 
@@ -461,14 +465,19 @@ export default function ScreenerDashboard({ onHealthChange }) {
         }`}>
           <div className="font-bold text-foreground">
             {regimeOff
-              ? '🔴 SPY closed below its 200-day SMA: the rules take no new buys. Watchlist only.'
-              : '🟢 SPY above its 200-day SMA: new buys allowed.'}
+              ? `🔴 Market filter off (needs: ${regimeText}): the rules take no new buys. Watchlist only.`
+              : `🟢 Market filter on (${regimeText}): new buys allowed.`}
             <span className="font-mono font-normal text-muted-foreground ml-2">
-              SPY ${regime.spy_close?.toFixed(2)} vs 200-day ${regime.spy_sma200?.toFixed(2)}
+              SPY ${regime.spy_close?.toFixed(2)}
+              {regime.spy_sma200 != null ? ` vs 200-day $${regime.spy_sma200.toFixed(2)}` : ` · ${regime.spy_above_200 ? 'above' : 'below'} 200-day`}
+              {regime.breadth_50 != null ? ` · ${regime.breadth_50.toFixed(0)}% of stocks above 50-day` : ''}
             </span>
           </div>
           <div className="text-[11px] text-muted-foreground" title={data?.rules_version ? `Rules ${data.rules_version}` : ''}>
-            Leaders: RS ≥ {data?.rules?.rsMin ?? 90} · top {100 - (data?.rules?.dvPctMin ?? 85)}% liquidity · ≥ +{data?.rules?.upLow52Min ?? 100}% off 52w low · ≤ {data?.rules?.depth52Max ?? 35}% off high
+            Leaders: RS ≥ {rules?.rsMin ?? 90}
+            {(rules?.dvPctMin ?? 85) > 0 ? ` · top ${100 - (rules?.dvPctMin ?? 85)}% liquidity` : ` · $${((rules?.dvMin ?? 10e6) / 1e6).toFixed(0)}M+ daily volume`}
+            {` · ≥ +${rules?.upLow52Min ?? 100}% off 52w low`}
+            {rules?.depth52Max != null ? ` · ≤ ${rules.depth52Max}% off high` : ''}
           </div>
         </div>
       )}
@@ -541,8 +550,8 @@ export default function ScreenerDashboard({ onHealthChange }) {
           <h3 className="text-base font-bold text-foreground">No Setups in this Category Today</h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
             {regimeOff
-              ? 'SPY is below its 200-day SMA, so the rules take no new buys. Leaders still setting up are on the watchlist below.'
-              : 'No RS-90+ liquid leader has an untriggered setup in this category. Cash is a position.'}
+              ? 'The market filter is off, so the rules take no new buys. Leaders still setting up are on the watchlist below.'
+              : `No RS-${rules?.rsMin ?? 90}+ liquid leader has an untriggered setup in this category. Cash is a position.`}
           </p>
         </div>
       ) : (
@@ -795,6 +804,50 @@ export default function ScreenerDashboard({ onHealthChange }) {
               );
             });
           })()}
+        </div>
+      )}
+
+      {/* SEPARATELY TRACKED FAMILIES (not buy signals) */}
+      {tracked.length > 0 && (
+        <div className="bg-card border border-purple-500/20 rounded-2xl p-5 shadow-sm space-y-3">
+          <div>
+            <h3 className="text-sm font-black text-foreground">
+              🧪 Tracked separately: {(data?.rules_text?.tracked_families || ['High Tight Flags']).join(', ')} ({tracked.length})
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              These setups pass every buy rule, but their family is not a buy rule{data?.rules_text?.track_note ? `: ${data.rules_text.track_note}` : '.'}
+              {' '}They are recorded in the track record under their own tier so the yearly re-study can re-admit them on
+              evidence. Not buy signals.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-[10px] uppercase text-muted-foreground text-left">
+                  <th className="py-1 pr-3">Ticker</th><th className="pr-3">Setup</th><th className="pr-3 text-right">Price</th>
+                  <th className="pr-3 text-right">Buy stop</th><th className="pr-3 text-right">Stop</th><th className="pr-3 text-right">RS</th>
+                  <th className="pr-3 text-right">Liq.</th><th className="pr-3 text-right">Run-up</th><th className="pr-3 text-right">Days left</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tracked.map((w) => (
+                  <tr key={`${w.ticker}-${w.signal_date}`} className="border-t border-border/50">
+                    <td className="py-1.5 pr-3 font-bold">
+                      <a href={`https://www.tradingview.com/chart/?symbol=${w.ticker}`} target="_blank" rel="noreferrer" className="hover:underline">{w.ticker}</a>
+                    </td>
+                    <td className="pr-3">{w.setup_type}</td>
+                    <td className="pr-3 text-right font-mono">${w.price?.toFixed(2)}</td>
+                    <td className="pr-3 text-right font-mono">${w.buy_stop?.toFixed(2)}</td>
+                    <td className="pr-3 text-right font-mono">{w.suggested_stop != null ? `$${w.suggested_stop.toFixed(2)}` : ''}</td>
+                    <td className="pr-3 text-right font-mono">{w.rs_rank?.toFixed(0)}</td>
+                    <td className="pr-3 text-right font-mono">{w.dv_rank?.toFixed(0)}</td>
+                    <td className="pr-3 text-right font-mono">{w.up_from_low52 != null ? `+${w.up_from_low52.toFixed(0)}%` : ''}</td>
+                    <td className="pr-3 text-right font-mono">{w.sessions_left}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

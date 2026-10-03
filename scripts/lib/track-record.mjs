@@ -2,7 +2,8 @@
 // happened next, so the screener's rules can be judged on evidence.
 //
 // Trade model (the plan the 20-year rule study selected; mechanical on purpose,
-// implemented once in lib/leader-rules.mjs simulateTrade):
+// implemented once in lib/leader-rules.mjs simulateTrade; the stop and exit
+// types come from lib/rules.json, defaults described below):
 //   - A signal is one setup: ticker + setup day + setup family. The screener
 //     lists it every day its buy stop is live, but it is recorded once.
 //   - Entry: buy stop at the pivot, valid ENTRY_WINDOW sessions after the
@@ -16,10 +17,16 @@
 //     the fill, the first close below the 21-day EMA instead. Max 252 sessions.
 //   - R = (exit - entry) / (entry - stop). Account return assumes 1% account
 //     risk per trade with positions capped at 25% of the account.
+//   - Setups of families in rules.json `trackFamilies` (e.g. High Tight Flags)
+//     are recorded with tier 'track': measured the same way but kept out of the
+//     main stats and the simulated account, so the yearly re-study has live
+//     evidence on whether to re-admit them.
 import fs from 'fs';
 import { simulatePortfolio } from './portfolio.mjs';
 import path from 'path';
-import { RULES, RULES_VERSION, prepare, simulateTrade, parseChart } from './leader-rules.mjs';
+import {
+    RULES, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, simulateTrade, parseChart,
+} from './leader-rules.mjs';
 
 export const ENTRY_WINDOW = RULES.entryWindow;
 export const MAX_HOLD_DAYS = RULES.maxHold;
@@ -36,8 +43,11 @@ export const PICK_DAYS_PATH = path.join(process.cwd(), 'public', 'pick-days.json
 
 export const SETTINGS = {
     entry: `Buy stop at the pivot, valid ${ENTRY_WINDOW} sessions after the setup day`,
-    stop: `Structural stop clamped to ${RULES.stopMinPct}%-${RULES.stopMaxPct}% below the fill`,
-    exit: `First close below the 50-day SMA (21-day EMA once up ${RULES.trailAfterGainPct}%), or session ${MAX_HOLD_DAYS}`,
+    stop: STOP_TEXT[RULES.stop],
+    exit: `${EXIT_TEXT[RULES.exit]}, or session ${MAX_HOLD_DAYS}`,
+    market: REGIME_TEXT[RULES.regime],
+    families: RULES.families.map(f => FAMILY_LABELS[f]),
+    tracked_families: RULES.trackFamilies.map(f => FAMILY_LABELS[f]),
     sizing: '1% account risk per trade, position capped at 25%',
     signal: 'Each setup (ticker, setup day, family) counts once',
     entry_window: ENTRY_WINDOW,
@@ -59,6 +69,7 @@ export function pickFields(m, refDate) {
         ticker: m.ticker,
         family: m.family,
         setup_type: m.setup_type,
+        ...(m.tier === 'track' ? { tier: 'track' } : {}),
         timing_status: m.timing_status,
         price: round(m.price, 4),
         pivot: round(m.recent_pivot, 4),
@@ -193,10 +204,12 @@ function groupStats(list, keyFn) {
     return Object.fromEntries(Object.entries(groups).sort().map(([k, v]) => [k, stats(v)]));
 }
 
+export const isTracked = (s) => s.tier === 'track';
+
 export function summarize(signals) {
     const out = {};
     for (const source of ['live', 'backfill']) {
-        const s = signals.filter(x => x.source === source);
+        const s = signals.filter(x => x.source === source && !isTracked(x));
         out[source] = {
             overall: stats(s),
             by_setup: groupStats(s, x => x.setup_type),
@@ -204,6 +217,12 @@ export function summarize(signals) {
             by_timing: groupStats(s, x => x.timing_status),
             by_month: groupStats(s, x => x.signal_date.slice(0, 7)),
         };
+    }
+    // Separately tracked families (not buy signals), per source and family.
+    out.tracked = {};
+    for (const source of ['live', 'backfill']) {
+        const s = signals.filter(x => x.source === source && isTracked(x));
+        out.tracked[source] = { overall: stats(s), by_setup: groupStats(s, x => x.setup_type), by_year: groupStats(s, x => x.signal_date.slice(0, 4)) };
     }
     return out;
 }
@@ -221,7 +240,7 @@ export function readJson(file, fallback) {
 export function portfolios(signals, spy) {
     const out = {};
     for (const source of ['live', 'backfill']) {
-        out[source] = simulatePortfolio(signals.filter(s => s.source === source), spy);
+        out[source] = simulatePortfolio(signals.filter(s => s.source === source && !isTracked(s)), spy);
     }
     return out;
 }

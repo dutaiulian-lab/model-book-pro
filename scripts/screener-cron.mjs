@@ -4,8 +4,9 @@ import YahooFinance from 'yahoo-finance2';
 import { calculatePerformance } from './lib/technicals.mjs';
 import { fetchAllUSTickers } from './lib/universe.mjs';
 import {
-    RULES, WATCH, RULES_VERSION, FAMILY_LABELS, prepare, rsScore, dollarVol, inRankUniverse, detect,
-    countedSetups, passesBuyRules, passesWatch, bestSetup, initialStop, percentile, sma, splitFactors, parseChart,
+    RULES, WATCH, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, rsScore, dollarVol,
+    inRankUniverse, detect, countedSetups, passesBuyRules, passesTrackRules, passesWatch, bestSetup, initialStop,
+    percentile, regimeOn, spyRegimeByDate, splitFactors, parseChart,
 } from './lib/leader-rules.mjs';
 
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
@@ -23,7 +24,9 @@ async function sendDiscordSummary(output, spy3mo) {
     const watch = output.watchlist || [];
     const count = matches.length;
     const isZero = count === 0;
-    const regimeOn = output.regime?.spy_above_200;
+    const regimeIsOn = output.regime?.on ?? output.regime?.spy_above_200;
+    const tracked = output.tracked || [];
+    const famNames = RULES.families.map(f => FAMILY_LABELS[f]).join(' / ');
     const color = isZero ? 0x64748b : 0x10b981; // Slate gray if 0, Emerald green if matches
 
     const fields = [
@@ -33,13 +36,13 @@ async function sendDiscordSummary(output, spy3mo) {
             inline: true
         },
         {
-            name: "🎯 Buy Setups (F6)",
+            name: `🎯 Buy Setups (${RULES_VERSION})`,
             value: isZero ? "0 (Cash Posture)" : `${count} Active Buy-Stops`,
             inline: true
         },
         {
             name: "📊 Market Regime",
-            value: `${regimeOn ? '🟢 SPY > 200-day' : '🔴 SPY < 200-day (no new buys)'} · 3M ${fmtPct(spy3mo)}`,
+            value: `${regimeIsOn ? '🟢' : '🔴'} ${output.regime?.rule_text || 'SPY vs 200-day'}${regimeIsOn ? '' : ': OFF (no new buys)'} · SPY 3M ${fmtPct(spy3mo)}`,
             inline: true
         }
     ];
@@ -47,9 +50,9 @@ async function sendDiscordSummary(output, spy3mo) {
     if (isZero) {
         fields.push({
             name: "🛡️ Guidance",
-            value: regimeOn
-                ? "No RS-90+ liquid leader has an untriggered setup (Coil / Tight Range / Base / High Tight Flag) today. Capital preservation."
-                : "SPY is below its 200-day SMA: the rules take no new buys. Watchlist only.",
+            value: regimeIsOn
+                ? `No RS-${RULES.rsMin}+ liquid leader has an untriggered setup (${famNames}) today. Capital preservation.`
+                : "The market filter is off: the rules take no new buys. Watchlist only.",
             inline: false
         });
     } else {
@@ -70,6 +73,13 @@ async function sendDiscordSummary(output, spy3mo) {
             });
         }
     }
+    if (tracked.length) {
+        fields.push({
+            name: `🧪 Tracked separately (${tracked.length}, not buy signals)`,
+            value: tracked.slice(0, 12).map(w => `${w.ticker} (${w.setup_type}, RS ${w.rs_rank.toFixed(0)})`).join(' · '),
+            inline: false
+        });
+    }
     if (watch.length) {
         fields.push({
             name: `👀 Leader Watchlist (${watch.length}, not buy signals)`,
@@ -87,8 +97,8 @@ async function sendDiscordSummary(output, spy3mo) {
                     ? "🛡️ Daily Market Screener: 0 Buy Setups"
                     : `🚀 Daily Market Screener: ${count} Leader Buy Setups`,
                 description: isZero
-                    ? "The evening scan has completed across all US equities. No stock passed the F6 leader rules today."
-                    : `**${count} market leaders** (RS ≥ ${RULES.rsMin}, top ${100 - RULES.dvPctMin}% liquidity, ≥ +${RULES.upLow52Min}% off the 52-week low) have an active buy-stop for tomorrow.`,
+                    ? `The evening scan has completed across all US equities. No stock passed the ${RULES_VERSION} leader rules today.`
+                    : `**${count} market leaders** (RS ≥ ${RULES.rsMin}${RULES.dvPctMin > 0 ? `, top ${100 - RULES.dvPctMin}% liquidity` : ''}, ≥ +${RULES.upLow52Min}% off the 52-week low) have an active buy-stop for tomorrow.`,
                 color,
                 fields,
                 footer: {
@@ -203,7 +213,10 @@ function scanTicker(ticker, history, splits, meta, spyDates) {
     const n = S.n;
     const recent = {};
     for (let k = Math.max(0, n - RULES.entryWindow); k < n; k++) {
-        if (inRankUniverse(S, k)) recent[S.dates[k]] = { rs: rsScore(S, k), dv: dollarVol(S, k) };
+        if (inRankUniverse(S, k)) {
+            // a50: above its 50-day SMA (null before 50 bars), for market breadth.
+            recent[S.dates[k]] = { rs: rsScore(S, k), dv: dollarVol(S, k), a50: Number.isNaN(S.sma50[k]) ? null : S.c[k] > S.sma50[k] };
+        }
     }
     const pack = (st, s) => {
         let struct = st.structStop;
@@ -287,14 +300,10 @@ async function run() {
     const asOf = spyData[spyData.length - 1].date;
     const spyDates = spyData.map(b => b.date);
     const spyC = Float64Array.from(spyData, b => b.close);
-    const spy200 = sma(spyC, 200);
-    const spyAbove = new Map(spyDates.map((d, k) => [d, spyC[k] > spy200[k]]));
-    const regime = {
-        spy_above_200: !!spyAbove.get(asOf),
-        spy_close: spyC[spyC.length - 1],
-        spy_sma200: spy200[spy200.length - 1],
-    };
-    console.log(`Scanning as of the ${asOf} close. SPY ${regime.spy_above_200 ? 'above' : 'BELOW'} its 200-day SMA.`);
+    // Market flags per date; breadth is filled in after pass 1 (needs the universe).
+    const mktByDate = spyRegimeByDate(spyDates, spyC);
+    const mktFor = (d) => mktByDate.get(d) || { spy200: false, spy50: false, breadth: NaN };
+    console.log(`Scanning as of the ${asOf} close. SPY ${mktFor(asOf).spy200 ? 'above' : 'BELOW'} its 200-day SMA.`);
 
     // Scheduled runs on market holidays would just republish the previous
     // session (and re-post to Discord). Manual runs always proceed.
@@ -347,15 +356,28 @@ async function run() {
         process.exit(1);
     }
 
-    // Percentile universes per date (liquid US equities that day).
-    const rsBy = new Map(), dvBy = new Map();
+    // Percentile universes and breadth per date (liquid US equities that day).
+    const rsBy = new Map(), dvBy = new Map(), breadthBy = new Map();
     for (const r of results.values()) {
         for (const [d, x] of Object.entries(r.recent)) {
-            if (!rsBy.has(d)) { rsBy.set(d, []); dvBy.set(d, []); }
+            if (!rsBy.has(d)) { rsBy.set(d, []); dvBy.set(d, []); breadthBy.set(d, { n: 0, up: 0 }); }
             if (!Number.isNaN(x.rs)) rsBy.get(d).push(x.rs);
             dvBy.get(d).push(x.dv);
+            if (x.a50 != null) { const b = breadthBy.get(d); b.n++; if (x.a50) b.up++; }
         }
     }
+    for (const [d, b] of breadthBy) if (mktByDate.has(d) && b.n) mktByDate.get(d).breadth = b.up / b.n * 100;
+    const mktToday = mktFor(asOf);
+    const regime = {
+        rule: RULES.regime,
+        rule_text: REGIME_TEXT[RULES.regime],
+        on: regimeOn(mktToday),
+        spy_above_200: !!mktToday.spy200,
+        spy_above_50: !!mktToday.spy50,
+        breadth_50: Number.isFinite(mktToday.breadth) ? Number(mktToday.breadth.toFixed(1)) : null,
+        spy_close: spyC[spyC.length - 1],
+    };
+    console.log(`Market filter (${regime.rule_text}): ${regime.on ? 'ON' : 'OFF'}; breadth ${regime.breadth_50}% above 50-day.`);
     for (const a of rsBy.values()) a.sort((x, y) => x - y);
     for (const a of dvBy.values()) a.sort((x, y) => x - y);
     const universeToday = dvBy.get(asOf)?.length || 0;
@@ -371,23 +393,37 @@ async function run() {
 
     const techMatches = [];
     const watchlist = [];
+    const tracked = [];
+    const setupList = (list) => list.map(x => ({
+        family: x.st.fam, setup_type: FAMILY_LABELS[x.st.fam], signal_date: x.st.date,
+        pivot: x.st.pivot, struct_stop: x.st.structStop, suggested_stop: initialStop(x.st.pivot, x.st.structStop),
+        rs_rank: x.ranks.rs, dv_rank: x.ranks.dvPct,
+    }));
     for (const [ticker, r] of results) {
         if (!r.setups && !r.watch) continue;
-        const buys = (r.setups || []).map(st => ({ st, ranks: ranksFor(st) }))
-            .filter(x => passesBuyRules(x.st, x.ranks, !!spyAbove.get(x.st.date)));
+        const ranked = (r.setups || []).map(st => ({ st, ranks: ranksFor(st) }));
+        const buys = ranked.filter(x => passesBuyRules(x.st, x.ranks, mktFor(x.st.date)));
+        // Families tracked separately (e.g. High Tight Flags): same filters,
+        // recorded in the track record under their own tier, never buy signals
+        // (a ticker can be in both lists).
+        const tr = ranked.filter(x => passesTrackRules(x.st, x.ranks, mktFor(x.st.date)));
+        if (tr.length) {
+            const best = bestSetup(tr.map(x => x.st));
+            const m = buildMatch(ticker, r, best, tr.find(x => x.st === best).ranks, spy3mo);
+            m.tier = 'track';
+            m.setups = setupList(tr);
+            tracked.push(m);
+        }
         if (buys.length) {
             const best = bestSetup(buys.map(x => x.st));
             const m = buildMatch(ticker, r, best, buys.find(x => x.st === best).ranks, spy3mo);
             // Every qualifying setup is tracked separately in the track record
             // (as in the research); the card shows the one that triggers first.
-            m.setups = buys.map(x => ({
-                family: x.st.fam, setup_type: FAMILY_LABELS[x.st.fam], signal_date: x.st.date,
-                pivot: x.st.pivot, struct_stop: x.st.structStop, suggested_stop: initialStop(x.st.pivot, x.st.structStop),
-                rs_rank: x.ranks.rs, dv_rank: x.ranks.dvPct,
-            }));
+            m.setups = setupList(buys);
             techMatches.push(m);
             continue;
         }
+        if (tr.length) continue;
         const w = (r.watch || []).map(st => ({ st, ranks: ranksFor(st) })).filter(x => passesWatch(x.st, x.ranks));
         if (w.length) {
             const best = bestSetup(w.map(x => x.st));
@@ -395,15 +431,16 @@ async function run() {
             watchlist.push({
                 ...buildMatch(ticker, r, best, ranks, spy3mo),
                 gap_pct: best.gapPct ?? null,
-                why_not_buy: whyNotBuy(best, ranks, regime.spy_above_200),
+                why_not_buy: whyNotBuy(best, ranks, regimeOn(mktFor(best.date))),
             });
         }
     }
     techMatches.sort((a, b) => b.rs_rank - a.rs_rank);
+    tracked.sort((a, b) => b.rs_rank - a.rs_rank);
     watchlist.sort((a, b) => b.rs_rank - a.rs_rank);
     watchlist.splice(WATCHLIST_MAX);
 
-    console.log(`\nTechnical Scan found ${techMatches.length} F6 buy setups and ${watchlist.length} watchlist leaders.`);
+    console.log(`\nTechnical Scan found ${techMatches.length} buy setups, ${tracked.length} separately tracked setups and ${watchlist.length} watchlist leaders.`);
     console.log(`Fundamentals / earnings lookup (informational; the tested rules are price-only)...`);
 
     // Fundamentals are shown on the card and flag earnings risk, but do not
@@ -437,7 +474,7 @@ async function run() {
                 earnings_date: earningsDateStr,
                 earnings_soon: earningsSoon,
             });
-            console.log(`[F6] ${match.ticker} (${match.setup_type}) RS ${match.rs_rank.toFixed(0)} - EPS: ${epsGrowth == null ? 'n/a' : (epsGrowth * 100).toFixed(1) + '%'}, Rev: ${revGrowth == null ? 'n/a' : (revGrowth * 100).toFixed(1) + '%'}${earningsSoon ? ' - EARNINGS ' + earningsDateStr : ''}`);
+            console.log(`[BUY] ${match.ticker} (${match.setup_type}) RS ${match.rs_rank.toFixed(0)} - EPS: ${epsGrowth == null ? 'n/a' : (epsGrowth * 100).toFixed(1) + '%'}, Rev: ${revGrowth == null ? 'n/a' : (revGrowth * 100).toFixed(1) + '%'}${earningsSoon ? ' - EARNINGS ' + earningsDateStr : ''}`);
         } catch (e) {
             fundStats.failed++;
             console.log(`[FUNDAMENTALS ERROR] ${match.ticker}: ${e.name}: ${String(e.message).slice(0, 200)}`);
@@ -451,7 +488,13 @@ async function run() {
         timestamp: new Date().toISOString(),
         as_of: asOf,
         rules_version: RULES_VERSION,
-        rules: RULES,
+        rules: { ...RULES, depth52Max: Number.isFinite(RULES.depth52Max) ? RULES.depth52Max : null },
+        rules_text: {
+            families: RULES.families.map(f => FAMILY_LABELS[f]),
+            tracked_families: RULES.trackFamilies.map(f => FAMILY_LABELS[f]),
+            track_note: RULES.trackNote,
+            regime: REGIME_TEXT[RULES.regime], stop: STOP_TEXT[RULES.stop], exit: EXIT_TEXT[RULES.exit],
+        },
         watch_rules: WATCH,
         regime,
         total_scanned: tickers.length,
@@ -463,23 +506,26 @@ async function run() {
             fundamentals_failed: fundStats.failed,
         },
         matches: finalMatches,
+        tracked,
         watchlist,
     };
 
     if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
-    console.log(`Saved results: ${finalMatches.length} buy setups, ${watchlist.length} watchlist leaders.`);
+    console.log(`Saved results: ${finalMatches.length} buy setups, ${tracked.length} tracked, ${watchlist.length} watchlist leaders.`);
 
     await sendDiscordSummary(output, spy3mo);
 }
 
 // Short reason a watchlist leader is not a buy signal.
-function whyNotBuy(st, ranks, regimeOn) {
+function whyNotBuy(st, ranks, marketOn) {
     const f = st.feats;
+    if (RULES.trackFamilies.includes(st.fam)) return `${FAMILY_LABELS[st.fam]}: tracked separately, not a buy rule`;
     if (!RULES.families.includes(st.fam)) return st.fam === 'GAP' ? 'Power gap (watch for a setup)' : 'Setup not in buy rules';
-    if (!regimeOn) return 'SPY below 200-day';
-    if (!(ranks.rs >= RULES.rsMin)) return `RS ${ranks.rs.toFixed(0)} < ${RULES.rsMin}`;
-    if (!(ranks.dvPct >= RULES.dvPctMin)) return `Liquidity rank ${ranks.dvPct.toFixed(0)} < ${RULES.dvPctMin}`;
+    if (!marketOn) return `Market filter off (${REGIME_TEXT[RULES.regime]})`;
+    if (RULES.rsMin > 0 && !(ranks.rs >= RULES.rsMin)) return `RS ${ranks.rs.toFixed(0)} < ${RULES.rsMin}`;
+    if (RULES.dvPctMin > 0 && !(ranks.dvPct >= RULES.dvPctMin)) return `Liquidity rank ${ranks.dvPct.toFixed(0)} < ${RULES.dvPctMin}`;
+    if (!(f.dv >= RULES.dvMin)) return `Dollar volume below $${RULES.dvMin / 1e6}M`;
     if (f.upLow52 < RULES.upLow52Min) return `Only +${f.upLow52.toFixed(0)}% off 52w low`;
     if (f.depth52 > RULES.depth52Max) return `${f.depth52.toFixed(0)}% below 52w high`;
     return 'Repeat setup (de-duplicated)';

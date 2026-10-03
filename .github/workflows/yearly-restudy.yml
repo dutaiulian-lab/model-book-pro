@@ -1,0 +1,76 @@
+name: Yearly rule re-study
+
+# Re-runs the 20-year walk-forward rule selection (research/restudy.mjs) and
+# opens a pull request with the report and, if the procedure picks different
+# rules, the new scripts/lib/rules.json. Nothing changes until the PR is merged.
+on:
+  schedule:
+    # 3 January, 06:00 UTC: the previous year is complete in the data and the
+    # selection picks this year's rules from all complete years before it.
+    - cron: '0 6 3 1 *'
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year to pick rules for (default: this year when run Jan-Jun, next year otherwise)'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: yearly-restudy
+  cancel-in-progress: false
+
+jobs:
+  restudy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run the re-study
+        id: study
+        run: node research/restudy.mjs --fetch --apply ${YEAR_ARG}
+        env:
+          YEAR_ARG: ${{ inputs.year && format('--year={0}', inputs.year) || '' }}
+          # Optional: a paid eodhd.com key adds delisted stocks (removes most
+          # of the survivorship bias). Without it the report shows a stress test.
+          EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
+
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGED: ${{ steps.study.outputs.changed }}
+          REPORT: ${{ steps.study.outputs.report }}
+          YEAR: ${{ steps.study.outputs.year }}
+        run: |
+          branch="restudy/${YEAR}-$(date -u +%Y%m%d-%H%M)"
+          if [ "$CHANGED" = "true" ]; then
+            title="Rule re-study for ${YEAR}: new rules proposed"
+          else
+            title="Rule re-study for ${YEAR}: no change (report)"
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add research/reports scripts/lib/rules.json
+          git commit -m "$title"
+          git push origin "$branch"
+          if ! gh pr create --base main --head "$branch" --title "$title" --body-file "$REPORT"; then
+            gh issue create --title "$title" --body "The re-study finished, but GitHub Actions may not open pull requests in this repository.
+          Open it manually: https://github.com/${GITHUB_REPOSITORY}/compare/main...${branch}
+          (or enable Settings > Actions > General > 'Allow GitHub Actions to create and approve pull requests').
+          Report: https://github.com/${GITHUB_REPOSITORY}/blob/${branch}/${REPORT}"
+          fi

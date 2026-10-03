@@ -41,6 +41,16 @@ jobs:
         # Never block publishing the scan on the track record.
         run: node scripts/update-track-record.mjs || echo "::warning::Track record update failed; scan results are still published."
 
+      - name: Re-run the backfill when the rules changed
+        # rules.json changes (e.g. a merged yearly re-study PR) make the
+        # simulated history stale; rebuild it with the new rules once.
+        run: |
+          if node --input-type=module -e "import fs from 'fs'; import { RULES_VERSION } from './scripts/lib/leader-rules.mjs'; const r = JSON.parse(fs.readFileSync('public/track-record.json', 'utf8')); process.exit(r.backfill?.rules_version === RULES_VERSION ? 1 : 0)"; then
+            node scripts/backfill-track-record.mjs || echo "::warning::Backfill failed; the previous simulated history is kept."
+          else
+            echo "Backfill is up to date with the active rules."
+          fi
+
       - name: Commit and Push results
         run: |
           git config --global user.name 'github-actions[bot]'

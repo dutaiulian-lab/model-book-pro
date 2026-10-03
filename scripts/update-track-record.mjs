@@ -1,6 +1,7 @@
 // Daily track-record update, run after the screener:
 //   1. records today's picks (pick-days.json + a dated copy of market-state.json);
-//   2. adds every qualifying setup not seen before as a live signal;
+//   2. adds every qualifying setup not seen before as a live signal (setups of
+//      separately tracked families, market-state `tracked`, get tier 'track');
 //   3. refreshes outcomes of signals still waiting for a fill or still open.
 import fs from 'fs';
 import path from 'path';
@@ -31,7 +32,7 @@ async function main() {
         // Backfilled copies of the same setup are kept separately (different source).
         const known = new Set(signals.filter(s => s.source === 'live').map(s => s.id));
         let added = 0;
-        for (const m of state.matches) {
+        for (const m of [...state.matches, ...(state.tracked || [])]) {
             const setups = m.setups?.length ? m.setups : [{
                 family: m.family, setup_type: m.setup_type, signal_date: m.signal_date, pivot: m.recent_pivot,
                 struct_stop: m.struct_stop, suggested_stop: m.suggested_stop, rs_rank: m.rs_rank, dv_rank: m.dv_rank,
@@ -56,7 +57,7 @@ async function main() {
         const histDir = path.join(process.cwd(), 'public', 'history');
         fs.mkdirSync(histDir, { recursive: true });
         fs.copyFileSync(statePath, path.join(histDir, `${asOf}.json`));
-        console.log(`Recorded ${state.matches.length} picks for ${asOf} (${added} new signals).`);
+        console.log(`Recorded ${state.matches.length} picks and ${(state.tracked || []).length} tracked setups for ${asOf} (${added} new signals).`);
     } else {
         console.log('market-state.json has no as_of date; only refreshing outcomes.');
     }

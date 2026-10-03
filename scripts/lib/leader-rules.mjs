@@ -1,21 +1,23 @@
-// Model Book leader rules (2026-10 "F6"), shared by the daily screener, the
-// track-record backfill and the research verification harness.
+// Model Book leader rules, shared by the daily screener, the track-record
+// backfill, the yearly re-study (research/) and the verification harness.
 //
-// Selected by a 20-year (2006-2026) study of ~4,400 US stocks: a pre-registered
-// grid of entry setups, leadership / liquidity filters, market regimes, stops and
-// exits, chosen by a portfolio-level walk-forward procedure restricted to setups
-// an end-of-day scanner can trade. See the research report for the evidence and
-// its limits (the selection procedure itself did not beat SPY out of sample).
+// The active parameters live in rules.json next to this file. The yearly
+// re-study (research/restudy.mjs, .github/workflows/yearly-restudy.yml) re-runs
+// the 20-year walk-forward selection and proposes a new rules.json as a pull
+// request; nothing changes until that PR is merged. Every option the study can
+// pick (families, regimes, stops, exits) is implemented here.
 //
-// A stock is a buy candidate on day s when ALL of these hold:
-//   Market:     SPY closes above its 200-day SMA.
-//   Leadership: IBD-style RS rank >= 90 (weighted 3/6/9/12-month return,
+// A stock is a buy candidate on day s when ALL of these hold (defaults shown):
+//   Market:     regime filter (spy200: SPY closes above its 200-day SMA;
+//               spy50: above its 50-day; breadth50: >= 50% of the liquid
+//               universe above their 50-day SMA; none).
+//   Leadership: IBD-style RS rank >= rsMin (weighted 3/6/9/12-month return,
 //               percentile across the liquid US universe that day).
-//   Liquidity:  20-day average dollar volume >= $10M and in the top 15% of the
-//               universe; price >= $10.
-//   Run-up:     close >= 100% above the 52-week low (since IPO for new issues).
-//   Depth:      close within 35% of the 52-week high.
-//   Setup:      one of
+//   Liquidity:  20-day average dollar volume >= dvMinM ($M) and, when dvPctMin
+//               > 0, in the top (100 - dvPctMin)% of the universe; price >= $10.
+//   Run-up:     close >= upLow52Min % above the 52-week low (since IPO for new issues).
+//   Depth:      close within depth52Max % of the 52-week high (null = any).
+//   Setup:      one of `families`:
 //     RANGE  "Launchpad coil": the original screener coil rules (Stage-2 or IPO,
 //            stacked 10/21 MAs, tight, dry volume, no breakdown trap);
 //            pivot = prior 10-day high.
@@ -26,23 +28,77 @@
 //            pivot = base high.
 //     HTF    high tight flag: +90% pole within 40 sessions, flag 5-25 sessions and
 //            <= 25% deep, close within 7% of the flag high; pivot = flag high.
+//   Families in `trackFamilies` pass the same filters but are NOT buy signals:
+//   they are shown and tracked separately (HTF since 2026-10: ~0R per trade
+//   over 2007-2026 and negative since 2023).
 //
 // Trade plan:
 //   Entry: buy stop at the pivot, valid for 5 sessions after the signal day.
-//   Stop:  the structural stop, clamped to 3%-8% below the fill.
-//   Exit:  first close below the 50-day SMA; once a close is >= 20% above the
-//          fill, the first close below the 21-day EMA instead. Max 252 sessions.
+//   Stop:  struct (structural low), clamp (structural, clamped to 3%-8% below
+//          the fill), min5 (structural, but at least 5% below), fix7, fix10.
+//   Exit:  c50 first close below the 50-day SMA; c50t21 the same, but the 21-day
+//          EMA once a close is >= 20% above the fill; c21 / c10 close below the
+//          21-day EMA / 10-day SMA; c50be c50 with the stop raised to breakeven
+//          at +2R; c50part c50 selling 1/3 at +3R (stop to breakeven);
+//          t20 sell after 20 sessions. Max 252 sessions.
+import fs from 'fs';
 
-export const RULES_VERSION = '2026-10 (F6)';
+const CFG = JSON.parse(fs.readFileSync(new URL('./rules.json', import.meta.url), 'utf8'));
+export const STOP_TYPES = ['struct', 'clamp', 'min5', 'fix7', 'fix10'];
+export const EXIT_TYPES = ['t20', 'c10', 'c21', 'c50', 'c50be', 'c50t21', 'c50part'];
+export const REGIMES = ['none', 'spy50', 'spy200', 'breadth50'];
+for (const [k, list] of [['stop', STOP_TYPES], ['exit', EXIT_TYPES], ['regime', REGIMES]]) {
+    if (!list.includes(CFG[k])) throw new Error(`rules.json: unsupported ${k} "${CFG[k]}"`);
+}
+export const RULES_VERSION = CFG.version;
 export const RULES = {
-    rsMin: 90, dvPctMin: 85, dvMin: 10e6, priceMin: 10, upLow52Min: 100, depth52Max: 35,
-    families: ['RANGE', 'TIGHT', 'BASE', 'HTF'],
-    entryWindow: 5, stopMinPct: 3, stopMaxPct: 8, trailAfterGainPct: 20, maxHold: 252,
-    // Universe used for RS / dollar-volume percentiles.
+    rsMin: CFG.rsMin, dvPctMin: CFG.dvPctMin, dvMin: CFG.dvMinM * 1e6, priceMin: CFG.priceMin,
+    upLow52Min: CFG.upLow52Min, depth52Max: CFG.depth52Max ?? Infinity,
+    families: CFG.families, trackFamilies: CFG.trackFamilies || [], trackNote: CFG.trackNote || '',
+    regime: CFG.regime, stop: CFG.stop, exit: CFG.exit,
+    entryWindow: 5, stopMinPct: 3, stopMaxPct: 8, trailAfterGainPct: 20,
+    maxHold: CFG.exit === 't20' ? 20 : 252,
+    // Universe used for RS / dollar-volume percentiles and breadth.
     rankPriceMin: 5, rankDvMin: 5e6,
 };
 // Watchlist (not buy signals): leaders with any setup, looser liquidity, any market.
 export const WATCH = { rsMin: 90, dvPctMin: 70 };
+
+// Plain-language rule text for the dashboard / track record / Discord.
+export const REGIME_TEXT = {
+    none: 'No market filter', spy200: 'SPY above its 200-day SMA', spy50: 'SPY above its 50-day SMA',
+    breadth50: 'At least 50% of liquid US stocks above their 50-day SMA',
+};
+export const STOP_TEXT = {
+    struct: 'Structural stop (setup low)', clamp: 'Structural stop clamped to 3%-8% below the fill',
+    min5: 'Structural stop, at least 5% below the fill', fix7: '7% below the fill', fix10: '10% below the fill',
+};
+export const EXIT_TEXT = {
+    c50: 'First close below the 50-day SMA',
+    c50t21: 'First close below the 50-day SMA (21-day EMA once a close is 20%+ above the fill)',
+    c21: 'First close below the 21-day EMA', c10: 'First close below the 10-day SMA',
+    c50be: 'First close below the 50-day SMA; stop to breakeven at +2R',
+    c50part: 'Sell 1/3 at +3R (stop to breakeven), rest on a close below the 50-day SMA',
+    t20: 'Sell after 20 sessions',
+};
+
+// Market regime check. mkt: { spy200, spy50, breadth } for the signal day, or a
+// boolean (SPY above its 200-day; legacy callers).
+export function regimeOn(mkt) {
+    const m = typeof mkt === 'object' && mkt !== null ? mkt : { spy200: !!mkt };
+    switch (RULES.regime) {
+        case 'none': return true;
+        case 'spy50': return !!m.spy50;
+        case 'breadth50': return m.breadth >= 50;
+        default: return !!m.spy200;
+    }
+}
+// Per-date SPY flags { spy200, spy50 } (close above its 200 / 50-day SMA).
+// Breadth is added by the caller, which sees the whole universe.
+export function spyRegimeByDate(dates, closes) {
+    const c = Float64Array.from(closes), s200 = sma(c, 200), s50 = sma(c, 50);
+    return new Map(dates.map((d, k) => [d, { spy200: c[k] > s200[k], spy50: c[k] > s50[k], breadth: NaN }]));
+}
 
 export const FAMILY_LABELS = {
     RANGE: 'Launchpad Coil', TIGHT: 'Tight Range', BASE: 'Base Breakout', HTF: 'High Tight Flag', GAP: 'Power Gap',
@@ -258,18 +314,27 @@ export function triggerBar(S, s, pivot) {
 }
 
 // Leadership / liquidity / run-up / depth / regime filter for a counted setup.
-// ranks: { rs, dvPct } percentiles (0-100); spyAbove200: boolean.
-export function passesBuyRules(setup, ranks, spyAbove200) {
+// ranks: { rs, dvPct } percentiles (0-100); mkt: { spy200, spy50, breadth } for
+// the signal day (or a boolean: SPY above its 200-day).
+function passesFilters(setup, ranks, mkt, families) {
     const f = setup.feats;
-    if (!RULES.families.includes(setup.fam)) return false;
+    if (!families.includes(setup.fam)) return false;
     if (setup.fam === 'RANGE' && setup.trap) return false;
-    if (!spyAbove200) return false;
-    if (!(ranks.rs >= RULES.rsMin)) return false;
-    if (!(ranks.dvPct >= RULES.dvPctMin) || !(f.dv >= RULES.dvMin)) return false;
+    if (!regimeOn(mkt)) return false;
+    if (RULES.rsMin > 0 && !(ranks.rs >= RULES.rsMin)) return false;
+    if (RULES.dvPctMin > 0 && !(ranks.dvPct >= RULES.dvPctMin)) return false;
+    if (!(f.dv >= RULES.dvMin)) return false;
     if (f.rawPrice < RULES.priceMin) return false;
     if (f.upLow52 < RULES.upLow52Min) return false;
     if (f.depth52 > RULES.depth52Max) return false;
     return true;
+}
+export function passesBuyRules(setup, ranks, mkt) {
+    return passesFilters(setup, ranks, mkt, RULES.families);
+}
+// Families tracked separately (same filters, not buy signals), e.g. HTF.
+export function passesTrackRules(setup, ranks, mkt) {
+    return RULES.trackFamilies.length > 0 && passesFilters(setup, ranks, mkt, RULES.trackFamilies);
 }
 export function passesWatch(setup, ranks) {
     if (setup.fam === 'RANGE' && setup.trap) return false;
@@ -281,16 +346,23 @@ export function bestSetup(list) {
     return [...list].sort((a, b) => a.pivot - b.pivot || FAMILY_PRIORITY[a.fam] - FAMILY_PRIORITY[b.fam])[0];
 }
 
-// Initial stop for a fill at P with structural stop `struct` (clamped 3-8%).
-export function initialStop(P, struct) {
-    const sr = (P - struct) / P;
-    return P * (1 - Math.min(RULES.stopMaxPct / 100, Math.max(RULES.stopMinPct / 100, sr)));
+// Initial stop for a fill at P with structural stop `struct`, per RULES.stop.
+// NaN when the result is not a valid long stop (the research drops those).
+export function initialStop(P, struct, type = RULES.stop) {
+    let x;
+    if (type === 'struct') x = struct;
+    else if (type === 'min5') x = Math.min(struct, P * 0.95);
+    else if (type === 'fix7') x = P * 0.93;
+    else if (type === 'fix10') x = P * 0.90;
+    else x = P * (1 - Math.min(RULES.stopMaxPct / 100, Math.max(RULES.stopMinPct / 100, (P - struct) / P)));
+    return x > 0 && x < P ? x : NaN;
 }
 
 // Simulate the trade for a setup at bar s (pivot, structStop, fam). Returns
 // { status: 'no_entry' | 'pending' | 'open' | 'closed', ... } using bars up to S.n-1.
-export function simulateTrade(S, s, pivot, structStop, fam) {
-    const { o, h, l, c, sma50, ema21 } = S;
+// Same rules as the research simulator (research/build-events.mjs `simulate`).
+export function simulateTrade(S, s, pivot, structStop, fam, exitType = RULES.exit, stopType = RULES.stop) {
+    const { o, h, l, c, sma10, sma50, ema21 } = S;
     const n = S.n;
     let eb = -1;
     for (let m = s + 1; m <= Math.min(n - 1, s + RULES.entryWindow); m++) if (h[m] > pivot) { eb = m; break; }
@@ -298,23 +370,35 @@ export function simulateTrade(S, s, pivot, structStop, fam) {
     const P = Math.max(o[eb], pivot);
     let struct = structStop;
     if (fam !== 'RANGE') for (let q = s + 1; q < eb; q++) struct = Math.min(struct, l[q] * 0.995);
-    const stop = initialStop(P, struct);
-    const risk = P - stop;
-    let trail21 = false, exit = NaN, xj = -1, reason = null;
-    const last = Math.min(n - 1, eb + RULES.maxHold - 1);
+    const stop0 = initialStop(P, struct, stopType);
+    if (Number.isNaN(stop0)) return { status: 'no_entry', reason: 'invalid_stop' };
+    const risk = P - stop0;
+    const maxHold = exitType === 't20' ? 20 : 252;
+    const ma = exitType === 'c10' ? sma10 : exitType === 'c21' ? ema21 : sma50;
+    let stop = stop0, trail21 = false, partDone = false, partR = 0, exit = NaN, xj = -1, reason = null;
+    const last = Math.min(n - 1, eb + maxHold - 1);
     for (let j = eb; j <= last; j++) {
         const first = j === eb;
         if (first ? c[j] < stop : l[j] <= stop) { exit = first ? c[j] : Math.min(stop, o[j]); xj = j; reason = 'stop'; break; }
-        if (c[j] >= P * (1 + RULES.trailAfterGainPct / 100)) trail21 = true;
-        if (!first) {
-            const m = trail21 ? ema21[j] : sma50[j];
-            if (c[j] < m) { exit = c[j]; xj = j; reason = trail21 ? 'ema21' : 'sma50'; break; }
+        if (exitType === 'c50part' && !partDone && h[j] >= P + 3 * risk) {
+            partDone = true; partR = (Math.max(o[j], P + 3 * risk) - P) / risk; stop = Math.max(stop, P);
         }
-        if (j === eb + RULES.maxHold - 1) { exit = c[j]; xj = j; reason = 'time'; break; }
+        if (exitType === 'c50be' && h[j] >= P + 2 * risk) stop = Math.max(stop, P);
+        if (exitType === 'c50t21' && c[j] >= P * (1 + RULES.trailAfterGainPct / 100)) trail21 = true;
+        if (!first && exitType !== 't20') {
+            const m = trail21 ? ema21[j] : ma[j];
+            if (c[j] < m) { exit = c[j]; xj = j; reason = trail21 ? 'ema21' : exitType === 'c10' ? 'sma10' : exitType === 'c21' ? 'ema21' : 'sma50'; break; }
+        }
+        if (j === eb + maxHold - 1) { exit = c[j]; xj = j; reason = 'time'; break; }
     }
-    const base = { eb, entry: P, stop, struct, risk_pct: risk / P * 100, trail21 };
-    if (Number.isNaN(exit)) return { ...base, status: 'open', mark: c[n - 1], r: (c[n - 1] - P) / risk, last: n - 1 };
-    return { ...base, status: 'closed', xj, exit, reason, r: (exit - P) / risk, ret: (exit / P - 1) * 100 };
+    const blend = (r) => (partDone ? partR / 3 + r * 2 / 3 : r);
+    const base = { eb, entry: P, stop: stop0, struct, risk_pct: risk / P * 100, trail21, partial: partDone };
+    if (Number.isNaN(exit)) {
+        const r = blend((c[n - 1] - P) / risk);
+        return { ...base, status: 'open', mark: c[n - 1], r, last: n - 1 };
+    }
+    const r = blend((exit - P) / risk);
+    return { ...base, status: 'closed', xj, exit, reason, r, ret: r * risk / P * 100 };
 }
 
 // Percentile helper: share of `sorted` strictly below x, in percent.
