@@ -106,7 +106,10 @@ async function fetchAllUSTickers() {
         const text = await res.text();
         const tickers = text.split('\n')
             .map(t => t.trim())
-            .filter(t => t.length > 0 && !t.includes('-') && !t.includes('.') && !t.endsWith('W') && !t.endsWith('U')); 
+            .filter(t => t.length > 0 && !t.includes('-') && !t.includes('.'))
+            // Nasdaq marks warrants/units/rights with a 5th letter W/U/R. Only
+            // strip those; a bare endsWith('W'/'U') also dropped MU, NOW, SNOW...
+            .filter(t => !(t.length === 5 && /[WUR]$/.test(t)));
         console.log(`Successfully loaded ${tickers.length} master tickers.`);
         return tickers;
     } catch (e) {
@@ -168,6 +171,17 @@ async function fetchYahooData(ticker) {
             });
         }
     }
+    // While the regular session is open, Yahoo's last daily bar is partial
+    // (low volume, unfinished range), which makes the dry-up / contraction
+    // filters pass trivially. Exclude it so intraday scans use the last close.
+    const regular = data.meta?.currentTradingPeriod?.regular;
+    const lastTs = timestamps[timestamps.length - 1];
+    if (regular && Date.now() / 1000 < regular.end && lastTs >= regular.start &&
+        history.length > 0 &&
+        history[history.length - 1].date === new Date(lastTs * 1000).toISOString().split('T')[0]) {
+        history.pop();
+    }
+
     stats.ok++;
     return { history, meta: data.meta };
   } catch (e) {
@@ -200,6 +214,24 @@ function calculatePerformance(data, daysAgo) {
     return ((currentPrice - pastPrice) / pastPrice) * 100;
 }
 
+// Fundamentals lookup with retry. Failures are usually transient (rate
+// limiting right after the price scan, or cookie/crumb refresh), so back off
+// 2s then 4s. validateResult:false keeps type coercion but stops minor Yahoo
+// schema drift on a single field from failing the whole lookup.
+async function quoteSummaryWithRetry(ticker, attempts = 3) {
+    for (let i = 0; ; i++) {
+        try {
+            return await yf.quoteSummary(
+                ticker,
+                { modules: ['financialData', 'defaultKeyStatistics', 'calendarEvents', 'summaryProfile'] },
+                { validateResult: false });
+        } catch (e) {
+            if (i >= attempts - 1) throw e;
+            await sleep(2000 * 2 ** i);
+        }
+    }
+}
+
 async function run() {
     console.log(`Fetching S&P 500 Market Benchmark (SPY)...`);
     const spyDataResult = await fetchYahooData('SPY');
@@ -209,6 +241,23 @@ async function run() {
     }
     const spyData = spyDataResult.history;
     const spy3mo = calculatePerformance(spyData, 63);
+    const asOf = spyData[spyData.length - 1].date;
+    console.log(`Scanning as of the ${asOf} close.`);
+
+    // Scheduled runs on market holidays would just republish the previous
+    // session (and re-post to Discord). Manual runs always proceed.
+    const outPath = path.join(process.cwd(), 'public', 'market-state.json');
+    if (process.env.GITHUB_EVENT_NAME === 'schedule' && fs.existsSync(outPath)) {
+        try {
+            const previous = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+            if (previous.as_of === asOf) {
+                console.log(`Previous scan already covers ${asOf} (market holiday?). Skipping.`);
+                return;
+            }
+        } catch (e) {
+            // Unreadable previous file: just rescan.
+        }
+    }
 
     const tickers = await fetchAllUSTickers();
     if (tickers.length < MIN_UNIVERSE_SIZE) {
@@ -419,10 +468,10 @@ async function run() {
     console.log(`Starting FUNDAMENTAL Validation phase...`);
 
     let finalMatches = [];
-
+    const fundStats = { checked: techMatches.length, failed: 0 };
     for (const match of techMatches) {
         try {
-            const summary = await yf.quoteSummary(match.ticker, { modules: ['financialData', 'defaultKeyStatistics', 'calendarEvents', 'summaryProfile'] });
+            const summary = await quoteSummaryWithRetry(match.ticker);
             const epsGrowth = summary?.financialData?.earningsGrowth || 0;
             const revGrowth = summary?.financialData?.revenueGrowth || 0;
 
@@ -471,6 +520,8 @@ async function run() {
                 console.log(`[REJECTED] ${match.ticker} - Failed Fundamental Test (EPS: ${(epsGrowth*100).toFixed(1)}%, Rev: ${(revGrowth*100).toFixed(1)}%)`);
             }
         } catch (e) {
+            fundStats.failed++;
+            console.log(`[FUNDAMENTALS ERROR] ${match.ticker}: ${e.name}: ${String(e.message).slice(0, 200)}`);
             // If fundamentals cannot be fetched, preserve if technical setup is an A+ Launchpad Coil
             if (match.setup_type === 'Launchpad Coil' && match.relative_strength_3mo > 30) {
                 finalMatches.push(match);
@@ -482,14 +533,29 @@ async function run() {
         await new Promise(r => setTimeout(r, 300));
     }
 
+    // yahoo-finance2's quoteSummary breaks periodically (crumb/cookie changes).
+    // If most lookups fail, the result would silently be "coils only".
+    const fundFailureRate = fundStats.checked ? fundStats.failed / fundStats.checked : 0;
+    console.log(`Fundamentals: ${fundStats.failed}/${fundStats.checked} lookups failed.`);
+    if (fundStats.checked >= 5 && fundFailureRate > 0.5) {
+        console.error(`Aborting: ${(fundFailureRate * 100).toFixed(0)}% of fundamentals lookups failed. ` +
+            `Previous market-state.json left untouched.`);
+        process.exit(1);
+    }
+
     const output = {
         timestamp: new Date().toISOString(),
+        as_of: asOf,
         total_scanned: tickers.length,
-        stats: { ...stats, failure_rate: Number(failureRate.toFixed(4)) },
+        stats: {
+            ...stats,
+            failure_rate: Number(failureRate.toFixed(4)),
+            fundamentals_checked: fundStats.checked,
+            fundamentals_failed: fundStats.failed,
+        },
         matches: finalMatches
     };
 
-    const outPath = path.join(process.cwd(), 'public', 'market-state.json');
     if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
     console.log(`Saved results. Found ${finalMatches.length} stocks that passed BOTH Technicals and Fundamentals.`);
