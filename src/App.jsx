@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
+
+const HEALTH_BADGE = {
+  loading:  { label: 'Loading…',             cls: 'text-muted-foreground' },
+  ok:       { label: 'Live Scanner Active',  cls: 'text-emerald-600 dark:text-emerald-500' },
+  scanning: { label: 'Scan In Progress',     cls: 'text-blue-600 dark:text-blue-400' },
+  stale:    { label: 'Data Stale',           cls: 'text-amber-600 dark:text-amber-400' },
+  failed:   { label: 'Last Scan Failed',     cls: 'text-rose-600 dark:text-rose-400' },
+  error:    { label: 'Data Unavailable',     cls: 'text-rose-600 dark:text-rose-400' },
+};
 import ScreenerDashboard from './components/ScreenerDashboard';
 import { Target, Activity, ShieldAlert, Sun, Moon } from 'lucide-react';
 
 function App() {
+  const [health, setHealth] = useState('loading');
+  const badge = HEALTH_BADGE[health] || HEALTH_BADGE.loading;
 
   const [isDark, setIsDark] = useState(() => {
     try {
@@ -36,8 +47,8 @@ function App() {
         </div>
         <div className="flex gap-4 text-xs font-mono">
           <div className="bg-card border border-border px-3 py-1.5 rounded-lg flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
-            <span className="text-emerald-600 dark:text-emerald-500">Live Scanner Active</span>
+            <Activity className={`w-4 h-4 ${badge.cls}`} />
+            <span className={badge.cls}>{badge.label}</span>
           </div>
           <button
             onClick={() => setIsDark(!isDark)}
@@ -51,7 +62,7 @@ function App() {
 
       {/* Main Content */}
       <main>
-        <ScreenerDashboard />
+        <ScreenerDashboard onHealthChange={setHealth} />
       </main>
     </div>
   );

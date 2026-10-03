@@ -1,7 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, Play, ExternalLink, X } from 'lucide-react';
 
-export default function ScreenerDashboard() {
+// Most recent weekday 21:30 UTC (scheduled scan time) that is at least 6h in
+// the past. A healthy dataset must be newer than this; the 6h grace absorbs
+// GitHub's usual scheduling delay.
+function expectedScanAfter(now = new Date()) {
+  const ref = new Date(now.getTime() - 6 * 3600 * 1000);
+  const c = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate(), 21, 30));
+  if (c > ref) c.setUTCDate(c.getUTCDate() - 1);
+  while (c.getUTCDay() === 0 || c.getUTCDay() === 6) c.setUTCDate(c.getUTCDate() - 1);
+  return c;
+}
+
+const DISMISSED_RUN_KEY = 'dismissedFailedRunUrl';
+
+export default function ScreenerDashboard({ onHealthChange }) {
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedTab, setSelectedTab] = useState('ALL');
   const [copied, setCopied] = useState(false);
@@ -13,6 +26,9 @@ export default function ScreenerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [livePrices, setLivePrices] = useState({});
+  const dismissedRunUrlRef = useRef(
+    (() => { try { return localStorage.getItem(DISMISSED_RUN_KEY); } catch { return null; } })()
+  );
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -70,11 +86,12 @@ export default function ScreenerDashboard() {
             loadMarketData();
           }
 
-          // Scan failed on GitHub Actions
+          // Scan failed on GitHub Actions (skip if the user already dismissed this run)
           if (statusData.status === 'completed' && statusData.conclusion === 'failure') {
             if (isTrackingScan) {
               setIsTrackingScan(false);
             }
+            if (statusData.url && statusData.url === dismissedRunUrlRef.current) return;
             setScanFeedback({
               type: 'error',
               title: 'Scan Failed on GitHub Actions',
@@ -153,12 +170,11 @@ export default function ScreenerDashboard() {
         if (!res.ok) return;
         const quotes = await res.json();
         if (isMounted && quotes) {
+          // /api/quote returns a { SYMBOL: price } map.
           const prices = {};
-          quotes.forEach(q => {
-            if (q.symbol && q.regularMarketPrice) {
-              prices[q.symbol] = q.regularMarketPrice;
-            }
-          });
+          for (const [sym, px] of Object.entries(quotes)) {
+            if (typeof px === 'number') prices[sym] = px;
+          }
           setLivePrices(prices);
         }
       } catch (e) {
@@ -173,6 +189,29 @@ export default function ScreenerDashboard() {
       clearInterval(priceInterval);
     };
   }, [data]);
+
+  const dataTimestamp = data?.timestamp ? new Date(data.timestamp) : null;
+  const isStale = !loading && (!dataTimestamp || dataTimestamp < expectedScanAfter());
+  const scanFailed = scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure';
+  const scanRunning = scanStatus?.status === 'in_progress' || scanStatus?.status === 'queued';
+  const health = loading ? 'loading'
+    : error ? 'error'
+    : scanRunning ? 'scanning'
+    : scanFailed ? 'failed'
+    : isStale ? 'stale'
+    : 'ok';
+
+  useEffect(() => {
+    if (onHealthChange) onHealthChange(health);
+  }, [health, onHealthChange]);
+
+  const dismissFeedback = () => {
+    if (scanFeedback?.type === 'error' && scanStatus?.url) {
+      dismissedRunUrlRef.current = scanStatus.url;
+      try { localStorage.setItem(DISMISSED_RUN_KEY, scanStatus.url); } catch {}
+    }
+    setScanFeedback(null);
+  };
 
   if (loading) {
     return (
@@ -252,10 +291,23 @@ export default function ScreenerDashboard() {
                   ⚠️ FAILED
                 </span>
               )}
+              {isStale && !scanRunning && (
+                <span className="text-amber-600 dark:text-amber-400 font-mono text-[9px] font-black" title="No scan has completed since the last scheduled run.">
+                  ⚠️ STALE
+                </span>
+              )}
             </div>
-            <div className="text-xs font-mono font-bold text-foreground mt-0.5">
+            <div className={`text-xs font-mono font-bold mt-0.5 ${isStale ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
               {new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
             </div>
+            {data?.stats && (
+              <div
+                className={`text-[10px] font-mono mt-0.5 ${data.stats.fetch_failed > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                title={`Fetched OK: ${data.stats.ok} · No data: ${data.stats.no_data} · Failed: ${data.stats.fetch_failed} · Retries: ${data.stats.retries}`}
+              >
+                {data.stats.ok.toLocaleString()} ok · {data.stats.fetch_failed.toLocaleString()} failed
+              </div>
+            )}
           </div>
           <div className="h-8 w-px bg-border/60"></div>
           <div className="text-left">
@@ -351,7 +403,7 @@ export default function ScreenerDashboard() {
               </button>
             )}
             <button
-              onClick={() => setScanFeedback(null)}
+              onClick={dismissFeedback}
               className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
             >
               <X className="w-4 h-4"/>
