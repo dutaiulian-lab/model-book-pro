@@ -270,38 +270,43 @@
    "scen": [
     {
      "name": "As measured (survivors only)",
+     "short": "as measured",
      "added": 0,
      "avgR": 0.4759171946518976,
-     "cagr": 12.024808479552807,
-     "dd": 21.552933754667304
+     "cagr": 11.760627855988638,
+     "dd": 20.9496559309851
     },
     {
      "name": "Missing stocks trade like survivors that later busted (half as many setups)",
+     "short": "bust-like x0.5",
      "added": 229,
-     "avgR": 0.4197984987977867,
-     "cagr": 10.898098851115146,
-     "dd": 27.317585716061306
+     "avgR": 0.37261024687202615,
+     "cagr": 10.666516483993082,
+     "dd": 26.565062060934018
     },
     {
      "name": "Missing stocks trade like survivors that later busted (as many setups)",
+     "short": "bust-like x1",
      "added": 459,
-     "avgR": 0.37340267757188816,
-     "cagr": 11.989356287034303,
-     "dd": 28.252983517571817
+     "avgR": 0.32841595773837995,
+     "cagr": 9.925868618380896,
+     "dd": 33.00154932640591
     },
     {
-     "name": "Every missing trade is a full stop-out (-1R)",
+     "name": "Extreme bound: every missing trade is a full stop-out (-1R)",
+     "short": "all -1R",
      "added": 459,
      "avgR": -0.019546501806276012,
-     "cagr": -3.7885813030189897,
-     "dd": 86.82308686798066
+     "cagr": -3.9239356293892302,
+     "dd": 87.16429050997198
     },
     {
-     "name": "Every missing trade gaps through its stop (-1.5R)",
+     "name": "Extreme bound: every missing trade gaps through its stop (-1.5R)",
+     "short": "all -1.5R",
      "added": 459,
      "avgR": -0.18265950820285934,
-     "cagr": -10.10932793302054,
-     "dd": 96.15054560067097
+     "cagr": -9.611030689266409,
+     "dd": 96.20049888555651
     }
    ]
   },
@@ -313,38 +318,43 @@
    "scen": [
     {
      "name": "As measured (survivors only)",
+     "short": "as measured",
      "added": 0,
      "avgR": 0.44883141503066454,
-     "cagr": 12.167038032226518,
-     "dd": 20.468193235389307
+     "cagr": 12.490763437734076,
+     "dd": 20.617185249683885
     },
     {
      "name": "Missing stocks trade like survivors that later busted (half as many setups)",
+     "short": "bust-like x0.5",
      "added": 246,
-     "avgR": 0.4283383775652096,
-     "cagr": 12.66689410245787,
-     "dd": 26.915765979945533
+     "avgR": 0.38596577959467204,
+     "cagr": 11.874191434610104,
+     "dd": 26.241332995258702
     },
     {
      "name": "Missing stocks trade like survivors that later busted (as many setups)",
+     "short": "bust-like x1",
      "added": 495,
-     "avgR": 0.3246680660506324,
-     "cagr": 11.478424631976614,
-     "dd": 32.27811199415478
+     "avgR": 0.32288112822997933,
+     "cagr": 11.956036243567647,
+     "dd": 26.710342537814736
     },
     {
-     "name": "Every missing trade is a full stop-out (-1R)",
+     "name": "Extreme bound: every missing trade is a full stop-out (-1R)",
+     "short": "all -1R",
      "added": 495,
-     "avgR": -0.01284920056365833,
-     "cagr": -0.980793685962289,
-     "dd": 85.15020808765223
+     "avgR": -0.013309427242211666,
+     "cagr": -1.8478325308701526,
+     "dd": 86.35368813214922
     },
     {
-     "name": "Every missing trade gaps through its stop (-1.5R)",
+     "name": "Extreme bound: every missing trade gaps through its stop (-1.5R)",
+     "short": "all -1.5R",
      "added": 495,
-     "avgR": -0.16597122777366907,
-     "cagr": -7.432394348162141,
-     "dd": 95.34126508569365
+     "avgR": -0.16632302185868067,
+     "cagr": -6.584555387108737,
+     "dd": 94.90846377397543
     }
    ]
   }

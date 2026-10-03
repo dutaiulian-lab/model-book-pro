@@ -1,23 +1,23 @@
 {
-  "version": "2026-10 (F6b)",
+  "version": "2027 (WF-P)",
   "adopted": "2026-10-03",
-  "selected_by": "Walk-forward pick F6 (2026-10 study) with High Tight Flags moved to separate tracking (HTF ~0R/trade 2007-2026, 4 of 16 years positive, -0.23R on 101 trades since 2023).",
+  "selected_by": "Yearly re-study 2026-10-03: walk-forward pick for 2027 (research/reports/restudy-2026-10-03.md).",
   "families": [
-    "RANGE",
     "TIGHT",
     "BASE"
   ],
   "trackFamilies": [
+    "RANGE",
     "HTF"
   ],
-  "trackNote": "in the 20-year test High Tight Flags averaged about 0R per trade (2007-2026, positive in 4 of 16 years) and -0.23R over 101 trades since 2023.",
-  "regime": "spy200",
+  "trackNote": "under these filters in the 2026-10-03 re-study, RANGE: +0.06R per trade 2007-2026 over 370 trades (positive in 10 of 20 years), +0.44R over 62 trades in the last 3 years; HTF: +0.03R per trade 2007-2026 over 168 trades (positive in 4 of 16 years), -0.23R over 84 trades in the last 3 years.",
+  "regime": "breadth50",
   "rsMin": 90,
   "dvPctMin": 85,
   "dvMinM": 10,
   "priceMin": 10,
-  "upLow52Min": 100,
+  "upLow52Min": 50,
   "depth52Max": 35,
-  "stop": "clamp",
+  "stop": "fix7",
   "exit": "c50t21"
 }
