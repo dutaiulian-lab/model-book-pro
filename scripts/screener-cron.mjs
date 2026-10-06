@@ -429,16 +429,25 @@ async function run() {
 
 // Short reason a watchlist leader is not a buy signal.
 function whyNotBuy(st, ranks, marketOn) {
-    const f = st.feats;
-    if (RULES.trackFamilies.includes(st.fam)) return `${FAMILY_LABELS[st.fam]}: tracked separately, not a buy rule`;
+    // Separately tracked families (HTF): name the filter that failed, or the
+    // de-duplication (the same pattern was already counted earlier).
+    if (RULES.trackFamilies.includes(st.fam)) {
+        const r = filterReason(st, ranks, marketOn);
+        return `${FAMILY_LABELS[st.fam]} (tracked, not a buy rule): ${r || 'repeat of an earlier flag'}`;
+    }
     if (!RULES.families.includes(st.fam)) return st.fam === 'GAP' ? 'Power gap (watch for a setup)' : 'Setup not in buy rules';
+    return filterReason(st, ranks, marketOn) || 'Repeat setup (de-duplicated)';
+}
+
+function filterReason(st, ranks, marketOn) {
+    const f = st.feats;
     if (!marketOn) return `Market filter off (${REGIME_TEXT[RULES.regime]})`;
     if (RULES.rsMin > 0 && !(ranks.rs >= RULES.rsMin)) return `RS ${ranks.rs.toFixed(0)} < ${RULES.rsMin}`;
     if (RULES.dvPctMin > 0 && !(ranks.dvPct >= RULES.dvPctMin)) return `Liquidity rank ${ranks.dvPct.toFixed(0)} < ${RULES.dvPctMin}`;
     if (!(f.dv >= RULES.dvMin)) return `Dollar volume below $${RULES.dvMin / 1e6}M`;
     if (f.upLow52 < RULES.upLow52Min) return `Only +${f.upLow52.toFixed(0)}% off 52w low`;
     if (f.depth52 > RULES.depth52Max) return `${f.depth52.toFixed(0)}% below 52w high`;
-    return 'Repeat setup (de-duplicated)';
+    return null;
 }
 
 run();

@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-06T03:27:15.345Z",
+  "timestamp": "2026-10-06T07:44:14.040Z",
   "as_of": "2026-10-05",
-  "rules_version": "2026-10 (F6b)",
+  "rules_version": "2026-10 (F6c)",
   "rules": {
     "rsMin": 90,
     "dvPctMin": 85,
@@ -17,7 +17,7 @@
     "trackFamilies": [
       "HTF"
     ],
-    "trackNote": "in the 20-year test High Tight Flags averaged about 0R per trade (2007-2026, positive in 4 of 16 years) and -0.23R over 101 trades since 2023.",
+    "trackNote": "with the tightened definition (2026-10-06) High Tight Flags averaged +0.5R per trade in the 20-year test (166 trades 2007-2026, positive in 6 of 15 years), but -0.35R over 44 trades in 2026 so far; kept out of the buy rules until the yearly re-study.",
     "regime": "spy200",
     "stop": "clamp",
     "exit": "c50t21",
@@ -38,7 +38,7 @@
     "tracked_families": [
       "High Tight Flag"
     ],
-    "track_note": "in the 20-year test High Tight Flags averaged about 0R per trade (2007-2026, positive in 4 of 16 years) and -0.23R over 101 trades since 2023.",
+    "track_note": "with the tightened definition (2026-10-06) High Tight Flags averaged +0.5R per trade in the 20-year test (166 trades 2007-2026, positive in 6 of 15 years), but -0.35R over 44 trades in 2026 so far; kept out of the buy rules until the yearly re-study.",
     "regime": "SPY above its 200-day SMA",
     "stop": "Structural stop clamped to 3%-8% below the fill",
     "exit": "First close below the 50-day SMA (21-day EMA once a close is 20%+ above the fill)"
@@ -54,7 +54,8 @@
     "spy_above_200": true,
     "spy_above_50": true,
     "breadth_50": 29.7,
-    "spy_close": 774.8300170898438
+    "spy_close": 774.8300170898438,
+    "spy_sma200": 720.95
   },
   "idle_cash": {
     "mode": "spy200band",
@@ -63,6 +64,31 @@
     "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
     "on": true,
     "spy_vs_200": 7.47
+  },
+  "context": {
+    "spy": {
+      "value": 7.5,
+      "state": "uptrend",
+      "label": "Uptrend",
+      "color": "green",
+      "meaning": "Healthy trend, historically the best balance of risk and reward: SPY was higher 3 months later about 3 times in 4, and 10% drops were rare (about 1 in 13)."
+    },
+    "breadth": {
+      "value": 29.7,
+      "change10": -4.6,
+      "state": "weak",
+      "label": "Weak",
+      "color": "red",
+      "meaning": "Most stocks are in pullbacks. SPY fell 10%+ at some point in the next 3 months about 1 in 4 times."
+    },
+    "flags": [
+      {
+        "id": "narrow",
+        "label": "Narrow market",
+        "text": "SPY is strong but most stocks are weak: a few large stocks are carrying the index. Historically a modest warning (SPY higher 3 months later 66% of the time vs 72% otherwise, with deeper dips)."
+      }
+    ],
+    "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
   },
   "total_scanned": 6226,
   "ranking_universe": 2856,
@@ -191,106 +217,7 @@
       "earnings_soon": false
     }
   ],
-  "tracked": [
-    {
-      "ticker": "SNDK",
-      "family": "HTF",
-      "setup_type": "High Tight Flag",
-      "signal_date": "2026-10-01",
-      "sessions_left": 3,
-      "price": 1704.1600341796875,
-      "dma10": 1762.9410034179687,
-      "ema21": 1698.716895666149,
-      "sma50": 1545.0198950195313,
-      "rs_rank": 99.82375749030666,
-      "dv_rank": 99.85979670522256,
-      "dollar_volume": 16880146071.882324,
-      "base_depth": "-24.1%",
-      "depth_52w": 24.069927965555536,
-      "up_from_low52": 1496.1517333984375,
-      "setup_depth": 13.116658121548658,
-      "setup_length": 7,
-      "spread_10_21": 3.7807422717506043,
-      "vol_ratio": 0.7270452951900154,
-      "vol_status": "Vol 73% of 20d",
-      "is_ipo": false,
-      "ipo_date": "2025-02-13",
-      "adr": 4.8513114737147225,
-      "relative_strength_3mo": 1.717556469178621,
-      "dist_10dma": -3.334256173310246,
-      "dist_21ema": 0.3204264658475564,
-      "recent_pivot": 1909.47998046875,
-      "buy_stop": 1909.47998046875,
-      "dist_from_pivot": -10.752662944319502,
-      "timing_status": "NEAR_PIVOT",
-      "timing_label": "⏳ Near Pivot",
-      "struct_stop": 1672.595,
-      "suggested_stop": 1756.7215820312501,
-      "suggested_stop_pct": 7.999999999999993,
-      "tier": "track",
-      "setups": [
-        {
-          "family": "HTF",
-          "setup_type": "High Tight Flag",
-          "signal_date": "2026-10-01",
-          "pivot": 1909.47998046875,
-          "struct_stop": 1672.595,
-          "suggested_stop": 1756.7215820312501,
-          "rs_rank": 99.82375749030666,
-          "dv_rank": 99.85979670522256
-        }
-      ]
-    },
-    {
-      "ticker": "TEAM",
-      "family": "HTF",
-      "setup_type": "High Tight Flag",
-      "signal_date": "2026-10-01",
-      "sessions_left": 3,
-      "price": 196.64999389648438,
-      "dma10": 187.23199920654298,
-      "ema21": 184.7260710252472,
-      "sma50": 165.8115998840332,
-      "rs_rank": 97.00387733521325,
-      "dv_rank": 93.27024185068349,
-      "dollar_volume": 602953816.5769958,
-      "base_depth": "-5.0%",
-      "depth_52w": 5.0449981689453125,
-      "up_from_low52": 239.06446947543992,
-      "setup_depth": 15.974998474121094,
-      "setup_length": 7,
-      "spread_10_21": 1.3565644347804549,
-      "vol_ratio": 0.9724692791097946,
-      "vol_status": "Vol 97% of 20d",
-      "is_ipo": false,
-      "ipo_date": null,
-      "adr": 4.442940096372481,
-      "relative_strength_3mo": 118.8528392655184,
-      "dist_10dma": 5.030120241119707,
-      "dist_21ema": 6.454921498117883,
-      "recent_pivot": 200,
-      "buy_stop": 200,
-      "dist_from_pivot": -1.6750030517578174,
-      "timing_status": "AT_PIVOT",
-      "timing_label": "🎯 At Pivot",
-      "struct_stop": 167.20975303649902,
-      "suggested_stop": 184,
-      "suggested_stop_pct": 8,
-      "tier": "track",
-      "setups": [
-        {
-          "family": "HTF",
-          "setup_type": "High Tight Flag",
-          "signal_date": "2026-10-01",
-          "pivot": 200,
-          "struct_stop": 167.20975303649902,
-          "suggested_stop": 184,
-          "rs_rank": 97.00387733521325,
-          "dv_rank": 93.27024185068349
-        }
-      ]
-    }
-  ],
+  "tracked": [],
   "watchlist": [
     {
       "ticker": "CORT",
@@ -367,6 +294,44 @@
       "suggested_stop_pct": 6.125708081730512,
       "gap_pct": null,
       "why_not_buy": "Liquidity rank 79 < 85"
+    },
+    {
+      "ticker": "TEAM",
+      "family": "HTF",
+      "setup_type": "High Tight Flag",
+      "signal_date": "2026-10-05",
+      "sessions_left": 5,
+      "price": 196.64999389648438,
+      "dma10": 187.23199920654298,
+      "ema21": 184.7260710252472,
+      "sma50": 165.8115998840332,
+      "rs_rank": 97.11267605633803,
+      "dv_rank": 93.38235294117648,
+      "dollar_volume": 614113349.6894836,
+      "base_depth": "-1.7%",
+      "depth_52w": 1.6750030517578125,
+      "up_from_low52": 251.09801783529372,
+      "setup_depth": 15.974998474121094,
+      "setup_length": 24,
+      "spread_10_21": 1.3565644347804549,
+      "vol_ratio": 0.9724692791097946,
+      "vol_status": "Vol 97% of 20d",
+      "is_ipo": false,
+      "ipo_date": null,
+      "adr": 4.442940096372481,
+      "relative_strength_3mo": 118.8528392655184,
+      "dist_10dma": 5.030120241119707,
+      "dist_21ema": 6.454921498117883,
+      "recent_pivot": 200,
+      "buy_stop": 200,
+      "dist_from_pivot": -1.6750030517578174,
+      "timing_status": "AT_PIVOT",
+      "timing_label": "🎯 At Pivot",
+      "struct_stop": 181.65715728759764,
+      "suggested_stop": 184,
+      "suggested_stop_pct": 8,
+      "gap_pct": null,
+      "why_not_buy": "High Tight Flag (tracked, not a buy rule): repeat of an earlier flag"
     },
     {
       "ticker": "XP",
