@@ -34,8 +34,6 @@ jobs:
 
       - name: Run Screener
         run: node scripts/screener-cron.mjs
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       - name: Update track record
         # Never block publishing the scan on the track record.

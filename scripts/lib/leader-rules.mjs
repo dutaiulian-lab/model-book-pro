@@ -73,7 +73,7 @@ export const RULES = {
 // Watchlist (not buy signals): leaders with any setup, looser liquidity, any market.
 export const WATCH = { rsMin: 90, dvPctMin: 70 };
 
-// Plain-language rule text for the dashboard / track record / Discord.
+// Plain-language rule text for the dashboard / track record.
 export const REGIME_TEXT = {
     none: 'No market filter', spy200: 'SPY above its 200-day SMA', spy50: 'SPY above its 50-day SMA',
     breadth50: 'At least 50% of liquid US stocks above their 50-day SMA',

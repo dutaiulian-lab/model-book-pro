@@ -11,130 +11,6 @@ import {
 
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
-const fmtPct = (x, d = 1) => (x == null || Number.isNaN(x) ? 'N/A' : `${x >= 0 ? '+' : ''}${x.toFixed(d)}%`);
-
-async function sendDiscordSummary(output, spy3mo) {
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
-        console.log("No valid DISCORD_WEBHOOK_URL found. Skipping Discord broadcast.");
-        return;
-    }
-
-    const matches = output.matches || [];
-    const watch = output.watchlist || [];
-    const count = matches.length;
-    const isZero = count === 0;
-    const regimeIsOn = output.regime?.on ?? output.regime?.spy_above_200;
-    const tracked = output.tracked || [];
-    const famNames = RULES.families.map(f => FAMILY_LABELS[f]).join(' / ');
-    const color = isZero ? 0x64748b : 0x10b981; // Slate gray if 0, Emerald green if matches
-
-    const fields = [
-        {
-            name: "🔍 Universe Scanned",
-            value: `${output.total_scanned?.toLocaleString() || "6,000+"} US Tickers`,
-            inline: true
-        },
-        {
-            name: `🎯 Buy Setups (${RULES_VERSION})`,
-            value: isZero ? "0 (Cash Posture)" : `${count} Active Buy-Stops`,
-            inline: true
-        },
-        {
-            name: "📊 Market Regime",
-            value: `${regimeIsOn ? '🟢' : '🔴'} ${output.regime?.rule_text || 'SPY vs 200-day'}${regimeIsOn ? '' : ': OFF (no new buys)'} · SPY 3M ${fmtPct(spy3mo)}`,
-            inline: true
-        }
-    ];
-    if (output.idle_cash && output.idle_cash.mode !== 'none') {
-        const ic = output.idle_cash;
-        fields.push({
-            name: "💵 Idle cash",
-            value: ic.on
-                ? `Hold SPY with cash not in setups (SPY ${fmtPct(ic.spy_vs_200)} vs 200-day). Sell SPY to fund buys.`
-                : `Keep idle cash in cash (SPY ${fmtPct(ic.spy_vs_200)} vs 200-day; back to SPY above +${ic.band}%).`,
-            inline: false
-        });
-    }
-
-    if (isZero) {
-        fields.push({
-            name: "🛡️ Guidance",
-            value: regimeIsOn
-                ? `No RS-${RULES.rsMin}+ liquid leader has an untriggered setup (${famNames}) today. Capital preservation.`
-                : "The market filter is off: the rules take no new buys. Watchlist only.",
-            inline: false
-        });
-    } else {
-        matches.slice(0, 8).forEach((m, idx) => {
-            const stopStr = m.suggested_stop ? `$${m.suggested_stop.toFixed(2)} (-${m.suggested_stop_pct?.toFixed(1)}%)` : 'N/A';
-            fields.push({
-                name: `${idx + 1}. [${m.setup_type}] ${m.ticker} · $${m.price?.toFixed(2)} · RS ${m.rs_rank?.toFixed(0)}`,
-                value: `🎯 Buy-stop **$${m.buy_stop?.toFixed(2)}** (${fmtPct(m.dist_from_pivot)} away, ${m.sessions_left}d left) | 🛡️ Stop **${stopStr}** | ` +
-                    `52w: **${fmtPct(m.up_from_low52, 0)}** off low, **${m.base_depth}** off high${m.earnings_soon ? ' | ⚠️ earnings ' + m.earnings_date : ''}`,
-                inline: false
-            });
-        });
-        if (matches.length > 8) {
-            fields.push({
-                name: "➕ Additional Setups",
-                value: `Plus ${matches.length - 8} more on the live dashboard.`,
-                inline: false
-            });
-        }
-    }
-    if (tracked.length) {
-        fields.push({
-            name: `🧪 Tracked separately (${tracked.length}, not buy signals)`,
-            value: tracked.slice(0, 12).map(w => `${w.ticker} (${w.setup_type}, RS ${w.rs_rank.toFixed(0)})`).join(' · '),
-            inline: false
-        });
-    }
-    if (watch.length) {
-        fields.push({
-            name: `👀 Leader Watchlist (${watch.length}, not buy signals)`,
-            value: watch.slice(0, 12).map(w => `${w.ticker} (${w.family}, RS ${w.rs_rank.toFixed(0)})`).join(' · '),
-            inline: false
-        });
-    }
-
-    const payload = {
-        username: "Model Book Pro · Daily Screener",
-        avatar_url: "https://assets.marketleaders.trade/favicon.ico",
-        embeds: [
-            {
-                title: isZero
-                    ? "🛡️ Daily Market Screener: 0 Buy Setups"
-                    : `🚀 Daily Market Screener: ${count} Leader Buy Setups`,
-                description: isZero
-                    ? `The evening scan has completed across all US equities. No stock passed the ${RULES_VERSION} leader rules today.`
-                    : `**${count} market leaders** (RS ≥ ${RULES.rsMin}${RULES.dvPctMin > 0 ? `, top ${100 - RULES.dvPctMin}% liquidity` : ''}, ≥ +${RULES.upLow52Min}% off the 52-week low) have an active buy-stop for tomorrow.`,
-                color,
-                fields,
-                footer: {
-                    text: `Model Book Pro · rules ${RULES_VERSION}`
-                },
-                timestamp: new Date().toISOString()
-            }
-        ]
-    };
-
-    try {
-        const res = await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-            console.log("✅ Successfully broadcasted Daily Screener Digest to Discord!");
-        } else {
-            console.warn("Discord API returned status:", res.status, await res.text());
-        }
-    } catch (err) {
-        console.error("Error sending to Discord:", err.message);
-    }
-}
-
 // Scan health accounting. "no_data" = Yahoo answered but has nothing usable
 // (delisted / unknown symbol); "fetch_failed" = network error, 429 or 5xx
 // after retries. Only fetch_failed counts toward the abort threshold.
@@ -316,7 +192,7 @@ async function run() {
     console.log(`Scanning as of the ${asOf} close. SPY ${mktFor(asOf).spy200 ? 'above' : 'BELOW'} its 200-day SMA.`);
 
     // Scheduled runs on market holidays would just republish the previous
-    // session (and re-post to Discord). Manual runs always proceed.
+    // session. Manual runs always proceed.
     const outPath = path.join(process.cwd(), 'public', 'market-state.json');
     if (process.env.GITHUB_EVENT_NAME === 'schedule' && fs.existsSync(outPath)) {
         try {
@@ -531,8 +407,6 @@ async function run() {
     if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
     console.log(`Saved results: ${finalMatches.length} buy setups, ${tracked.length} tracked, ${watchlist.length} watchlist leaders.`);
-
-    await sendDiscordSummary(output, spy3mo);
 }
 
 // Short reason a watchlist leader is not a buy signal.
