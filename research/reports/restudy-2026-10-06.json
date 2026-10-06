@@ -1,0 +1,786 @@
+{
+ "date": "2026-10-06",
+ "year": 2027,
+ "data_to": "2026-10-05",
+ "changed": true,
+ "diffs": [
+  "families",
+  "upLow52Min"
+ ],
+ "current": {
+  "version": "2026-10 (F6b)",
+  "adopted": "2026-10-03",
+  "selected_by": "Walk-forward pick F6 (2026-10 study) with High Tight Flags moved to separate tracking (HTF ~0R/trade 2007-2026, 4 of 16 years positive, -0.23R on 101 trades since 2023).",
+  "families": [
+   "RANGE",
+   "TIGHT",
+   "BASE"
+  ],
+  "trackFamilies": [
+   "HTF"
+  ],
+  "trackNote": "in the 20-year test High Tight Flags averaged about 0R per trade (2007-2026, positive in 4 of 16 years) and -0.23R over 101 trades since 2023.",
+  "regime": "spy200",
+  "rsMin": 90,
+  "dvPctMin": 85,
+  "dvMinM": 10,
+  "priceMin": 10,
+  "upLow52Min": 100,
+  "depth52Max": 35,
+  "stop": "clamp",
+  "exit": "c50t21",
+  "idleCash": {
+   "mode": "spy200band",
+   "band": 3
+  },
+  "idleCashNote": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
+  "context": {
+   "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes.",
+   "spy200": [
+    {
+     "below": 0,
+     "state": "downtrend",
+     "label": "Downtrend",
+     "color": "red",
+     "meaning": "SPY is below its 200-day, a long-term downtrend. Expect wide swings: about 1 in 3 times SPY fell another 10%+ at some point in the next 3 months."
+    },
+    {
+     "below": 3,
+     "state": "testing",
+     "label": "Testing",
+     "color": "yellow",
+     "meaning": "SPY sits just above its 200-day and can flip either way. In the next 3 months it dipped 5%+ about 1 in 3 times and 10%+ about 1 in 5."
+    },
+    {
+     "below": 10,
+     "state": "uptrend",
+     "label": "Uptrend",
+     "color": "green",
+     "meaning": "Healthy trend, historically the best balance of risk and reward: SPY was higher 3 months later about 3 times in 4, and 10% drops were rare (about 1 in 13)."
+    },
+    {
+     "below": null,
+     "state": "extended",
+     "label": "Extended",
+     "color": "yellow",
+     "meaning": "Stretched (only 15% of days are this far above the 200-day): the next month's gains were about half the usual, and a 5% pullback came within 3 months about 1 in 3 times. Don't chase; not a sell signal, the biggest extensions were rebounds that kept going."
+    }
+   ],
+   "breadth": [
+    {
+     "below": 20,
+     "state": "washed_out",
+     "label": "Washed out",
+     "color": "yellow",
+     "meaning": "Capitulation: almost everything has been sold. Bottoms form here and the next 3 months were often strong, but about half the time SPY first fell another 5%. Wait for a breadth thrust before trusting a bounce."
+    },
+    {
+     "below": 40,
+     "state": "weak",
+     "label": "Weak",
+     "color": "red",
+     "meaning": "Most stocks are in pullbacks. SPY fell 10%+ at some point in the next 3 months about 1 in 4 times."
+    },
+    {
+     "below": 60,
+     "state": "mixed",
+     "label": "Mixed",
+     "color": "yellow",
+     "meaning": "No clear direction; money is rotating between sectors."
+    },
+    {
+     "below": 80,
+     "state": "healthy",
+     "label": "Healthy",
+     "color": "green",
+     "meaning": "Broad participation. 10% drops in the next 3 months were rare (about 1 in 12)."
+    },
+    {
+     "below": null,
+     "state": "strong",
+     "label": "Strong",
+     "color": "green",
+     "meaning": "Very broad buying, historically bullish: SPY was higher 3 months later 80% of the time. Not a top signal on its own."
+    }
+   ],
+   "narrow": {
+    "spyMin": 5,
+    "breadthBelow": 40,
+    "label": "Narrow market",
+    "text": "SPY is strong but most stocks are weak: a few large stocks are carrying the index. Historically a modest warning (SPY higher 3 months later 66% of the time vs 72% otherwise, with deeper dips)."
+   },
+   "thrust": {
+    "from": 20,
+    "to": 60,
+    "within": 10,
+    "showFor": 20,
+    "label": "Breadth thrust",
+    "text": "Breadth went from 20% or less to 60%+ within 10 sessions. This happened 9 times since 2005; SPY was higher 6 months later in 8 of them (median +13%). It has marked the start of new uptrends."
+   }
+  }
+ },
+ "proposal": {
+  "families": [
+   "TIGHT",
+   "BASE",
+   "HTF"
+  ],
+  "regime": "spy200",
+  "rsMin": 90,
+  "dvPctMin": 85,
+  "dvMinM": 10,
+  "priceMin": 10,
+  "upLow52Min": 0,
+  "depth52Max": 35,
+  "stop": "clamp",
+  "exit": "c50t21"
+ },
+ "pick": {
+  "pick": "TIGHT+BASE+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} clamp|c50t21",
+  "train": {
+   "cagr": 13.98373599183671,
+   "maxDD": 21.43466221648659
+  }
+ },
+ "oos": {
+  "rows": [
+   {
+    "year": 2010,
+    "ret": 11.273746768892433,
+    "spy": 12.840988195524993,
+    "trades": 36,
+    "pick": "BASE {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv50\",\"rsMin\":80,\"upLow52Min\":0} fix7|c50be",
+    "partial": false
+   },
+   {
+    "year": 2011,
+    "ret": -11.773727975922954,
+    "spy": -0.1988071570576566,
+    "trades": 36,
+    "pick": "RANGE+BASE+HTF {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv50\",\"rsMin\":80,\"upLow52Min\":50} clamp|c50be",
+    "partial": false
+   },
+   {
+    "year": 2012,
+    "ret": 1.4936465899858753,
+    "spy": 13.4741065036728,
+    "trades": 10,
+    "pick": "RANGE+BASE {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv20\",\"rsMin\":90,\"upLow52Min\":200} fix7|t20",
+    "partial": false
+   },
+   {
+    "year": 2013,
+    "ret": 9.05066183812988,
+    "spy": 29.688924718809062,
+    "trades": 52,
+    "pick": "TIGHT {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv20\",\"rsMin\":90,\"upLow52Min\":0} min5|c50part",
+    "partial": false
+   },
+   {
+    "year": 2014,
+    "ret": 13.195449643181934,
+    "spy": 11.289182180470924,
+    "trades": 31,
+    "pick": "RANGE+TIGHT {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} min5|c50part",
+    "partial": false
+   },
+   {
+    "year": 2015,
+    "ret": -6.744035633267432,
+    "spy": -0.8124930541476227,
+    "trades": 27,
+    "pick": "RANGE+TIGHT {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} min5|c50part",
+    "partial": false
+   },
+   {
+    "year": 2016,
+    "ret": -7.874963903056054,
+    "spy": 9.643402233275422,
+    "trades": 21,
+    "pick": "TIGHT {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} struct|c50be",
+    "partial": false
+   },
+   {
+    "year": 2017,
+    "ret": 17.815247271926715,
+    "spy": 19.384416771302206,
+    "trades": 31,
+    "pick": "RANGE+TIGHT+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} min5|c50part",
+    "partial": false
+   },
+   {
+    "year": 2018,
+    "ret": 8.532130938786175,
+    "spy": -6.347893319524989,
+    "trades": 27,
+    "pick": "RANGE+TIGHT+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} min5|c50t21",
+    "partial": false
+   },
+   {
+    "year": 2019,
+    "ret": -7.936757233260994,
+    "spy": 28.785206349907998,
+    "trades": 45,
+    "pick": "RANGE+TIGHT+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":50} min5|c50part",
+    "partial": false
+   },
+   {
+    "year": 2020,
+    "ret": 75.89601874180025,
+    "spy": 16.162313396749006,
+    "trades": 49,
+    "pick": "RANGE+TIGHT+BASE+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"breadth50\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} fix10|c50part",
+    "partial": false
+   },
+   {
+    "year": 2021,
+    "ret": 9.689703721344657,
+    "spy": 27.03540848726258,
+    "trades": 94,
+    "pick": "TIGHT+BASE+HTF {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv50\",\"rsMin\":90,\"upLow52Min\":0} clamp|c50t21",
+    "partial": false
+   },
+   {
+    "year": 2022,
+    "ret": -8.137233710757707,
+    "spy": -19.481640652683986,
+    "trades": 21,
+    "pick": "RANGE+BASE {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv20\",\"rsMin\":90,\"upLow52Min\":100} fix10|c50t21",
+    "partial": false
+   },
+   {
+    "year": 2023,
+    "ret": 0.4666511575947663,
+    "spy": 24.28679932579316,
+    "trades": 79,
+    "pick": "RANGE+BASE {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv20\",\"rsMin\":90,\"upLow52Min\":100} fix10|c50t21",
+    "partial": false
+   },
+   {
+    "year": 2024,
+    "ret": 7.545701260442739,
+    "spy": 23.30479478660552,
+    "trades": 73,
+    "pick": "TIGHT+BASE {\"extra\":\"none\",\"depth52Max\":null,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"dv50\",\"rsMin\":90,\"upLow52Min\":0} fix10|c50t21",
+    "partial": false
+   },
+   {
+    "year": 2025,
+    "ret": 56.58117509624234,
+    "spy": 16.35271004396326,
+    "trades": 60,
+    "pick": "TIGHT+BASE+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} clamp|c50t21",
+    "partial": false
+   },
+   {
+    "year": 2026,
+    "ret": 28.836032267011813,
+    "spy": 13.624770722099289,
+    "trades": 54,
+    "pick": "TIGHT+BASE+HTF {\"extra\":\"none\",\"depth52Max\":35,\"tmpl\":0,\"regime\":\"spy200\",\"liq\":\"pct85\",\"rsMin\":90,\"upLow52Min\":0} clamp|c50t21",
+    "partial": true
+   }
+  ],
+  "cagr": 9.67367031740105,
+  "spy_cagr": 12.08284257233947,
+  "max_year_end_dd": 14.087909164594436
+ },
+ "idle_cash": {
+  "rule": {
+   "mode": "spy200band",
+   "band": 3
+  },
+  "cash": {
+   "rows": [
+    {
+     "year": 2010,
+     "ret": 11.273746768892433,
+     "in_setups": 54.99301861577669,
+     "in_spy": 0
+    },
+    {
+     "year": 2011,
+     "ret": -11.773727975922954,
+     "in_setups": 49.39678660787662,
+     "in_spy": 0
+    },
+    {
+     "year": 2012,
+     "ret": 1.4936465899858753,
+     "in_setups": 8.337838044440616,
+     "in_spy": 0
+    },
+    {
+     "year": 2013,
+     "ret": 9.05066183812988,
+     "in_setups": 82.62254424478563,
+     "in_spy": 0
+    },
+    {
+     "year": 2014,
+     "ret": 13.195449643181934,
+     "in_setups": 66.30298366756297,
+     "in_spy": 0
+    },
+    {
+     "year": 2015,
+     "ret": -6.744035633267432,
+     "in_setups": 50.27732968707006,
+     "in_spy": 0
+    },
+    {
+     "year": 2016,
+     "ret": -7.874963903056054,
+     "in_setups": 32.472334009400676,
+     "in_spy": 0
+    },
+    {
+     "year": 2017,
+     "ret": 17.815247271926715,
+     "in_setups": 75.30169512759667,
+     "in_spy": 0
+    },
+    {
+     "year": 2018,
+     "ret": 8.532130938786175,
+     "in_setups": 52.75411499713213,
+     "in_spy": 0
+    },
+    {
+     "year": 2019,
+     "ret": -7.936757233260994,
+     "in_setups": 59.50512819496521,
+     "in_spy": 0
+    },
+    {
+     "year": 2020,
+     "ret": 75.89601874180025,
+     "in_setups": 63.410200118381574,
+     "in_spy": 0
+    },
+    {
+     "year": 2021,
+     "ret": 9.689703721344657,
+     "in_setups": 72.1357596538359,
+     "in_spy": 0
+    },
+    {
+     "year": 2022,
+     "ret": -8.137233710757707,
+     "in_setups": 14.668860638188377,
+     "in_spy": 0
+    },
+    {
+     "year": 2023,
+     "ret": 0.4666511575947663,
+     "in_setups": 73.3683337768062,
+     "in_spy": 0
+    },
+    {
+     "year": 2024,
+     "ret": 7.545701260442739,
+     "in_setups": 79.61921317681686,
+     "in_spy": 0
+    },
+    {
+     "year": 2025,
+     "ret": 56.58117509624234,
+     "in_setups": 62.92486799382308,
+     "in_spy": 0
+    },
+    {
+     "year": 2026,
+     "ret": 28.836032267011813,
+     "in_setups": 62.44227075844528,
+     "in_spy": 0
+    }
+   ],
+   "cagr": 9.67367031740105,
+   "dailyDD": 37.78018835738135,
+   "last5": 14.89636211981109,
+   "beat": 6
+  },
+  "spy_conservative": {
+   "rows": [
+    {
+     "year": 2010,
+     "ret": 9.287516026908005,
+     "in_setups": 54.47326639236919,
+     "in_spy": 20.115228660489763
+    },
+    {
+     "year": 2011,
+     "ret": -14.981433355881036,
+     "in_setups": 49.302121186264586,
+     "in_spy": 12.026488847630874
+    },
+    {
+     "year": 2012,
+     "ret": 10.780323063893027,
+     "in_setups": 8.313064923013606,
+     "in_spy": 87.76849239798561
+    },
+    {
+     "year": 2013,
+     "ret": 26.076964178793926,
+     "in_setups": 82.14444344519941,
+     "in_spy": 17.832391825966457
+    },
+    {
+     "year": 2014,
+     "ret": 15.434346442977564,
+     "in_setups": 66.01791016684071,
+     "in_spy": 33.97495826910303
+    },
+    {
+     "year": 2015,
+     "ret": -7.10666353018321,
+     "in_setups": 50.15395427968019,
+     "in_spy": 20.312350764508185
+    },
+    {
+     "year": 2016,
+     "ret": 1.2656739021114083,
+     "in_setups": 32.39507713506914,
+     "in_spy": 45.76950080707003
+    },
+    {
+     "year": 2017,
+     "ret": 19.595588090773465,
+     "in_setups": 75.88960447760364,
+     "in_spy": 24.10023130545002
+    },
+    {
+     "year": 2018,
+     "ret": 7.26108219114614,
+     "in_setups": 52.40108142683609,
+     "in_spy": 30.233418889487474
+    },
+    {
+     "year": 2019,
+     "ret": -0.11132706320766683,
+     "in_setups": 62.744107337428254,
+     "in_spy": 21.887064744497927
+    },
+    {
+     "year": 2020,
+     "ret": 70.88154769058346,
+     "in_setups": 63.32352462427604,
+     "in_spy": 20.439695054669496
+    },
+    {
+     "year": 2021,
+     "ret": 18.0409025135827,
+     "in_setups": 72.2381989404884,
+     "in_spy": 27.733672530157914
+    },
+    {
+     "year": 2022,
+     "ret": -13.755698953493589,
+     "in_setups": 14.650985245022783,
+     "in_spy": 10.837339760969368
+    },
+    {
+     "year": 2023,
+     "ret": 6.447988736151045,
+     "in_setups": 72.86919424422933,
+     "in_spy": 20.235258824190307
+    },
+    {
+     "year": 2024,
+     "ret": 11.569935813093423,
+     "in_setups": 80.48002005110561,
+     "in_spy": 19.52248142937025
+    },
+    {
+     "year": 2025,
+     "ret": 52.956818670584504,
+     "in_setups": 62.7743574195598,
+     "in_spy": 20.194091147896483
+    },
+    {
+     "year": 2026,
+     "ret": 27.326887855472215,
+     "in_setups": 62.35795093443816,
+     "in_spy": 34.48918029535056
+    }
+   ],
+   "cagr": 12.373247708943659,
+   "dailyDD": 35.641976206712165,
+   "last5": 14.810287191312455,
+   "beat": 7
+  },
+  "spy_optimistic": {
+   "rows": [
+    {
+     "year": 2010,
+     "ret": 10.15954251380229,
+     "in_setups": 54.44226398304838,
+     "in_spy": 20.127229684174544
+    },
+    {
+     "year": 2011,
+     "ret": -12.315353468633749,
+     "in_setups": 49.29656607634445,
+     "in_spy": 12.017351358711613
+    },
+    {
+     "year": 2012,
+     "ret": 11.130535902692174,
+     "in_setups": 8.317192512236094,
+     "in_spy": 87.79709320204965
+    },
+    {
+     "year": 2013,
+     "ret": 28.864994319483884,
+     "in_setups": 82.95942784725868,
+     "in_spy": 17.040572152741422
+    },
+    {
+     "year": 2014,
+     "ret": 17.875430049957195,
+     "in_setups": 66.01198128029782,
+     "in_spy": 33.98801871970212
+    },
+    {
+     "year": 2015,
+     "ret": -5.703942652224214,
+     "in_setups": 50.0851384994492,
+     "in_spy": 20.37961523558612
+    },
+    {
+     "year": 2016,
+     "ret": 2.0840879822937364,
+     "in_setups": 32.42595713766264,
+     "in_spy": 45.77526697051107
+    },
+    {
+     "year": 2017,
+     "ret": 21.690869079276133,
+     "in_setups": 75.87528139174188,
+     "in_spy": 24.124718608258092
+    },
+    {
+     "year": 2018,
+     "ret": 8.315525283226233,
+     "in_setups": 53.29740781673925,
+     "in_spy": 29.332074254973904
+    },
+    {
+     "year": 2019,
+     "ret": 1.641906090200318,
+     "in_setups": 62.71324402580824,
+     "in_spy": 21.934301183768227
+    },
+    {
+     "year": 2020,
+     "ret": 73.96610799883841,
+     "in_setups": 64.28607322455039,
+     "in_spy": 19.462442267091408
+    },
+    {
+     "year": 2021,
+     "ret": 21.629230442940983,
+     "in_setups": 72.09757948514198,
+     "in_spy": 27.90242051485804
+    },
+    {
+     "year": 2022,
+     "ret": -13.491135397689135,
+     "in_setups": 14.643865830009078,
+     "in_spy": 10.81054746638989
+    },
+    {
+     "year": 2023,
+     "ret": 5.020108013220903,
+     "in_setups": 73.29199860070479,
+     "in_spy": 19.83133170146921
+    },
+    {
+     "year": 2024,
+     "ret": 5.693310665290796,
+     "in_setups": 80.00010474876098,
+     "in_spy": 19.999895251239025
+    },
+    {
+     "year": 2025,
+     "ret": 56.887747003609746,
+     "in_setups": 62.64847495166392,
+     "in_spy": 20.31212863142829
+    },
+    {
+     "year": 2026,
+     "ret": 28.67692909756854,
+     "in_setups": 62.29983820822665,
+     "in_spy": 34.535138849071004
+    }
+   ],
+   "cagr": 13.513124463814474,
+   "dailyDD": 34.02830785580567,
+   "last5": 14.154768513292538,
+   "beat": 7
+  }
+ },
+ "families": [
+  {
+   "fam": "RANGE",
+   "in_buy": false,
+   "n": 460,
+   "avg_r": 0.15628301922697574,
+   "pos_years": 9,
+   "years": 19,
+   "last3_avg_r": 0.38064522659849553,
+   "last3_n": 84
+  },
+  {
+   "fam": "TIGHT",
+   "in_buy": true,
+   "n": 722,
+   "avg_r": 0.4118455292094612,
+   "pos_years": 15,
+   "years": 19,
+   "last3_avg_r": 0.6274886588669486,
+   "last3_n": 144
+  },
+  {
+   "fam": "BASE",
+   "in_buy": true,
+   "n": 460,
+   "avg_r": 0.54839083404918,
+   "pos_years": 13,
+   "years": 19,
+   "last3_avg_r": 0.860604361756196,
+   "last3_n": 119
+  },
+  {
+   "fam": "HTF",
+   "in_buy": true,
+   "n": 166,
+   "avg_r": 0.5251879465193993,
+   "pos_years": 6,
+   "years": 15,
+   "last3_avg_r": 0.49473734388358137,
+   "last3_n": 89
+  }
+ ],
+ "survivorship": {
+  "delisted_included": 0,
+  "coverage": {
+   "2007": 0.362497553337248,
+   "2008": 0.4076296613801972,
+   "2009": 0.440581685980459,
+   "2010": 0.47440990885720963,
+   "2011": 0.4996403740110285,
+   "2012": 0.5290102389078498,
+   "2013": 0.5442583732057417,
+   "2014": 0.5539024948500801,
+   "2015": 0.5806893403332573,
+   "2016": 0.6074809512814593,
+   "2017": 0.6367619926199262,
+   "2018": 0.7308746573635684,
+   "2019": 0.7900255754475703,
+   "2020": 0.8135964912280702,
+   "2021": 0.7842480100544617,
+   "2022": 0.8330461008186126,
+   "2023": 0.9228630993745657,
+   "2024": 1,
+   "2025": 1
+  },
+  "proposed": {
+   "trades": 1348,
+   "busts": 165,
+   "bustR": 0.12574589921895302,
+   "otherR": 0.5207484205434885,
+   "scen": [
+    {
+     "name": "As measured (survivors only)",
+     "short": "as measured",
+     "added": 0,
+     "avgR": 0.4723987053961974,
+     "cagr": 13.5442687404018,
+     "dd": 21.416349745523643
+    },
+    {
+     "name": "Missing stocks trade like survivors that later busted (half as many setups)",
+     "short": "bust-like x0.5",
+     "added": 289,
+     "avgR": 0.4246730700705005,
+     "cagr": 13.16403275338831,
+     "dd": 28.83092582125536
+    },
+    {
+     "name": "Missing stocks trade like survivors that later busted (as many setups)",
+     "short": "bust-like x1",
+     "added": 579,
+     "avgR": 0.30545756009795916,
+     "cagr": 12.263329276060064,
+     "dd": 31.49251845846414
+    },
+    {
+     "name": "Extreme bound: every missing trade is a full stop-out (-1R)",
+     "short": "all -1R",
+     "added": 579,
+     "avgR": 0.012016161058632947,
+     "cagr": -1.1072664912346375,
+     "dd": 82.72255650008032
+    },
+    {
+     "name": "Extreme bound: every missing trade gaps through its stop (-1.5R)",
+     "short": "all -1.5R",
+     "added": 579,
+     "avgR": -0.1376098941952533,
+     "cagr": -6.986464625658984,
+     "dd": 93.88514592340809
+    }
+   ]
+  },
+  "current": {
+   "trades": 1116,
+   "busts": 150,
+   "bustR": 0.03045583512634039,
+   "otherR": 0.5243577172323641,
+   "scen": [
+    {
+     "name": "As measured (survivors only)",
+     "short": "as measured",
+     "added": 0,
+     "avgR": 0.45797305565897384,
+     "cagr": 12.669605024580077,
+     "dd": 20.46819323538932
+    },
+    {
+     "name": "Missing stocks trade like survivors that later busted (half as many setups)",
+     "short": "bust-like x0.5",
+     "added": 245,
+     "avgR": 0.36848980781018686,
+     "cagr": 12.355830231329378,
+     "dd": 26.149740677652822
+    },
+    {
+     "name": "Missing stocks trade like survivors that later busted (as many setups)",
+     "short": "bust-like x1",
+     "added": 496,
+     "avgR": 0.32759244620459727,
+     "cagr": 12.475928823739736,
+     "dd": 28.042896391368988
+    },
+    {
+     "name": "Extreme bound: every missing trade is a full stop-out (-1R)",
+     "short": "all -1R",
+     "added": 496,
+     "avgR": -0.008299620054070683,
+     "cagr": -1.1376712232685104,
+     "dd": 86.27987103633873
+    },
+    {
+     "name": "Extreme bound: every missing trade gaps through its stop (-1.5R)",
+     "short": "all -1.5R",
+     "added": 496,
+     "avgR": -0.16227254354437165,
+     "cagr": -6.364302827841472,
+     "dd": 94.41044009212683
+    }
+   ]
+  }
+ }
+}

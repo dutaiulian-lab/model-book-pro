@@ -1,7 +1,7 @@
 {
-  "version": "2026-10 (F6b)",
+  "version": "2026-10 (F6c)",
   "adopted": "2026-10-03",
-  "selected_by": "Walk-forward pick F6 (2026-10 study) with High Tight Flags moved to separate tracking (HTF ~0R/trade 2007-2026, 4 of 16 years positive, -0.23R on 101 trades since 2023).",
+  "selected_by": "Walk-forward pick F6 (2026-10 study) with High Tight Flags moved to separate tracking (HTF ~0R/trade 2007-2026, 4 of 16 years positive, -0.23R on 101 trades since 2023). 2026-10-06 (F6c): High Tight Flag definition tightened (pole +100%, flag peak within 5% of the 52-week high, flag measured from the pole's peak); buy rules unchanged.",
   "families": [
     "RANGE",
     "TIGHT",
@@ -10,7 +10,7 @@
   "trackFamilies": [
     "HTF"
   ],
-  "trackNote": "in the 20-year test High Tight Flags averaged about 0R per trade (2007-2026, positive in 4 of 16 years) and -0.23R over 101 trades since 2023.",
+  "trackNote": "with the tightened definition (2026-10-06) High Tight Flags averaged +0.5R per trade in the 20-year test (166 trades 2007-2026, positive in 6 of 15 years), but -0.35R over 44 trades in 2026 so far; kept out of the buy rules until the yearly re-study.",
   "regime": "spy200",
   "rsMin": 90,
   "dvPctMin": 85,

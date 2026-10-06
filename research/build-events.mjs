@@ -9,7 +9,8 @@
 //   TIGHT  tight 5-day range (<= 1.25 ADR) above rising 21-EMA; buy-stop at 5-day high
 //   BASE   base pivot: highest high of up to 130 sessions not exceeded for >= 20
 //          sessions (>= 10 for IPOs), close within 5% below it; buy-stop at the base high
-//   HTF    high tight flag: +90% within 40 sessions, flag <= 25% deep, 5-25 sessions
+//   HTF    high tight flag: +100% within 40 sessions to a peak within 5% of the 52-week
+//          high; flag <= 25% deep, 5-25 sessions from the pole's peak
 //   PEB    21-EMA undercut in an uptrend (close < 21 EMA, > 50 SMA); buy-stop at undercut-bar high
 //   OOPS   uptrend pullback near 21 EMA / 50 SMA; next day opens below prior low and
 //          trades back through it; buy at the prior low (one session)
@@ -293,16 +294,23 @@ for (let tid = 0; tid < tickers.length; tid++) {
                     cands.push({ fam: 'BASE', pivot: P, W: 5, structStop: ls * 0.995, baseDepth: bd, baseLen: len });
                 }
             }
-            // HTF: flag peak j2 within last 5-25 sessions; pole +90% within 40 sessions before peak.
+            // HTF: pivot = highest high of the last 25 sessions. The flag starts at the
+            // pole's peak: the first bar (up to 25 sessions before the pivot) with a
+            // high within 2% of it, so a marginal new high does not restart the flag
+            // (it expires after 25 sessions instead). Pole: +100% from the lowest low
+            // of the 40 sessions before the flag start. The pivot must be within 5%
+            // of the 52-week high (a rebound inside a crash is not a flag).
             const j2 = rollIdxMax(h, s, 25);
-            const len2 = s - j2;
+            let jf = j2;
+            for (let q = Math.max(0, j2 - 25); q <= j2; q++) if (h[q] >= h[j2] * 0.98) { jf = q; break; }
+            const len2 = s - jf;
             if (len2 >= 5 && len2 <= 25 && c[s] < h[j2] && c[s] >= h[j2] * 0.93) {
-                let mnPole = Infinity;
-                for (let q = Math.max(0, j2 - 40); q <= j2; q++) if (l[q] < mnPole) mnPole = l[q];
-                let mnFlag = Infinity;
-                for (let q = j2; q <= s; q++) if (l[q] < mnFlag) mnFlag = l[q];
+                let mnPole = Infinity, mnFlag = Infinity;
+                for (let q = Math.max(0, jf - 40); q <= jf; q++) if (l[q] < mnPole) mnPole = l[q];
+                for (let q = jf; q <= s; q++) if (l[q] < mnFlag) mnFlag = l[q];
                 const fd = (h[j2] - mnFlag) / h[j2] * 100;
-                if (h[j2] / mnPole >= 1.9 && fd <= 25) {
+                const hi52AtPeak = isIpo ? hiRef : h[hi252[j2]];
+                if (h[j2] / mnPole >= 2 && fd <= 25 && h[j2] >= hi52AtPeak * 0.95) {
                     cands.push({ fam: 'HTF', pivot: h[j2], W: 5, structStop: Math.min(l[s], l[s - 1], l[s - 2]) * 0.995, baseDepth: fd, baseLen: len2 });
                 }
             }
