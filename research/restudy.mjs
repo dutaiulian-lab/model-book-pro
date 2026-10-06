@@ -370,6 +370,8 @@ if (flag('--apply') && changed) {
         trackNote: notBuy.length ? `under these filters in the ${TODAY} re-study, ${notBuy.map(famNote).join('; ')}.` : '',
         ...Object.fromEntries(FIELDS.filter(k => k !== 'families').map(k => [k, proposal[k]])),
         ...(current.idleCash ? { idleCash: current.idleCash, idleCashNote: current.idleCashNote } : {}),
+        // Market context thresholds (display only) are calibrated separately; keep them.
+        ...(current.context ? { context: current.context } : {}),
     };
     fs.writeFileSync(RULES_PATH, JSON.stringify(next, null, 2) + '\n');
     lap(`wrote ${path.relative(REPO, RULES_PATH)} (${next.version})`);

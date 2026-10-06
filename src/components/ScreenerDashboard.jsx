@@ -14,6 +14,50 @@ function expectedScanAfter(now = new Date()) {
 
 const DISMISSED_RUN_KEY = 'dismissedFailedRunUrl';
 
+// Market context (display only): SPY vs its 200-day and breadth states with
+// what they meant historically (rules.json context), plus flags.
+const CONTEXT_COLORS = {
+  green: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300',
+  yellow: 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300',
+  red: 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300',
+};
+const CONTEXT_DOTS = { green: '🟢', yellow: '🟡', red: '🔴' };
+const signed = (x) => `${x >= 0 ? '+' : ''}${x.toFixed(1)}`;
+
+function ContextTile({ title, item, value }) {
+  if (!item?.state) return null;
+  return (
+    <div className={`rounded-xl border px-2.5 py-1.5 font-normal ${CONTEXT_COLORS[item.color] || CONTEXT_COLORS.yellow}`} title={item.meaning}>
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <span className="text-[10px] uppercase tracking-wide opacity-80">{title}</span>
+        <span className="font-bold">{CONTEXT_DOTS[item.color]} {item.label}</span>
+        <span className="font-mono text-[11px] opacity-90">{value}</span>
+      </div>
+      <div className="sm:hidden text-[11px] text-foreground/80 mt-0.5 leading-snug">{item.meaning}</div>
+    </div>
+  );
+}
+
+function MarketContext({ context }) {
+  const { spy, breadth, flags = [] } = context;
+  return (
+    <div className="mt-2 space-y-1.5" title={context.note || ''}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        <ContextTile title="SPY trend" item={spy} value={spy?.value != null ? `${signed(spy.value)}% vs 200-day` : ''}/>
+        <ContextTile title="Breadth" item={breadth}
+          value={breadth?.value != null ? `${breadth.value.toFixed(0)}% above 50-day${breadth.change10 != null ? ` (${signed(breadth.change10)} in 10d)` : ''}` : ''}/>
+      </div>
+      {flags.map(f => (
+        <div key={f.id} title={f.text}
+          className={`rounded-lg border px-2.5 py-1 text-[11px] font-normal ${f.id === 'thrust' ? CONTEXT_COLORS.green : CONTEXT_COLORS.yellow}`}>
+          <span className="font-bold">{f.id === 'thrust' ? '🚀' : '⚠'} {f.label}{f.sessions_ago != null ? ` (${f.sessions_ago === 0 ? 'today' : `${f.sessions_ago} sessions ago`})` : ''}:</span>{' '}
+          <span className="text-foreground/80">{f.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ScreenerDashboard({ onHealthChange }) {
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedTab, setSelectedTab] = useState('ALL');
@@ -233,6 +277,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
   const watchlist = data?.watchlist || [];
   const regime = data?.regime;
   const idle = data?.idle_cash;
+  const context = data?.context;
   const tracked = data?.tracked || [];
   const rules = data?.rules;
   const regimeOff = regime && (regime.on != null ? regime.on === false : regime.spy_above_200 === false);
@@ -406,6 +451,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 </span>
               </div>
             )}
+            {context && <MarketContext context={context}/>}
           </div>
           <div className="text-[11px] text-muted-foreground" title={data?.rules_version ? `Rules ${data.rules_version}` : ''}>
             Leaders: RS ≥ {rules?.rsMin ?? 90}

@@ -7,6 +7,7 @@ import {
     RULES, WATCH, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, rsScore, dollarVol,
     inRankUniverse, detect, countedSetups, passesBuyRules, passesTrackRules, passesWatch, bestSetup, initialStop,
     percentile, regimeOn, spyRegimeByDate, splitFactors, parseChart, IDLE, idleCashByDate, idleCashText,
+    CONTEXT, contextHistory, marketContext,
 } from './lib/leader-rules.mjs';
 
 const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
@@ -88,6 +89,9 @@ async function quoteSummaryWithRetry(ticker, attempts = 3) {
 //            triggered yet (still actionable tomorrow);
 //   watch:   today's raw setups including power gaps (watchlist);
 //   snap:    display values for the dashboard card.
+// Sessions of breadth history kept for the market context.
+const BREADTH_SESSIONS = contextHistory();
+
 function scanTicker(ticker, history, splits, meta, spyDates) {
     if (meta?.instrumentType && meta.instrumentType !== 'EQUITY') return null;
     if (history.length < 30) return null;
@@ -98,10 +102,14 @@ function scanTicker(ticker, history, splits, meta, spyDates) {
     const S = prepare(history, { ipoStart, factor: splitFactors(dates, splits) });
     const n = S.n;
     const recent = {};
-    for (let k = Math.max(0, n - RULES.entryWindow); k < n; k++) {
+    // RS / dollar volume for the entry window (percentiles); a50 (above its
+    // 50-day SMA, null before 50 bars) for a longer window: market breadth and
+    // its history for the market context (breadth thrust, 10-day change).
+    const window = Math.max(RULES.entryWindow, BREADTH_SESSIONS);
+    for (let k = Math.max(0, n - window); k < n; k++) {
         if (inRankUniverse(S, k)) {
-            // a50: above its 50-day SMA (null before 50 bars), for market breadth.
-            recent[S.dates[k]] = { rs: rsScore(S, k), dv: dollarVol(S, k), a50: Number.isNaN(S.sma50[k]) ? null : S.c[k] > S.sma50[k] };
+            const a50 = Number.isNaN(S.sma50[k]) ? null : S.c[k] > S.sma50[k];
+            recent[S.dates[k]] = k >= n - RULES.entryWindow ? { rs: rsScore(S, k), dv: dollarVol(S, k), a50 } : { a50 };
         }
     }
     const pack = (st, s) => {
@@ -247,9 +255,12 @@ async function run() {
     const rsBy = new Map(), dvBy = new Map(), breadthBy = new Map();
     for (const r of results.values()) {
         for (const [d, x] of Object.entries(r.recent)) {
-            if (!rsBy.has(d)) { rsBy.set(d, []); dvBy.set(d, []); breadthBy.set(d, { n: 0, up: 0 }); }
-            if (!Number.isNaN(x.rs)) rsBy.get(d).push(x.rs);
-            dvBy.get(d).push(x.dv);
+            if (!breadthBy.has(d)) breadthBy.set(d, { n: 0, up: 0 });
+            if (x.dv !== undefined) {
+                if (!rsBy.has(d)) { rsBy.set(d, []); dvBy.set(d, []); }
+                if (!Number.isNaN(x.rs)) rsBy.get(d).push(x.rs);
+                dvBy.get(d).push(x.dv);
+            }
             if (x.a50 != null) { const b = breadthBy.get(d); b.n++; if (x.a50) b.up++; }
         }
     }
@@ -263,6 +274,7 @@ async function run() {
         spy_above_50: !!mktToday.spy50,
         breadth_50: Number.isFinite(mktToday.breadth) ? Number(mktToday.breadth.toFixed(1)) : null,
         spy_close: spyC[spyC.length - 1],
+        spy_sma200: spyC.length >= 200 ? Number((spyC.subarray(-200).reduce((a, b) => a + b, 0) / 200).toFixed(2)) : null,
     };
     console.log(`Market filter (${regime.rule_text}): ${regime.on ? 'ON' : 'OFF'}; breadth ${regime.breadth_50}% above 50-day.`);
     const idleToday = idleCashByDate(spyDates, spyC).get(asOf);
@@ -272,6 +284,10 @@ async function run() {
         spy_vs_200: Number.isFinite(idleToday?.vs200) ? Number(idleToday.vs200.toFixed(2)) : null,
     };
     console.log(`${idle_cash.rule_text}: ${idle_cash.on ? 'HOLD SPY' : 'CASH'} (SPY ${idle_cash.spy_vs_200}% vs 200-day).`);
+    // Market context (display only): states for SPY vs its 200-day and breadth.
+    const breadthHist = spyDates.slice(-BREADTH_SESSIONS).map(d => mktFor(d).breadth);
+    const context = CONTEXT ? { ...marketContext(idleToday?.vs200, breadthHist), note: CONTEXT.note } : null;
+    if (context) console.log(`Market context: SPY ${context.spy.label ?? '-'}, breadth ${context.breadth.label ?? '-'} (10-day ${context.breadth.change10 ?? '-'})${context.flags.map(f => `, ${f.label}`).join('')}.`);
     for (const a of rsBy.values()) a.sort((x, y) => x - y);
     for (const a of dvBy.values()) a.sort((x, y) => x - y);
     const universeToday = dvBy.get(asOf)?.length || 0;
@@ -392,6 +408,7 @@ async function run() {
         watch_rules: WATCH,
         regime,
         idle_cash,
+        context,
         total_scanned: tickers.length,
         ranking_universe: universeToday,
         stats: {

@@ -24,5 +24,89 @@
     "mode": "spy200band",
     "band": 3
   },
-  "idleCashNote": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results."
+  "idleCashNote": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
+  "context": {
+    "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes.",
+    "spy200": [
+      {
+        "below": 0,
+        "state": "downtrend",
+        "label": "Downtrend",
+        "color": "red",
+        "meaning": "SPY is below its 200-day, a long-term downtrend. Expect wide swings: about 1 in 3 times SPY fell another 10%+ at some point in the next 3 months."
+      },
+      {
+        "below": 3,
+        "state": "testing",
+        "label": "Testing",
+        "color": "yellow",
+        "meaning": "SPY sits just above its 200-day and can flip either way. In the next 3 months it dipped 5%+ about 1 in 3 times and 10%+ about 1 in 5."
+      },
+      {
+        "below": 10,
+        "state": "uptrend",
+        "label": "Uptrend",
+        "color": "green",
+        "meaning": "Healthy trend, historically the best balance of risk and reward: SPY was higher 3 months later about 3 times in 4, and 10% drops were rare (about 1 in 13)."
+      },
+      {
+        "below": null,
+        "state": "extended",
+        "label": "Extended",
+        "color": "yellow",
+        "meaning": "Stretched (only 15% of days are this far above the 200-day): the next month's gains were about half the usual, and a 5% pullback came within 3 months about 1 in 3 times. Don't chase; not a sell signal, the biggest extensions were rebounds that kept going."
+      }
+    ],
+    "breadth": [
+      {
+        "below": 20,
+        "state": "washed_out",
+        "label": "Washed out",
+        "color": "yellow",
+        "meaning": "Capitulation: almost everything has been sold. Bottoms form here and the next 3 months were often strong, but about half the time SPY first fell another 5%. Wait for a breadth thrust before trusting a bounce."
+      },
+      {
+        "below": 40,
+        "state": "weak",
+        "label": "Weak",
+        "color": "red",
+        "meaning": "Most stocks are in pullbacks. SPY fell 10%+ at some point in the next 3 months about 1 in 4 times."
+      },
+      {
+        "below": 60,
+        "state": "mixed",
+        "label": "Mixed",
+        "color": "yellow",
+        "meaning": "No clear direction; money is rotating between sectors."
+      },
+      {
+        "below": 80,
+        "state": "healthy",
+        "label": "Healthy",
+        "color": "green",
+        "meaning": "Broad participation. 10% drops in the next 3 months were rare (about 1 in 12)."
+      },
+      {
+        "below": null,
+        "state": "strong",
+        "label": "Strong",
+        "color": "green",
+        "meaning": "Very broad buying, historically bullish: SPY was higher 3 months later 80% of the time. Not a top signal on its own."
+      }
+    ],
+    "narrow": {
+      "spyMin": 5,
+      "breadthBelow": 40,
+      "label": "Narrow market",
+      "text": "SPY is strong but most stocks are weak: a few large stocks are carrying the index. Historically a modest warning (SPY higher 3 months later 66% of the time vs 72% otherwise, with deeper dips)."
+    },
+    "thrust": {
+      "from": 20,
+      "to": 60,
+      "within": 10,
+      "showFor": 20,
+      "label": "Breadth thrust",
+      "text": "Breadth went from 20% or less to 60%+ within 10 sessions. This happened 9 times since 2005; SPY was higher 6 months later in 8 of them (median +13%). It has marked the start of new uptrends."
+    }
+  }
 }

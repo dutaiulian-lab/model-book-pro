@@ -108,6 +108,55 @@ export function regimeOn(mkt) {
         default: return !!m.spy200;
     }
 }
+// Market context (rules.json context): display-only states for SPY's distance
+// from its 200-day SMA and for breadth, plus narrow-market / breadth-thrust
+// flags. Never used by the buy rules.
+export const CONTEXT = CFG.context || null;
+
+// First band whose `below` bound exceeds the value (null bound = no limit).
+export function classify(bands, value) {
+    if (!bands?.length || !Number.isFinite(value)) return null;
+    const b = bands.find(x => x.below == null || value < x.below) || bands[bands.length - 1];
+    return { state: b.state, label: b.label, color: b.color, meaning: b.meaning };
+}
+
+// Sessions of breadth history marketContext needs (thrust window + display window).
+export const contextHistory = (ctx = CONTEXT) => (ctx?.thrust ? ctx.thrust.within + ctx.thrust.showFor : 10) + 1;
+
+// spyVs200: SPY % above its 200-day SMA today. breadth: % above the 50-day per
+// session, oldest first, last = today (NaN for missing sessions).
+export function marketContext(spyVs200, breadth, ctx = CONTEXT) {
+    if (!ctx) return null;
+    const n = breadth.length, today = n ? breadth[n - 1] : NaN;
+    const r1 = (x) => Number.isFinite(x) ? Math.round(x * 10) / 10 : null;
+    const prev10 = n > 10 ? breadth[n - 11] : NaN;
+    const out = {
+        spy: { value: r1(spyVs200), ...classify(ctx.spy200, spyVs200) },
+        breadth: { value: r1(today), change10: r1(today - prev10), ...classify(ctx.breadth, today) },
+        flags: [],
+    };
+    const nw = ctx.narrow;
+    if (nw && spyVs200 >= nw.spyMin && today < nw.breadthBelow) out.flags.push({ id: 'narrow', label: nw.label, text: nw.text });
+    const th = ctx.thrust;
+    if (th) {
+        // A session qualifies when breadth is at least `to` with a reading at or
+        // below `from` in the preceding `within` sessions. The thrust starts on
+        // the first session of a run of qualifying sessions and is shown for
+        // `showFor` sessions from there.
+        const qualifies = (i) => {
+            if (!(breadth[i] >= th.to)) return false;
+            for (let j = Math.max(0, i - th.within); j < i; j++) if (breadth[j] <= th.from) return true;
+            return false;
+        };
+        for (let i = n - 1; i >= Math.max(0, n - th.showFor); i--) {
+            if (!qualifies(i) || (i > 0 && qualifies(i - 1))) continue;
+            out.flags.push({ id: 'thrust', label: th.label, text: th.text, sessions_ago: n - 1 - i });
+            break;
+        }
+    }
+    return out;
+}
+
 // Per-date SPY flags { spy200, spy50 } (close above its 200 / 50-day SMA).
 // Breadth is added by the caller, which sees the whole universe.
 export function spyRegimeByDate(dates, closes) {

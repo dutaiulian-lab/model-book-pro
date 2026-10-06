@@ -1,7 +1,7 @@
 // Unit tests for the configurable trade model in lib/leader-rules.mjs.
 //   node scripts/test-leader-rules.mjs
 import assert from 'assert';
-import { initialStop, simulateTrade, regimeOn, RULES, idleCashByDate } from './lib/leader-rules.mjs';
+import { initialStop, simulateTrade, regimeOn, RULES, idleCashByDate, classify, marketContext, CONTEXT } from './lib/leader-rules.mjs';
 
 const near = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
 let n = 0;
@@ -136,6 +136,47 @@ test('idle cash: SPY 200-day with a 3% band', () => {
     assert(near(st.get('d203').vs200, (105 / ((195 * 100 + 101 + 98 + 95 + 102 + 105) / 200) - 1) * 100));
     assert.equal(idleCashByDate(dates, closes, { mode: 'always' }).get('d000').on, true);
     assert.equal(idleCashByDate(dates, closes, { mode: 'none' }).get('d203').on, false);
+});
+
+test('market context: state boundaries (rules.json context)', () => {
+    const spy = (v) => classify(CONTEXT.spy200, v)?.state;
+    assert.equal(spy(-5), 'downtrend');
+    assert.equal(spy(0), 'testing');      // lower bound inclusive
+    assert.equal(spy(2.99), 'testing');
+    assert.equal(spy(3), 'uptrend');
+    assert.equal(spy(9.9), 'uptrend');
+    assert.equal(spy(10), 'extended');
+    assert.equal(spy(40), 'extended');
+    const br = (v) => classify(CONTEXT.breadth, v)?.state;
+    assert.equal(br(5), 'washed_out');
+    assert.equal(br(20), 'weak');
+    assert.equal(br(39.9), 'weak');
+    assert.equal(br(40), 'mixed');
+    assert.equal(br(60), 'healthy');
+    assert.equal(br(80), 'strong');
+    assert.equal(classify(CONTEXT.breadth, NaN), null);
+});
+
+test('market context: narrow market and breadth thrust flags', () => {
+    const ids = (c) => c.flags.map(f => f.id).sort().join(',');
+    const flat = (v, len = 31) => Array(len).fill(v);
+    // SPY +6.8%, breadth 27.5% -> narrow market.
+    let c = marketContext(6.8, [...flat(50, 30), 27.5]);
+    assert.equal(c.spy.state, 'uptrend');
+    assert.equal(c.breadth.state, 'weak');
+    assert(near(c.breadth.change10, -22.5));
+    assert.equal(ids(c), 'narrow');
+    assert.equal(ids(marketContext(4.9, [...flat(50, 30), 27.5])), '');   // SPY not strong enough
+    assert.equal(ids(marketContext(6.8, flat(40))), '');                  // breadth not below 40
+    // Thrust: 18% -> 62% within 10 sessions, 5 sessions ago.
+    const th = [...flat(18, 20), 30, 45, 55, 62, 64, 63, 61, 60, 59, 58, 57];
+    c = marketContext(4, th);
+    assert.equal(ids(c), 'thrust');
+    assert.equal(c.flags[0].sessions_ago, 7);
+    // Too slow: the low is 11+ sessions before reaching 60.
+    assert.equal(ids(marketContext(4, [...flat(18, 10), 25, 30, 35, 40, 45, 50, 52, 54, 56, 58, 59, 61, ...flat(61, 9)])), '');
+    // Thrust older than the display window (20 sessions) is no longer shown.
+    assert.equal(ids(marketContext(4, [...flat(18, 5), 62, ...flat(65, 25)])), '');
 });
 
 console.log(`\nAll ${n} tests passed.`);
