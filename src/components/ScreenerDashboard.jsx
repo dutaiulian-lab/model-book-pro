@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, Play, ExternalLink, X } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, ExternalLink, X } from 'lucide-react';
 
-// Most recent weekday 21:30 UTC (scheduled scan time) that is at least 6h in
+// Most recent weekday 22:15 UTC (primary scheduled scan time) that is at least 6h in
 // the past. A healthy dataset must be newer than this; the 6h grace absorbs
 // GitHub's usual scheduling delay.
 function expectedScanAfter(now = new Date()) {
   const ref = new Date(now.getTime() - 6 * 3600 * 1000);
-  const c = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate(), 21, 30));
+  const c = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate(), 22, 15));
   if (c > ref) c.setUTCDate(c.getUTCDate() - 1);
   while (c.getUTCDay() === 0 || c.getUTCDay() === 6) c.setUTCDate(c.getUTCDate() - 1);
   return c;
@@ -18,7 +18,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedTab, setSelectedTab] = useState('ALL');
   const [copied, setCopied] = useState(false);
-  const [isDispatching, setIsDispatching] = useState(false);
   const [isTrackingScan, setIsTrackingScan] = useState(false);
   const [scanStatus, setScanStatus] = useState(null);
   const [scanFeedback, setScanFeedback] = useState(null);
@@ -126,7 +125,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
             setScanFeedback({
               type: 'error',
               title: 'Scan Failed on GitHub Actions',
-              message: 'The institutional scan job encountered a failure or timeout on the GitHub runner. Click below to inspect logs or retry.',
+              message: 'The institutional scan job encountered a failure or timeout on the GitHub runner. Open the run on GitHub for the logs; the backup schedules retry automatically.',
               url: statusData.url
             });
           }
@@ -151,43 +150,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
   };
 
   const toggleCard = (ticker) => setExpandedCard(prev => prev === ticker ? null : ticker);
-
-  const triggerScan = async () => {
-    setIsDispatching(true);
-    setScanFeedback({
-      type: 'info',
-      title: 'Dispatching Scan to GitHub Actions...',
-      message: 'Requesting a runner to execute the Model Book screening pipeline across all US equities.'
-    });
-
-    try {
-      const res = await fetch('/api/trigger-scan', { method: 'POST' });
-      const result = await res.json();
-      if (!res.ok) {
-        setScanFeedback({
-          type: 'error',
-          title: 'Failed to Trigger Scan',
-          message: result.error || 'Server rejected the scan trigger request.'
-        });
-      } else {
-        setIsTrackingScan(true);
-        setScanStatus(prev => ({ ...(prev || {}), status: 'queued' }));
-        setScanFeedback({
-          type: 'info',
-          title: 'Scan Queued & Initializing',
-          message: 'GitHub runner allocated. Analyzing 6,000+ US tickers through Stage-2, VCP, and Extension filters...'
-        });
-      }
-    } catch (e) {
-      setScanFeedback({
-        type: 'error',
-        title: 'Connection Error',
-        message: e.message || 'Could not communicate with the trigger API.'
-      });
-    } finally {
-      setIsDispatching(false);
-    }
-  };
 
   // Real-time loop for live prices
   useEffect(() => {
@@ -365,37 +327,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
               {matches.length} Setups
             </div>
           </div>
-          <button
-            onClick={triggerScan}
-            disabled={isDispatching || (scanStatus && (scanStatus.status === 'in_progress' || scanStatus.status === 'queued'))}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ml-2 shadow-sm flex items-center gap-1.5 ${
-              scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure'
-                ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/30'
-                : 'bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50'
-            }`}
-          >
-            {isDispatching ? (
-              <>
-                <RefreshCw className="w-3 h-3 animate-spin" /> DISPATCHING...
-              </>
-            ) : scanStatus?.status === 'in_progress' ? (
-              <>
-                <RefreshCw className="w-3 h-3 animate-spin text-emerald-600 dark:text-emerald-400" /> SCANNING...
-              </>
-            ) : scanStatus?.status === 'queued' ? (
-              <>
-                <Clock className="w-3 h-3 animate-pulse text-amber-600 dark:text-amber-400" /> QUEUED...
-              </>
-            ) : scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure' ? (
-              <>
-                <AlertTriangle className="w-3 h-3 text-white" /> RETRY SCAN
-              </>
-            ) : (
-              <>
-                <Play className="w-3 h-3 fill-current" /> SCAN NOW
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -440,15 +371,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {scanFeedback.type === 'error' && (
-              <button
-                onClick={triggerScan}
-                disabled={isDispatching}
-                className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap shadow-sm"
-              >
-                Retry Now
-              </button>
-            )}
             <button
               onClick={dismissFeedback}
               className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"

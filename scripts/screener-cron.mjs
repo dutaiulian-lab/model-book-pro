@@ -191,10 +191,11 @@ async function run() {
     const mktFor = (d) => mktByDate.get(d) || { spy200: false, spy50: false, breadth: NaN };
     console.log(`Scanning as of the ${asOf} close. SPY ${mktFor(asOf).spy200 ? 'above' : 'BELOW'} its 200-day SMA.`);
 
-    // Scheduled runs on market holidays would just republish the previous
-    // session. Manual runs always proceed.
+    // One scan per session: several schedules trigger this (cron-job.org,
+    // Vercel Cron, GitHub's schedule), and on market holidays a run would just
+    // republish the previous session. FORCE_SCAN=1 (workflow input) rescans.
     const outPath = path.join(process.cwd(), 'public', 'market-state.json');
-    if (process.env.GITHUB_EVENT_NAME === 'schedule' && fs.existsSync(outPath)) {
+    if (process.env.FORCE_SCAN !== '1' && fs.existsSync(outPath)) {
         try {
             const previous = JSON.parse(fs.readFileSync(outPath, 'utf8'));
             if (previous.as_of === asOf) {

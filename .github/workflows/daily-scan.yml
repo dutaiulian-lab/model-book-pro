@@ -1,11 +1,18 @@
 name: Daily Market Screener
 
 on:
+  # Primary trigger: cron-job.org calls /api/cron-scan at 22:15 UTC on weekdays,
+  # which dispatches this workflow. Backups: Vercel Cron (02:30 UTC, same
+  # endpoint) and this schedule (GitHub often starts it hours late). The
+  # screener skips sessions that are already scanned, so extra runs are no-ops.
   schedule:
-    # Runs Monday through Friday at 21:30 UTC (5:30 PM EDT / 4:30 PM EST)
-    # Perfectly timed after NYSE/NASDAQ closing cross & final daily volume settlement
     - cron: '30 21 * * 1-5'
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Rescan even if the latest session is already scanned'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -34,6 +41,8 @@ jobs:
 
       - name: Run Screener
         run: node scripts/screener-cron.mjs
+        env:
+          FORCE_SCAN: ${{ inputs.force && '1' || '' }}
 
       - name: Update track record
         # Never block publishing the scan on the track record.
