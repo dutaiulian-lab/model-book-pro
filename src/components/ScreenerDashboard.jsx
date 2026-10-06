@@ -258,20 +258,24 @@ export default function ScreenerDashboard({ onHealthChange }) {
       
       {/* INSTITUTIONAL ENGINE HEADER */}
       <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-widest border border-emerald-500/20 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3"/> Model Book Calibrated
-            </span>
-            <span className="text-xs text-muted-foreground font-mono">Stage-2 · VCP · MA Smash · Volume Shield</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+        <div className="space-y-2.5">
+          <span className="inline-flex bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-widest border border-emerald-500/20 items-center gap-1">
+            <ShieldCheck className="w-3 h-3"/> Model Book Calibrated
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             True Market Leaders Screener
           </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
-            Calibrated against 10 years of institutional market leaders (NVDA, APP, SMCI, PLTR, MSTR, RDDT). 
-            Filters for shallow bases, moving average squeezes, and volume dry-ups while neutralizing false breakdowns.
+          <p
+            className="text-sm text-muted-foreground max-w-xl"
+            title="Calibrated on NVDA, APP, SMCI, PLTR, MSTR, RDDT and other leaders. Filters for shallow bases, moving-average squeezes and volume dry-ups while neutralizing false breakdowns."
+          >
+            Stage-2 leaders in tight bases, calibrated on 10 years of the market's biggest winners.
           </p>
+          <div className="flex flex-wrap gap-1.5">
+            {['Stage-2', 'VCP', 'MA Smash', 'Volume Shield'].map(t => (
+              <span key={t} className="text-[10px] font-mono text-muted-foreground border border-border/60 rounded-md px-1.5 py-0.5">{t}</span>
+            ))}
+          </div>
         </div>
 
         {/* METRICS SUMMARY WIDGET */}
@@ -300,21 +304,21 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 </span>
               )}
             </div>
-            <div className={`text-xs font-mono font-bold mt-0.5 ${isStale ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
-              {new Date(timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
+            <div className={`text-lg font-mono font-bold leading-tight mt-1 ${isStale ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
+              {new Date(timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })}
             </div>
-            {data?.as_of && (
-              <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
-                as of {data.as_of} close
-              </div>
-            )}
-            {data?.stats && (
+            {(data?.as_of || data?.stats) && (
               <div
-                className={`text-[10px] font-mono mt-0.5 ${data.stats.fetch_failed > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
-                title={`Fetched OK: ${data.stats.ok} · No data: ${data.stats.no_data} · Failed: ${data.stats.fetch_failed} · Retries: ${data.stats.retries}` +
-                  (data.stats.fundamentals_checked != null ? ` · Fundamentals failed: ${data.stats.fundamentals_failed}/${data.stats.fundamentals_checked}` : '')}
+                className="text-[10px] font-mono text-muted-foreground mt-0.5"
+                title={data?.stats ? `Fetched OK: ${data.stats.ok} · No data: ${data.stats.no_data} · Failed: ${data.stats.fetch_failed} · Retries: ${data.stats.retries}` +
+                  (data.stats.fundamentals_checked != null ? ` · Fundamentals failed: ${data.stats.fundamentals_failed}/${data.stats.fundamentals_checked}` : '') : ''}
               >
-                {data.stats.ok.toLocaleString()} ok · {data.stats.fetch_failed.toLocaleString()} failed
+                {data?.as_of && `${new Date(`${data.as_of}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })} close`}
+                {data?.as_of && data?.stats && ' · '}
+                {data?.stats && `${data.stats.ok.toLocaleString()} tickers`}
+                {data?.stats?.fetch_failed > 0 && (
+                  <span className="text-amber-600 dark:text-amber-400"> · {data.stats.fetch_failed.toLocaleString()} failed</span>
+                )}
               </div>
             )}
           </div>
@@ -323,8 +327,12 @@ export default function ScreenerDashboard({ onHealthChange }) {
             <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
               <Target className="w-3 h-3"/> Leaders
             </div>
-            <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">
-              {matches.length} Setups
+            <div className="text-lg font-mono font-bold text-emerald-500 leading-tight mt-1">
+              {matches.length}
+              <span className="text-[10px] font-sans font-bold uppercase text-muted-foreground ml-1.5">setups</span>
+            </div>
+            <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+              {readyCount} at pivot
             </div>
           </div>
         </div>
@@ -382,39 +390,79 @@ export default function ScreenerDashboard({ onHealthChange }) {
       )}
 
       {/* MARKET REGIME & RULES */}
-      {regime && (
-        <div className={`p-3.5 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-          regimeOff ? 'bg-rose-500/10 border-rose-500/30' : 'bg-emerald-500/5 border-emerald-500/20'
-        }`}>
-          <div className="font-bold text-foreground">
-            {regimeOff
-              ? `🔴 Market filter off (needs: ${regimeText}): the rules take no new buys. Watchlist only.`
-              : `🟢 Market filter on (${regimeText}): new buys allowed.`}
-            <span className="font-mono font-normal text-muted-foreground ml-2">
-              SPY ${regime.spy_close?.toFixed(2)}
-              {regime.spy_sma200 != null ? ` vs 200-day $${regime.spy_sma200.toFixed(2)}` : ` · ${regime.spy_above_200 ? 'above' : 'below'} 200-day`}
-              {regime.breadth_50 != null ? ` · ${regime.breadth_50.toFixed(0)}% of stocks above 50-day` : ''}
-            </span>
-            {idle && idle.mode !== 'none' && (
-              <div className="font-normal mt-1 text-foreground/90" title={idle.note || ''}>
-                {idle.on
-                  ? '💵 Idle cash: hold SPY with the money not in setups; sell SPY to fund new buys.'
-                  : '💵 Idle cash: keep it in cash (SPY is in a downtrend).'}
-                <span className="font-mono text-muted-foreground ml-2">
-                  SPY {idle.spy_vs_200 != null ? `${idle.spy_vs_200 >= 0 ? '+' : ''}${idle.spy_vs_200.toFixed(1)}%` : '—'} vs 200-day
-                  {idle.mode === 'spy200band' ? (idle.on ? ` · to cash below -${idle.band}%` : ` · back to SPY above +${idle.band}%`) : ''}
-                </span>
-              </div>
-            )}
+      {regime && (() => {
+        const pct = (v) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`);
+        const spyVs200 = regime.spy_sma200 ? (regime.spy_close / regime.spy_sma200 - 1) * 100 : idle?.spy_vs_200;
+        const band = idle?.mode === 'spy200band' ? idle.band : null;
+        const tiles = [
+          {
+            label: 'Market filter',
+            title: `Rule: ${regimeText}`,
+            value: (
+              <span className={`flex items-center gap-1.5 ${regimeOff ? 'text-rose-500' : 'text-emerald-500'}`}>
+                <span className={`w-2 h-2 rounded-full ${regimeOff ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`}></span>
+                {regimeOff ? 'Off' : 'On'}
+              </span>
+            ),
+            sub: regimeOff ? 'No new buys · watchlist only' : 'New buys allowed',
+          },
+          {
+            label: 'SPY vs 200-day',
+            title: regime.spy_sma200 != null ? `SPY $${regime.spy_close?.toFixed(2)} vs 200-day $${regime.spy_sma200.toFixed(2)}` : '',
+            value: <span className={spyVs200 != null && spyVs200 < 0 ? 'text-rose-500' : 'text-foreground'}>{spyVs200 != null ? pct(spyVs200) : (regime.spy_above_200 ? 'Above' : 'Below')}</span>,
+            sub: `SPY $${regime.spy_close?.toFixed(2)}`,
+          },
+          idle && idle.mode !== 'none' && {
+            label: 'Idle cash',
+            title: idle.note || (idle.on ? 'Money not in setups sits in SPY; sell SPY to fund new buys.' : 'SPY is in a downtrend; idle money stays in cash.'),
+            value: <span className="text-foreground">{idle.on ? 'In SPY' : 'In cash'}</span>,
+            sub: band != null
+              ? (idle.on ? `Sell to fund buys · cash below −${band}%` : `Back to SPY above +${band}%`)
+              : (idle.on ? 'Sell SPY to fund buys' : 'SPY in a downtrend'),
+          },
+          regime.breadth_50 != null && {
+            label: 'Breadth',
+            title: 'Share of scanned stocks trading above their 50-day SMA',
+            value: <span className="text-foreground">{regime.breadth_50.toFixed(0)}%</span>,
+            sub: 'of stocks above 50-day',
+          },
+        ].filter(Boolean);
+        const lgCols = { 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4' }[tiles.length] || 'lg:grid-cols-4';
+        const ruleChips = [
+          `RS ≥ ${rules?.rsMin ?? 90}`,
+          (rules?.dvPctMin ?? 85) > 0 ? `Top ${100 - (rules?.dvPctMin ?? 85)}% liquidity` : `$${((rules?.dvMin ?? 10e6) / 1e6).toFixed(0)}M+ daily volume`,
+          `≥ +${rules?.upLow52Min ?? 100}% off 52w low`,
+          rules?.depth52Max != null ? `≤ ${rules.depth52Max}% off high` : null,
+        ].filter(Boolean);
+        return (
+          <div className={`rounded-2xl border overflow-hidden ${regimeOff ? 'border-rose-500/30 bg-rose-500/5' : 'border-border/80 bg-card'}`}>
+            <div className={`grid grid-cols-2 ${lgCols}`}>
+              {tiles.map((t, i) => (
+                <div
+                  key={t.label}
+                  title={t.title}
+                  className={`px-4 py-3 border-border/60 ${i > 0 ? 'lg:border-l' : ''} ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''} ${
+                    tiles.length % 2 === 1 && i === tiles.length - 1 ? 'col-span-2 lg:col-span-1' : ''
+                  }`}
+                >
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{t.label}</div>
+                  <div className="text-lg font-mono font-bold leading-tight mt-1">{t.value}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{t.sub}</div>
+                </div>
+              ))}
+            </div>
+            <div
+              className="flex flex-wrap items-center gap-1.5 px-4 py-2 border-t border-border/60 bg-muted/20"
+              title={data?.rules_version ? `Rules ${data.rules_version}` : ''}
+            >
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mr-1">Leader rules</span>
+              {ruleChips.map(c => (
+                <span key={c} className="text-[10px] font-mono text-muted-foreground border border-border/60 rounded-md px-1.5 py-0.5">{c}</span>
+              ))}
+            </div>
           </div>
-          <div className="text-[11px] text-muted-foreground" title={data?.rules_version ? `Rules ${data.rules_version}` : ''}>
-            Leaders: RS ≥ {rules?.rsMin ?? 90}
-            {(rules?.dvPctMin ?? 85) > 0 ? ` · top ${100 - (rules?.dvPctMin ?? 85)}% liquidity` : ` · $${((rules?.dvMin ?? 10e6) / 1e6).toFixed(0)}M+ daily volume`}
-            {` · ≥ +${rules?.upLow52Min ?? 100}% off 52w low`}
-            {rules?.depth52Max != null ? ` · ≤ ${rules.depth52Max}% off high` : ''}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* FILTER TABS & TOOLBAR */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
