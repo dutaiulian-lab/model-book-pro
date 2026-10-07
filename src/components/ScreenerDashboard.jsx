@@ -799,9 +799,16 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><TrendingUp className="w-3.5 h-3.5"/> Setup</span>
                         <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase whitespace-nowrap truncate min-w-0">
                           {match.setup_type}{match.is_ipo ? ' · IPO' : ''}{match.signal_date ? ` · ${match.signal_date}` : ''}
-                          {match.setup_depth != null ? ` · ${match.setup_depth.toFixed(1)}% deep, ${match.setup_length}d` : ''}
                         </span>
                       </div>
+                      {match.setup_depth != null && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><BarChart3 className="w-3.5 h-3.5"/> Base Shape</span>
+                          <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
+                            {match.setup_depth.toFixed(1)}% deep · {match.setup_length} days
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Target className="w-3.5 h-3.5"/> 21-EMA Proximity</span>
                         <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] border ${proximityColor}`}>
