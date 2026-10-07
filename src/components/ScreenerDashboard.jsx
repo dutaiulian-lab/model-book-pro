@@ -757,79 +757,85 @@ export default function ScreenerDashboard({ onHealthChange }) {
                   {/* EXPANDABLE DEEP-DIVE METRICS */}
                   {expandedCard === match.ticker && (
                     <div className="space-y-2.5 mt-4 pt-4 border-t border-border/60 text-xs animate-in fade-in slide-in-from-top-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5"/> 10-DMA Pad Floor</span>
-                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><ShieldCheck className="w-3.5 h-3.5"/> 10-DMA Pad Floor</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
                           ${dma10.toFixed(2)} ({liveDist10 >= 0 ? '+' : ''}{liveDist10.toFixed(1)}% cushion)
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Buy Stop (valid {match.sessions_left ?? 5} more session{match.sessions_left === 1 ? '' : 's'})</span>
-                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Crosshair className="w-3.5 h-3.5"/> Buy Stop (valid {match.sessions_left ?? 5} more session{match.sessions_left === 1 ? '' : 's'})</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
                           ${buyStop.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Initial Stop</span>
-                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
-                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% from pivot, clamped 3-8%)
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Crosshair className="w-3.5 h-3.5"/> Initial Stop</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0" title="Distance from pivot, clamped to 3-8%">
+                          ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% vs pivot)
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5"/> Exit</span>
-                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px]">
-                          Close below 50-DMA{match.sma50 ? ` ($${match.sma50.toFixed(2)})` : ''}; 21-EMA once +20%
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Crosshair className="w-3.5 h-3.5"/> Exit</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0" title="Exit on a daily close below the 50-DMA">
+                          Close &lt; 50-DMA{match.sma50 ? ` ($${match.sma50.toFixed(2)})` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Crosshair className="w-3.5 h-3.5"/> Exit once +20%</span>
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0" title="After a +20% gain, trail the exit to the 21-EMA">
+                          Close &lt; 21-EMA (${ema21.toFixed(2)})
                         </span>
                       </div>
                       {match.up_from_low52 != null && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Prior Run-Up</span>
-                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><TrendingUp className="w-3.5 h-3.5"/> Prior Run-Up</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
                             +{match.up_from_low52.toFixed(0)}% from 52-wk low
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Setup</span>
-                        <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><TrendingUp className="w-3.5 h-3.5"/> Setup</span>
+                        <span className="text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] uppercase whitespace-nowrap truncate min-w-0">
                           {match.setup_type}{match.is_ipo ? ' · IPO' : ''}{match.signal_date ? ` · ${match.signal_date}` : ''}
                           {match.setup_depth != null ? ` · ${match.setup_depth.toFixed(1)}% deep, ${match.setup_length}d` : ''}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/> 21-EMA Proximity</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Target className="w-3.5 h-3.5"/> 21-EMA Proximity</span>
                         <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] border ${proximityColor}`}>
                           ${ema21.toFixed(2)} ({distanceAbs.toFixed(1)}% {isBelowEMA ? 'Below' : 'Above'})
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> 3-Mo RS vs SPY</span>
-                        <span className="font-mono font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded text-[10px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><TrendingUp className="w-3.5 h-3.5"/> 3-Mo RS vs SPY</span>
+                        <span className="font-mono font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
                           {match.relative_strength_3mo >= 0 ? '+' : ''}{match.relative_strength_3mo?.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><Zap className="w-3.5 h-3.5"/> Volatility (ADR)</span>
-                        <span className="font-mono font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded text-[10px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Zap className="w-3.5 h-3.5"/> Volatility (ADR)</span>
+                        <span className="font-mono font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
                           {match.adr?.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5"/> EPS Growth (YoY)</span>
-                        <span className="font-mono font-bold text-emerald-500">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><BarChart3 className="w-3.5 h-3.5"/> EPS Growth (YoY)</span>
+                        <span className="font-mono font-bold text-emerald-500 whitespace-nowrap truncate min-w-0">
                           {fmtGrowth(match.eps_growth)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Sales Growth (YoY)</span>
-                        <span className="font-mono font-bold text-blue-500">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><TrendingUp className="w-3.5 h-3.5"/> Sales Growth (YoY)</span>
+                        <span className="font-mono font-bold text-blue-500 whitespace-nowrap truncate min-w-0">
                           {fmtGrowth(match.rev_growth)}
                         </span>
                       </div>
                       {match.earnings_date && match.earnings_date !== "Unknown" && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Earnings Date</span>
-                          <span className="font-mono text-muted-foreground">{match.earnings_date}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Clock className="w-3.5 h-3.5"/> Earnings Date</span>
+                          <span className="font-mono text-muted-foreground whitespace-nowrap truncate min-w-0">{match.earnings_date}</span>
                         </div>
                       )}
                     </div>
