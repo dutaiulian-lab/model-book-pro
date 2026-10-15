@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, ExternalLink, X, Info } from 'lucide-react';
 
 // Most recent weekday 22:15 UTC (primary scheduled scan time) that is at least 6h in
-// the past. A healthy dataset must be newer than this; the 6h grace absorbs
-// GitHub's usual scheduling delay.
+// the past; its UTC date is the session the newest scan should cover. The 6h
+// grace absorbs scheduling delays.
 function expectedScanAfter(now = new Date()) {
   const ref = new Date(now.getTime() - 6 * 3600 * 1000);
   const c = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate(), 22, 15));
@@ -192,8 +192,18 @@ export default function ScreenerDashboard({ onHealthChange }) {
     };
   }, [data]);
 
+  // Stale = the published scan covers an older session than expected and no
+  // scan has succeeded since the expected scan time (a successful run that
+  // skipped means a market holiday). Uses as_of, not the write time: a late
+  // run once republished an older session with a fresh timestamp.
   const dataTimestamp = data?.timestamp ? new Date(data.timestamp) : null;
-  const isStale = !loading && (!dataTimestamp || dataTimestamp < expectedScanAfter());
+  const scanDue = expectedScanAfter();
+  const expectedSession = scanDue.toISOString().slice(0, 10);
+  const ranSinceDue = scanStatus?.status === 'completed' && scanStatus?.conclusion === 'success'
+    && scanStatus.updated_at && new Date(scanStatus.updated_at) >= scanDue;
+  const isStale = !loading && (data?.as_of
+    ? data.as_of < expectedSession && !ranSinceDue
+    : !dataTimestamp || dataTimestamp < scanDue);
   const scanFailed = scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure';
   const scanRunning = scanStatus?.status === 'in_progress' || scanStatus?.status === 'queued';
   const health = loading ? 'loading'
@@ -270,19 +280,19 @@ export default function ScreenerDashboard({ onHealthChange }) {
       <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2.5">
           <span className="inline-flex bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-widest border border-emerald-500/20 items-center gap-1">
-            <ShieldCheck className="w-3 h-3"/> Model Book Calibrated
+            <ShieldCheck className="w-3 h-3"/> Walk-Forward Tested
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             True Market Leaders Screener
           </h1>
           <p
             className="text-sm text-muted-foreground max-w-xl"
-            title="Calibrated on NVDA, APP, SMCI, PLTR, MSTR, RDDT and other leaders. Filters for shallow bases, moving-average squeezes and volume dry-ups while neutralizing false breakdowns."
+            title="Setup families, filters, stop and exit were picked by a walk-forward study of US stocks 2007-2026 and are re-studied every year. See the Track Record tab for live and simulated results."
           >
-            Stage-2 leaders in tight bases, calibrated on 10 years of the market's biggest winners.
+            Top-RS Stage-2 leaders in tight setups, with rules picked by a 20-year walk-forward study.
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {['Stage-2', 'VCP', 'MA Smash', 'Volume Shield'].map(t => (
+            {(data?.rules_text?.families || ['Launchpad Coil', 'Tight Range', 'Base Breakout']).map(t => (
               <span key={t} className="text-[10px] font-mono text-muted-foreground border border-border/60 rounded-md px-1.5 py-0.5">{t}</span>
             ))}
           </div>
@@ -309,7 +319,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 </span>
               )}
               {isStale && !scanRunning && (
-                <span className="text-amber-600 dark:text-amber-400 font-mono text-[9px] font-black" title="No scan has completed since the last scheduled run.">
+                <span className="text-amber-600 dark:text-amber-400 font-mono text-[9px] font-black" title={`The latest scan covers ${data?.as_of || 'an unknown session'}; expected ${expectedSession}.`}>
                   ⚠️ STALE
                 </span>
               )}
@@ -606,9 +616,11 @@ export default function ScreenerDashboard({ onHealthChange }) {
               const dma10 = match.dma10 || match.price;
               const liveDist10 = dma10 > 0 ? ((currentPrice - dma10) / dma10) * 100 : (match.dist_10dma || 0);
 
-              // Trade plan from the screener: buy stop at the pivot, initial stop
-              // = lower of the structural stop and 5% below the fill, exit on a
-              // close below the 50-DMA. Older market-state files lack buy_stop.
+              // Trade plan from the screener (rules.json): buy stop at the pivot,
+              // initial stop = structural stop clamped to 3%-8% below the fill,
+              // exit on a close below the 50-DMA (21-EMA once 20%+ up). The stop
+              // shown is measured from the pivot; on a gap-up fill the clamp
+              // applies to the fill price. Older market-state files lack buy_stop.
               const buyStop = match.buy_stop ?? match.recent_pivot ?? currentPrice;
               const stopPrice = match.suggested_stop || (dma10 * 0.985);
               const stopPct = match.suggested_stop_pct ?? Math.max(1.0, ((buyStop - stopPrice) / buyStop) * 100);
@@ -771,7 +783,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Crosshair className="w-3.5 h-3.5"/> Initial Stop</span>
-                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0" title="Distance from pivot, clamped to 3-8%">
+                        <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0" title="Measured from the pivot, clamped to 3-8%. If the stock gaps above the pivot, the 3-8% clamp applies to the fill price instead.">
                           ${stopPrice.toFixed(2)} (-{stopPct.toFixed(1)}% vs pivot)
                         </span>
                       </div>

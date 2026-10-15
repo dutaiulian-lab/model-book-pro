@@ -201,17 +201,26 @@ async function run() {
 
     // One scan per session: several schedules trigger this (cron-job.org,
     // Vercel Cron, GitHub's schedule), and on market holidays a run would just
-    // republish the previous session. FORCE_SCAN=1 (workflow input) rescans.
+    // republish the previous session. FORCE_SCAN=1 (workflow input) rescans the
+    // same session. Never go backwards, even when forced: runs in the evening
+    // (GitHub's schedule starts hours late) have received a SPY series from
+    // Yahoo without the latest session, and rescanning then overwrote the
+    // newer published scan with the previous session's.
     const outPath = path.join(process.cwd(), 'public', 'market-state.json');
-    if (process.env.FORCE_SCAN !== '1' && fs.existsSync(outPath)) {
+    if (fs.existsSync(outPath)) {
+        let prevAsOf = null;
         try {
-            const previous = JSON.parse(fs.readFileSync(outPath, 'utf8'));
-            if (previous.as_of === asOf) {
-                console.log(`Previous scan already covers ${asOf} (market holiday?). Skipping.`);
-                return;
-            }
+            prevAsOf = JSON.parse(fs.readFileSync(outPath, 'utf8')).as_of || null;
         } catch (e) {
             // Unreadable previous file: just rescan.
+        }
+        if (prevAsOf && asOf < prevAsOf) {
+            console.log(`Yahoo's latest session (${asOf}) is older than the published scan (${prevAsOf}). Skipping.`);
+            return;
+        }
+        if (prevAsOf === asOf && process.env.FORCE_SCAN !== '1') {
+            console.log(`Previous scan already covers ${asOf} (market holiday?). Skipping.`);
+            return;
         }
     }
 

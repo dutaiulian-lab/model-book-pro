@@ -13,6 +13,9 @@ const fmtPct = (x, digits = 0) => (x == null ? '—' : `${x.toFixed(digits)}%`);
 const tone = (x) =>
   x == null ? 'text-muted-foreground' : x > 0 ? 'text-emerald-600 dark:text-emerald-400' : x < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-foreground';
 
+// Close-below-average exits (lib/leader-rules.mjs simulateTrade `reason`).
+const EXIT_LABELS = { sma50: 'Below 50-DMA', ema21: 'Below 21-EMA', sma10: 'Below 10-DMA' };
+
 function statusText(o) {
   if (!o) return '—';
   switch (o.status) {
@@ -24,7 +27,7 @@ function statusText(o) {
     case 'closed':
       if (o.exit_reason === 'stop') return `Stopped · day ${o.days}`;
       if (o.exit_reason === 'time') return `Time exit · day ${o.days}`;
-      return `Below 50-DMA · day ${o.days}`;
+      return `${EXIT_LABELS[o.exit_reason] || 'Exit'} · day ${o.days}`;
     default: return o.status;
   }
 }
