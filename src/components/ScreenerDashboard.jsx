@@ -22,6 +22,25 @@ const CTX_BADGE = {
   red: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
 };
 
+// Health of an untriggered setup at `price`. The buy stop stays live for the
+// whole entry window under the current rules, but a close below the 50-DMA (the
+// exit rule for a position) or below the stop a fill at the pivot would use
+// means the setup broke down while waiting: flag it instead of calling it
+// "near pivot". Display only; see research/reports/cancel-pending-study.md.
+export const NEAR_PIVOT_PCT = 5;
+export function setupHealth(match, price) {
+  const pivot = match.buy_stop ?? match.recent_pivot;
+  const distPivot = pivot > 0 ? (price / pivot - 1) * 100 : NaN;
+  const reasons = [];
+  if (match.suggested_stop > 0 && price < match.suggested_stop) {
+    reasons.push(`below the $${match.suggested_stop.toFixed(2)} stop a fill at the pivot would use`);
+  }
+  if (match.sma50 > 0 && price < match.sma50) reasons.push(`below the 50-DMA ($${match.sma50.toFixed(2)})`);
+  const stage = price > pivot ? 'TRIGGERED' : reasons.length ? 'BROKEN'
+    : distPivot >= -2 ? 'AT_PIVOT' : distPivot >= -NEAR_PIVOT_PCT ? 'NEAR_PIVOT' : 'BELOW_PIVOT';
+  return { distPivot, reasons, stage, broken: stage === 'BROKEN' };
+}
+
 export default function ScreenerDashboard({ onHealthChange }) {
   const [expandedCard, setExpandedCard] = useState(null);
   const [openTile, setOpenTile] = useState(null); // market tile whose meaning is shown (mobile tap)
@@ -604,6 +623,9 @@ export default function ScreenerDashboard({ onHealthChange }) {
             const sorted = [...filteredMatches].sort((a, b) => {
               const priceA = livePrices[a.ticker] || a.price;
               const priceB = livePrices[b.ticker] || b.price;
+              // Broken setups last.
+              const brokenA = setupHealth(a, priceA).broken, brokenB = setupHealth(b, priceB).broken;
+              if (brokenA !== brokenB) return brokenA ? 1 : -1;
               const pivA = a.buy_stop ?? a.ema21, pivB = b.buy_stop ?? b.ema21;
               const distA = Math.abs((priceA - pivA) / pivA);
               const distB = Math.abs((priceB - pivB) / pivB);
@@ -643,6 +665,10 @@ export default function ScreenerDashboard({ onHealthChange }) {
               const liveDistPivot = buyStop > 0 ? ((currentPrice - buyStop) / buyStop) * 100 : 0;
               const isTriggered = liveDistPivot > 0;
               const isAtPivot = !isTriggered && liveDistPivot >= -2;
+              const health = setupHealth(match, currentPrice);
+              // Off High from today's close (older files: setup-day value).
+              const offHigh = match.high_52w > 0
+                ? Math.max(0, (match.high_52w - currentPrice) / match.high_52w * 100) : null;
               const fmtRank = (x) => (x == null ? 'n/a' : x.toFixed(0));
               const fmtGrowth = (x) => (x == null ? 'n/a' : `${x >= 0 ? '+' : ''}${(x * 100).toFixed(0)}%`);
 
@@ -650,7 +676,9 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 <div
                   key={match.ticker}
                   data-screener-card="true"
-                  className="bg-card border border-border/80 hover:border-primary/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col group relative"
+                  className={`bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col group relative ${
+                    health.broken ? 'border-rose-500/40 opacity-75 hover:opacity-100' : 'border-border/80 hover:border-primary/50'
+                  }`}
                 >
                   {/* CARD TOP ROW: BADGE & ACTIONS */}
                   <div className="flex items-center justify-between gap-2 mb-3">
@@ -724,9 +752,17 @@ export default function ScreenerDashboard({ onHealthChange }) {
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                             🎯 AT PIVOT
                           </span>
-                        ) : (
+                        ) : health.broken ? (
+                          <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-rose-500/20" title={`Closed ${health.reasons.join(' and ')}`}>
+                            ⚠️ BROKEN
+                          </span>
+                        ) : health.stage === 'NEAR_PIVOT' ? (
                           <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-blue-500/20">
                             ⏳ NEAR PIVOT
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-muted-foreground bg-muted px-2 py-0.5 rounded text-[10px] font-black border border-border" title={`More than ${NEAR_PIVOT_PCT}% below the buy stop`}>
+                            ⏳ BELOW PIVOT
                           </span>
                         )}
                         <span className="font-mono text-muted-foreground text-[11px] whitespace-nowrap">
@@ -738,21 +774,28 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       </div>
                     </div>
 
+                    {health.broken && !isTriggered && (
+                      <div className="mt-2 text-[11px] leading-snug text-rose-600 dark:text-rose-400 bg-rose-500/5 border border-rose-500/20 rounded-lg px-2.5 py-1.5">
+                        Broke down while waiting: closed {health.reasons.join(' and ')}. The buy stop is still live under the current rules,
+                        but it needs a +{((buyStop / currentPrice - 1) * 100).toFixed(1)}% rally within {match.sessions_left ?? 'the remaining'} session{match.sessions_left === 1 ? '' : 's'}.
+                      </div>
+                    )}
+
                     {/* KEY METRICS SUMMARY ROW */}
                     <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-border/50 text-center">
-                      <div className="bg-muted/20 rounded-lg p-1.5" title="IBD-style relative strength percentile (weighted 3/6/9/12-month return) across liquid US stocks">
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="IBD-style relative strength percentile (weighted 3/6/9/12-month return) across liquid US stocks, on the setup day">
                         <div className="text-[9px] uppercase font-bold text-muted-foreground">RS Rank</div>
                         <div className="text-xs font-mono font-bold text-emerald-500 mt-0.5">{fmtRank(match.rs_rank)}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-1.5" title="20-day dollar volume percentile">
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="20-day dollar volume percentile, on the setup day">
                         <div className="text-[9px] uppercase font-bold text-muted-foreground">Liquidity</div>
                         <div className="text-xs font-mono font-bold text-foreground mt-0.5">{fmtRank(match.dv_rank)}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-1.5" title="Distance below the 52-week high">
+                      <div className="bg-muted/20 rounded-lg p-1.5" title={`Distance below the 52-week high${offHigh != null ? ` (${match.base_depth} on the setup day ${match.signal_date})` : ' on the setup day'}`}>
                         <div className="text-[9px] uppercase font-bold text-muted-foreground">Off High</div>
-                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">{match.base_depth}</div>
+                        <div className="text-xs font-mono font-bold text-foreground mt-0.5">{offHigh != null ? `-${offHigh.toFixed(1)}%` : match.base_depth}</div>
                       </div>
-                      <div className="bg-muted/20 rounded-lg p-1.5" title="Gain from the 52-week low">
+                      <div className="bg-muted/20 rounded-lg p-1.5" title="Gain from the 52-week low, on the setup day">
                         <div className="text-[9px] uppercase font-bold text-muted-foreground">Run-Up</div>
                         <div className="text-xs font-mono font-bold text-primary mt-0.5">
                           {match.up_from_low52 != null ? `+${match.up_from_low52.toFixed(0)}%` : 'n/a'}

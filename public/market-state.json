@@ -157,7 +157,9 @@
       "sector": "Technology",
       "industry": "Computer Hardware",
       "earnings_date": "2026-11-27",
-      "earnings_soon": false
+      "earnings_soon": false,
+      "high_52w": 595.510009765625,
+      "off_high_now": 14.706724598015175
     },
     {
       "ticker": "SNOW",
@@ -214,7 +216,9 @@
       "sector": "Technology",
       "industry": "Software - Application",
       "earnings_date": "2026-12-02",
-      "earnings_soon": false
+      "earnings_soon": false,
+      "high_52w": 384.55999755859375,
+      "off_high_now": 12.866655736544482
     },
     {
       "ticker": "U",
@@ -271,7 +275,9 @@
       "sector": "Technology",
       "industry": "Software - Application",
       "earnings_date": "2026-11-05",
-      "earnings_soon": false
+      "earnings_soon": false,
+      "high_52w": 52.150001525878906,
+      "off_high_now": 20.613613970203666
     }
   ],
   "tracked": [
@@ -322,7 +328,9 @@
           "rs_rank": 99.57671957671957,
           "dv_rank": 88.21052631578948
         }
-      ]
+      ],
+      "high_52w": 104,
+      "off_high_now": 22.02884967510517
     }
   ],
   "watchlist": [
@@ -362,7 +370,9 @@
       "suggested_stop": 108.98319915771485,
       "suggested_stop_pct": 7.999999999999995,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 72 < 85"
+      "why_not_buy": "Liquidity rank 72 < 85",
+      "high_52w": 118.45999908447266,
+      "off_high_now": 4.7357763411353115
     },
     {
       "ticker": "ANF",
@@ -400,7 +410,9 @@
       "suggested_stop": 143.19045364379883,
       "suggested_stop_pct": 7.7499983779795265,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 77 < 85"
+      "why_not_buy": "Liquidity rank 77 < 85",
+      "high_52w": 155.22000122070312,
+      "off_high_now": 3.5304700969221128
     },
     {
       "ticker": "PAYC",
@@ -438,7 +450,9 @@
       "suggested_stop": 232.44693046569824,
       "suggested_stop_pct": 5.115954559726499,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 74 < 85"
+      "why_not_buy": "Liquidity rank 74 < 85",
+      "high_52w": 244.97999572753906,
+      "off_high_now": 2.441013891677046
     },
     {
       "ticker": "SN",
@@ -476,7 +490,9 @@
       "suggested_stop": 182.68200607299804,
       "suggested_stop_pct": 6.0953981815419525,
       "gap_pct": null,
-      "why_not_buy": "Repeat setup (de-duplicated)"
+      "why_not_buy": "Repeat setup (de-duplicated)",
+      "high_52w": 194.5399932861328,
+      "off_high_now": 4.225345042458167
     },
     {
       "ticker": "EQNR",
@@ -514,7 +530,9 @@
       "suggested_stop": 43.44169984817505,
       "suggested_stop_pct": 5.23189418941886,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 78 < 85"
+      "why_not_buy": "Liquidity rank 78 < 85",
+      "high_52w": 45.84000015258789,
+      "off_high_now": 1.1998238115832485
     },
     {
       "ticker": "CVE",
@@ -552,7 +570,9 @@
       "suggested_stop": 31.541500759124755,
       "suggested_stop_pct": 7.665395491755913,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 81 < 85"
+      "why_not_buy": "Liquidity rank 81 < 85",
+      "high_52w": 34.15999984741211,
+      "off_high_now": 4.50819942156414
     },
     {
       "ticker": "PR",
@@ -590,7 +610,9 @@
       "suggested_stop": 23.088974924087523,
       "suggested_stop_pct": 6.313757373804265,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 81 < 85"
+      "why_not_buy": "Liquidity rank 81 < 85",
+      "high_52w": 24.645000457763672,
+      "off_high_now": 2.3737106145477953
     },
     {
       "ticker": "BTSG",
@@ -628,7 +650,9 @@
       "suggested_stop": 61.54999923706055,
       "suggested_stop_pct": 6.2309570240990775,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 75 < 85"
+      "why_not_buy": "Liquidity rank 75 < 85",
+      "high_52w": 73.75,
+      "off_high_now": 14.101696984242585
     },
     {
       "ticker": "OVV",
@@ -666,7 +690,9 @@
       "suggested_stop": 64.4660509109497,
       "suggested_stop_pct": 4.50888924449785,
       "gap_pct": null,
-      "why_not_buy": "Liquidity rank 79 < 85"
+      "why_not_buy": "Liquidity rank 79 < 85",
+      "high_52w": 67.51000213623047,
+      "off_high_now": 1.1257622754874714
     }
   ]
 }

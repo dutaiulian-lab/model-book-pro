@@ -131,6 +131,9 @@ function scanTicker(ticker, history, splits, meta, spyDates) {
     const snap = {
         price: S.c[k], dma10: S.sma10[k], ema21: S.ema21[k], sma50: S.sma50[k],
         adr: S.adrS[k] * 100, vol_ratio: S.v[k] / S.vol20[k],
+        // Highest high of the last 252 sessions (or since listing): the card's
+        // "Off High" is measured from today's close, not the setup day's.
+        hi52: Math.max(...Array.from(S.h.subarray(Math.max(0, n - 252)))),
         perf63: n > 63 ? (S.c[k] / S.c[k - 63] - 1) * 100 : NaN,
         is_ipo: ipoStart && k < 252, ipo_date: ipoStart ? S.dates[0] : null,
     };
@@ -159,6 +162,8 @@ function buildMatch(ticker, r, st, ranks, spy3mo) {
         dollar_volume: f.dv,
         base_depth: `-${f.depth52.toFixed(1)}%`,
         depth_52w: f.depth52,
+        high_52w: snap.hi52,
+        off_high_now: (snap.hi52 - snap.price) / snap.hi52 * 100,
         up_from_low52: f.upLow52,
         setup_depth: st.baseDepth,
         setup_length: st.baseLen,
