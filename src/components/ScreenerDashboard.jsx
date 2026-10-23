@@ -455,24 +455,24 @@ export default function ScreenerDashboard({ onHealthChange }) {
               </span>
             ),
             state: ctxSpy,
-            sub: `SPY $${regime.spy_close?.toFixed(2)}`,
+            sub: `SPY $${regime.spy_close?.toFixed(2)}${regime.spy_above_50 != null ? (regime.spy_above_50 ? ' · above 50-day' : ' · below 50-day') : ''}`,
           },
           idle && idle.mode !== 'none' && {
             label: 'Idle cash',
             title: idle.note || (idle.on ? 'Money not in setups sits in SPY; sell SPY to fund new buys.' : 'SPY is in a downtrend; idle money stays in cash.'),
             value: <span className="text-foreground">{idle.on ? 'In SPY' : 'In cash'}</span>,
             sub: band != null
-              ? (idle.on ? `Sell to fund buys · cash below −${band}%` : `Back to SPY above +${band}%`)
+              ? (idle.on ? `Sell to fund buys · cash if SPY < 200-day −${band}%` : `Back to SPY if > 200-day +${band}%`)
               : (idle.on ? 'Sell SPY to fund buys' : 'SPY in a downtrend'),
           },
           regime.breadth_50 != null && {
             label: 'Breadth',
-            title: ['Share of scanned stocks trading above their 50-day SMA', ctxBreadth?.meaning].filter(Boolean).join('\n\n'),
+            title: [`Share of liquid stocks (price ≥ $${rules?.rankPriceMin ?? 5}, $${((rules?.rankDvMin ?? 5e6) / 1e6).toFixed(0)}M+ daily volume${data?.ranking_universe ? `, ${data.ranking_universe.toLocaleString()} today` : ''}) trading above their 50-day SMA`, ctxBreadth?.meaning].filter(Boolean).join('\n\n'),
             meaning: ctxBreadth?.meaning,
             value: <span className={ctxBreadth ? CTX_TEXT[ctxBreadth.color] : 'text-foreground'}>{regime.breadth_50.toFixed(0)}%</span>,
             state: ctxBreadth,
             sub: ctxBreadth?.change10 != null
-              ? `above 50-day · ${ctxBreadth.change10 >= 0 ? '+' : ''}${ctxBreadth.change10.toFixed(1)} in 10d`
+              ? `above 50-day · ${ctxBreadth.change10 >= 0 ? '+' : ''}${ctxBreadth.change10.toFixed(1)} pts in 10d`
               : 'of stocks above 50-day',
           },
         ].filter(Boolean);

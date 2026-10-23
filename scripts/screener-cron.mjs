@@ -164,7 +164,6 @@ function buildMatch(ticker, r, st, ranks, spy3mo) {
         base_depth: `-${f.depth52.toFixed(1)}%`,
         depth_52w: f.depth52,
         high_52w: snap.hi52,
-        off_high_now: (snap.hi52 - snap.price) / snap.hi52 * 100,
         up_from_low52: f.upLow52,
         setup_depth: st.baseDepth,
         setup_length: st.baseLen,

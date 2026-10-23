@@ -4,6 +4,8 @@ import { getLatestRun } from '../lib/github.js';
 // polls this, and each uncached call spends GitHub API quota on the PAT that
 // /api/cron-scan also needs, so responses are cached at the edge for 15s.
 export default async function handler(req, res) {
+  // Errors must never be cached, or a transient GitHub failure would stick.
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
