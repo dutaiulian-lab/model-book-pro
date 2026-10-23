@@ -1,16 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Target, TrendingUp, BarChart3, Crosshair, Clock, ShieldCheck, Zap, ChevronDown, ChevronUp, Copy, Check, Sparkles, Filter, AlertTriangle, RefreshCw, CheckCircle2, ExternalLink, X, Info } from 'lucide-react';
+import { latestScannableSession } from '../lib/market-calendar';
 
-// Most recent weekday 22:15 UTC (primary scheduled scan time) that is at least 6h in
-// the past; its UTC date is the session the newest scan should cover. The 6h
-// grace absorbs scheduling delays.
-function expectedScanAfter(now = new Date()) {
-  const ref = new Date(now.getTime() - 6 * 3600 * 1000);
-  const c = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate(), 22, 15));
-  if (c > ref) c.setUTCDate(c.getUTCDate() - 1);
-  while (c.getUTCDay() === 0 || c.getUTCDay() === 6) c.setUTCDate(c.getUTCDate() - 1);
-  return c;
-}
+// The newest scan should cover the latest NYSE session whose 22:15 UTC scan
+// time is at least this far in the past (absorbs scheduling delays).
+const SCAN_GRACE_MS = 6 * 3600 * 1000;
 
 const DISMISSED_RUN_KEY = 'dismissedFailedRunUrl';
 
@@ -29,14 +23,18 @@ const CTX_BADGE = {
 // "near pivot". Display only; see research/reports/cancel-pending-study.md.
 export const NEAR_PIVOT_PCT = 5;
 export function setupHealth(match, price) {
-  const pivot = match.buy_stop ?? match.recent_pivot;
-  const distPivot = pivot > 0 ? (price / pivot - 1) * 100 : NaN;
+  // Same pivot fallback as the card's buy stop (older files lack buy_stop).
+  const pivot = match.buy_stop ?? match.recent_pivot ?? price;
+  const distPivot = pivot > 0 ? (price / pivot - 1) * 100 : 0;
+  // Breakdown is judged on the scan's close (match.price), not the live quote:
+  // the card says "closed below", and intraday ticks would flip the flag.
+  const close = match.price ?? price;
   const reasons = [];
-  if (match.suggested_stop > 0 && price < match.suggested_stop) {
+  if (match.suggested_stop > 0 && close < match.suggested_stop) {
     reasons.push(`below the $${match.suggested_stop.toFixed(2)} stop a fill at the pivot would use`);
   }
-  if (match.sma50 > 0 && price < match.sma50) reasons.push(`below the 50-DMA ($${match.sma50.toFixed(2)})`);
-  const stage = price > pivot ? 'TRIGGERED' : reasons.length ? 'BROKEN'
+  if (match.sma50 > 0 && close < match.sma50) reasons.push(`below the 50-DMA ($${match.sma50.toFixed(2)})`);
+  const stage = distPivot > 0 ? 'TRIGGERED' : reasons.length ? 'BROKEN'
     : distPivot >= -2 ? 'AT_PIVOT' : distPivot >= -NEAR_PIVOT_PCT ? 'NEAR_PIVOT' : 'BELOW_PIVOT';
   return { distPivot, reasons, stage, broken: stage === 'BROKEN' };
 }
@@ -211,17 +209,15 @@ export default function ScreenerDashboard({ onHealthChange }) {
     };
   }, [data]);
 
-  // Stale = the published scan covers an older session than expected and no
-  // scan has succeeded since the expected scan time (a successful run that
-  // skipped means a market holiday). Uses as_of, not the write time: a late
-  // run once republished an older session with a fresh timestamp.
+  // Stale = the published scan covers an older session than the latest NYSE
+  // session that is due (holidays come from the calendar, so a late-data skip
+  // can't pass for one). Uses as_of, not the write time: a late run once
+  // republished an older session with a fresh timestamp.
   const dataTimestamp = data?.timestamp ? new Date(data.timestamp) : null;
-  const scanDue = expectedScanAfter();
-  const expectedSession = scanDue.toISOString().slice(0, 10);
-  const ranSinceDue = scanStatus?.status === 'completed' && scanStatus?.conclusion === 'success'
-    && scanStatus.updated_at && new Date(scanStatus.updated_at) >= scanDue;
+  const { session: expectedSession, scanAt: scanDue } =
+    latestScannableSession(new Date(Date.now() - SCAN_GRACE_MS));
   const isStale = !loading && (data?.as_of
-    ? data.as_of < expectedSession && !ranSinceDue
+    ? data.as_of < expectedSession
     : !dataTimestamp || dataTimestamp < scanDue);
   const scanFailed = scanStatus?.status === 'completed' && scanStatus?.conclusion === 'failure';
   const scanRunning = scanStatus?.status === 'in_progress' || scanStatus?.status === 'queued';
@@ -620,11 +616,13 @@ export default function ScreenerDashboard({ onHealthChange }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
           {(() => {
+            const healthByTicker = new Map(filteredMatches.map(m =>
+              [m.ticker, setupHealth(m, livePrices[m.ticker] || m.price)]));
             const sorted = [...filteredMatches].sort((a, b) => {
               const priceA = livePrices[a.ticker] || a.price;
               const priceB = livePrices[b.ticker] || b.price;
               // Broken setups last.
-              const brokenA = setupHealth(a, priceA).broken, brokenB = setupHealth(b, priceB).broken;
+              const brokenA = healthByTicker.get(a.ticker).broken, brokenB = healthByTicker.get(b.ticker).broken;
               if (brokenA !== brokenB) return brokenA ? 1 : -1;
               const pivA = a.buy_stop ?? a.ema21, pivB = b.buy_stop ?? b.ema21;
               const distA = Math.abs((priceA - pivA) / pivA);
@@ -662,10 +660,11 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 HTF: ['bg-purple-500/10 text-purple-500 border-purple-500/20', '🚀'],
               };
               const [badgeBg, badgeIcon] = BADGES[match.family] || BADGES.RANGE;
-              const liveDistPivot = buyStop > 0 ? ((currentPrice - buyStop) / buyStop) * 100 : 0;
-              const isTriggered = liveDistPivot > 0;
-              const isAtPivot = !isTriggered && liveDistPivot >= -2;
-              const health = setupHealth(match, currentPrice);
+              // setupHealth drives the timing badge, sort order and card style,
+              // so a broken setup can't also be labelled AT PIVOT.
+              const health = healthByTicker.get(match.ticker);
+              const liveDistPivot = health.distPivot;
+              const isTriggered = health.stage === 'TRIGGERED';
               // Off High from today's close (older files: setup-day value).
               const offHigh = match.high_52w > 0
                 ? Math.max(0, (match.high_52w - currentPrice) / match.high_52w * 100) : null;
@@ -747,7 +746,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                           <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-amber-500/20" title="Live price is above the buy stop">
                             ⚡ TRIGGERED
                           </span>
-                        ) : isAtPivot ? (
+                        ) : health.stage === 'AT_PIVOT' ? (
                           <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                             🎯 AT PIVOT

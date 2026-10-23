@@ -3,6 +3,7 @@ import path from 'path';
 import YahooFinance from 'yahoo-finance2';
 import { calculatePerformance } from './lib/technicals.mjs';
 import { fetchAllUSTickers } from './lib/universe.mjs';
+import { latestScannableSession } from '../src/lib/market-calendar.js';
 import {
     RULES, WATCH, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, rsScore, dollarVol,
     inRankUniverse, detect, countedSetups, passesBuyRules, passesTrackRules, passesWatch, bestSetup, initialStop,
@@ -212,21 +213,30 @@ async function run() {
     // Yahoo without the latest session, and rescanning then overwrote the
     // newer published scan with the previous session's.
     const outPath = path.join(process.cwd(), 'public', 'market-state.json');
+    let prevAsOf = null;
     if (fs.existsSync(outPath)) {
-        let prevAsOf = null;
         try {
             prevAsOf = JSON.parse(fs.readFileSync(outPath, 'utf8')).as_of || null;
         } catch (e) {
             // Unreadable previous file: just rescan.
         }
-        if (prevAsOf && asOf < prevAsOf) {
-            console.log(`Yahoo's latest session (${asOf}) is older than the published scan (${prevAsOf}). Skipping.`);
-            return;
-        }
-        if (prevAsOf === asOf && process.env.FORCE_SCAN !== '1') {
-            console.log(`Previous scan already covers ${asOf} (market holiday?). Skipping.`);
-            return;
-        }
+    }
+    if (prevAsOf && asOf < prevAsOf) {
+        console.log(`Yahoo's latest session (${asOf}) is older than the published scan (${prevAsOf}). Skipping.`);
+        return;
+    }
+    // Latest NYSE session whose 22:15 UTC scan time has passed. If neither Yahoo
+    // nor the published scan has it, the data is late (not a holiday): fail, so
+    // the run shows as failed, the dashboard flags the scan, and the next
+    // trigger (Vercel Cron at 02:30 UTC) retries.
+    const expected = latestScannableSession().session;
+    if (asOf < expected && !(prevAsOf && prevAsOf >= expected)) {
+        console.error(`Yahoo's latest session is ${asOf}, but the ${expected} session (not an NYSE holiday) should be out. Data is late; failing so a later run retries.`);
+        process.exit(1);
+    }
+    if (prevAsOf === asOf && process.env.FORCE_SCAN !== '1') {
+        console.log(`Previous scan already covers ${asOf}; no newer NYSE session is due. Skipping.`);
+        return;
     }
 
     const tickers = await fetchAllUSTickers();
