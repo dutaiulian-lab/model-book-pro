@@ -2,13 +2,16 @@
 //   1. records today's picks (pick-days.json + a dated copy of market-state.json);
 //   2. adds every qualifying setup not seen before as a live signal (setups of
 //      separately tracked families, market-state `tracked`, get tier 'track');
-//   3. refreshes outcomes of signals still waiting for a fill or still open.
+//   3. refreshes outcomes of signals still waiting for a fill or still open,
+//      with the earnings releases near each signal (SEC 8-K Item 2.02 plus the
+//      scheduled date on today's card) for the F7 earnings-session rule.
 import fs from 'fs';
 import path from 'path';
 import {
     BARS_RANGE, EXPIRE_CALENDAR_DAYS, computeOutcome, fetchDailyBars, pickFields, signalId,
-    readJson, writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH,
+    readJson, writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH, earningsNear,
 } from './lib/track-record.mjs';
+import { secEarnings, mergeEarnings } from './lib/earnings.mjs';
 import { RULES_VERSION } from './lib/leader-rules.mjs';
 
 const OPEN = new Set(['pending', 'open']);
@@ -83,6 +86,21 @@ async function main() {
                 if (res) barsByTicker.set(t, res.bars);
             }));
         }
+        // Earnings releases near each signal still waiting for (or just past) its fill.
+        const cardEvents = new Map((state?.matches || []).map(m => [m.ticker, m.earnings_events || []]));
+        const needEarn = toRefresh.filter(s => s.outcome?.status === 'pending' || !s.outcome?.entry_date
+            || s.outcome.entry_date >= new Date(Date.now() - 20 * 86400e3).toISOString().slice(0, 10));
+        let secFailed = 0;
+        for (const t of [...new Set(needEarn.map(s => s.ticker))]) {
+            const since = needEarn.filter(s => s.ticker === t).reduce((m, s) => (s.signal_date < m ? s.signal_date : m), '9999');
+            let sec = [];
+            try { sec = await secEarnings(t, since); } catch (e) { secFailed++; }
+            for (const s of needEarn.filter(x => x.ticker === t)) {
+                const ev = earningsNear(s.signal_date, mergeEarnings(s.earnings, sec, cardEvents.get(t)));
+                if (ev.length) s.earnings = ev;
+            }
+        }
+        if (secFailed) console.log(`SEC earnings lookup failed for ${secFailed} tickers (kept the stored dates).`);
         let updated = 0;
         for (const s of toRefresh) {
             const bars = barsByTicker.get(s.ticker);

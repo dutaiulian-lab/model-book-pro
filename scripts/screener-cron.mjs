@@ -3,10 +3,11 @@ import path from 'path';
 import YahooFinance from 'yahoo-finance2';
 import { calculatePerformance } from './lib/technicals.mjs';
 import { fetchAllUSTickers } from './lib/universe.mjs';
-import { latestScannableSession } from '../src/lib/market-calendar.js';
+import { latestScannableSession, isTradingDay } from '../src/lib/market-calendar.js';
+import { upcomingEarnings } from './lib/earnings.mjs';
 import {
-    RULES, WATCH, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, rsScore, dollarVol,
-    inRankUniverse, detect, countedSetups, passesBuyRules, passesTrackRules, passesWatch, bestSetup, initialStop,
+    RULES, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, rsScore, dollarVol,
+    inRankUniverse, countedSetups, passesBuyRules, passesTrackRules, bestSetup, initialStop,
     percentile, regimeOn, spyRegimeByDate, splitFactors, parseChart, IDLE, idleCashByDate, idleCashText,
     CONTEXT, contextHistory, marketContext,
 } from './lib/leader-rules.mjs';
@@ -19,7 +20,6 @@ const yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 const stats = { ok: 0, no_data: 0, fetch_failed: 0, retries: 0 };
 const MAX_FETCH_FAILURE_RATE = 0.10;
 const MIN_UNIVERSE_SIZE = 1000;
-const WATCHLIST_MAX = 40;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // Retries network errors, 429 and 5xx with exponential backoff (1s, 2s).
@@ -88,7 +88,6 @@ async function quoteSummaryWithRetry(ticker, attempts = 3) {
 //            stock is in the ranking universe (feeds the percentiles);
 //   setups:  counted setups from the last 5 sessions whose buy-stop has not
 //            triggered yet (still actionable tomorrow);
-//   watch:   today's raw setups including power gaps (watchlist);
 //   snap:    display values for the dashboard card.
 // Sessions of breadth history kept for the market context.
 const BREADTH_SESSIONS = contextHistory();
@@ -125,9 +124,7 @@ function scanTicker(ticker, history, splits, meta, spyDates) {
     const setups = countedSetups(S, 30, n - 1)
         .filter(st => st.s >= n - RULES.entryWindow && st.eb < 0)
         .map(st => pack(st, st.s));
-    const today = detect(S, n - 1, { withGap: true });
-    const watch = today ? today.cands.map(cd => pack({ ...cd, feats: today.feats }, n - 1)) : [];
-    if (!setups.length && !watch.length) return { recent };
+    if (!setups.length) return { recent };
     const k = n - 1;
     const snap = {
         price: S.c[k], dma10: S.sma10[k], ema21: S.ema21[k], sma50: S.sma50[k],
@@ -138,7 +135,7 @@ function scanTicker(ticker, history, splits, meta, spyDates) {
         perf63: n > 63 ? (S.c[k] / S.c[k - 63] - 1) * 100 : NaN,
         is_ipo: ipoStart && k < 252, ipo_date: ipoStart ? S.dates[0] : null,
     };
-    return { recent, setups, watch, snap, n };
+    return { recent, setups, snap, n };
 }
 
 function buildMatch(ticker, r, st, ranks, spy3mo) {
@@ -147,7 +144,10 @@ function buildMatch(ticker, r, st, ranks, spy3mo) {
     const pivot = st.pivot;
     const stop = initialStop(pivot, st.structStop);
     const distPivot = (snap.price / pivot - 1) * 100;
-    const atPivot = distPivot >= -2;
+    // Display tiers (rules.json display): ready / soon / far (far = hidden on
+    // the dashboard, still a live order and recorded in the track record).
+    const tier = distPivot >= -RULES.readyWithinPct ? 'READY' : distPivot >= -RULES.soonWithinPct ? 'SOON' : 'FAR';
+    const TIER_LABEL = { READY: '🎯 Ready now', SOON: '⏳ Soon', FAR: '💤 Far below pivot' };
     return {
         ticker,
         family: st.fam,
@@ -179,8 +179,10 @@ function buildMatch(ticker, r, st, ranks, spy3mo) {
         recent_pivot: pivot,
         buy_stop: pivot,
         dist_from_pivot: distPivot,
-        timing_status: atPivot ? 'AT_PIVOT' : 'NEAR_PIVOT',
-        timing_label: atPivot ? '🎯 At Pivot' : '⏳ Near Pivot',
+        timing_status: tier,
+        timing_label: TIER_LABEL[tier],
+        buy_limit: pivot * (1 + RULES.gapLimitPct / 100),
+        below_stop: snap.price < stop,
         struct_stop: st.structStop,
         suggested_stop: stop,
         suggested_stop_pct: (pivot - stop) / pivot * 100,
@@ -325,7 +327,6 @@ async function run() {
     });
 
     const techMatches = [];
-    const watchlist = [];
     const tracked = [];
     const setupList = (list) => list.map(x => ({
         family: x.st.fam, setup_type: FAMILY_LABELS[x.st.fam], signal_date: x.st.date,
@@ -333,7 +334,7 @@ async function run() {
         rs_rank: x.ranks.rs, dv_rank: x.ranks.dvPct,
     }));
     for (const [ticker, r] of results) {
-        if (!r.setups && !r.watch) continue;
+        if (!r.setups) continue;
         const ranked = (r.setups || []).map(st => ({ st, ranks: ranksFor(st) }));
         const buys = ranked.filter(x => passesBuyRules(x.st, x.ranks, mktFor(x.st.date)));
         // Families tracked separately (e.g. High Tight Flags): same filters,
@@ -354,68 +355,58 @@ async function run() {
             // (as in the research); the card shows the one that triggers first.
             m.setups = setupList(buys);
             techMatches.push(m);
-            continue;
-        }
-        if (tr.length) continue;
-        const w = (r.watch || []).map(st => ({ st, ranks: ranksFor(st) })).filter(x => passesWatch(x.st, x.ranks));
-        if (w.length) {
-            const best = bestSetup(w.map(x => x.st));
-            const ranks = w.find(x => x.st === best).ranks;
-            watchlist.push({
-                ...buildMatch(ticker, r, best, ranks, spy3mo),
-                gap_pct: best.gapPct ?? null,
-                why_not_buy: whyNotBuy(best, ranks, regimeOn(mktFor(best.date))),
-            });
         }
     }
-    techMatches.sort((a, b) => b.rs_rank - a.rs_rank);
+    const tierOrder = { READY: 0, SOON: 1, FAR: 2 };
+    techMatches.sort((a, b) => tierOrder[a.timing_status] - tierOrder[b.timing_status] || b.rs_rank - a.rs_rank);
     tracked.sort((a, b) => b.rs_rank - a.rs_rank);
-    watchlist.sort((a, b) => b.rs_rank - a.rs_rank);
-    watchlist.splice(WATCHLIST_MAX);
 
-    console.log(`\nTechnical Scan found ${techMatches.length} buy setups, ${tracked.length} separately tracked setups and ${watchlist.length} watchlist leaders.`);
-    console.log(`Fundamentals / earnings lookup (informational; the tested rules are price-only)...`);
+    console.log(`\nTechnical Scan found ${techMatches.length} buy setups (${techMatches.filter(m => m.timing_status === 'READY').length} ready, ${techMatches.filter(m => m.timing_status === 'SOON').length} soon, ${techMatches.filter(m => m.timing_status === 'FAR').length} far below the pivot) and ${tracked.length} separately tracked setups.`);
+    console.log(`Fundamentals / earnings lookup...`);
 
-    // Fundamentals are shown on the card and flag earnings risk, but do not
-    // filter: the 20-year study could not test them (no point-in-time data), and
-    // the track record must follow exactly the rules that were tested.
+    // Fundamentals are informational (no point-in-time history to test them).
+    // The earnings date is part of the rules: no fill on the session that
+    // reacts to the release (rules.json entry.skipEarningsSession).
     const finalMatches = [];
-    const fundStats = { checked: techMatches.length, failed: 0 };
+    const fundStats = { checked: techMatches.length, failed: 0, earnings_unknown: 0 };
     for (const match of techMatches) {
+        let summary = null;
         try {
-            const summary = await quoteSummaryWithRetry(match.ticker);
-            const epsGrowth = summary?.financialData?.earningsGrowth ?? null;
-            const revGrowth = summary?.financialData?.revenueGrowth ?? null;
-            let earningsDateStr = "Unknown";
-            let earningsSoon = false;
-            const ed0 = summary?.calendarEvents?.earnings?.earningsDate?.[0];
-            if (ed0) {
-                const ed = new Date(ed0);
-                earningsDateStr = ed.toISOString().split('T')[0];
-                const diffDays = Math.ceil((ed - new Date()) / (1000 * 60 * 60 * 24));
-                earningsSoon = diffDays >= 0 && diffDays <= 7;
-            }
-            finalMatches.push({
-                ...match,
-                eps_growth: epsGrowth,
-                rev_growth: revGrowth,
-                growth_ok: (epsGrowth ?? 0) >= 0.20 || (revGrowth ?? 0) >= 0.20,
-                short_percent: summary?.defaultKeyStatistics?.shortPercentOfFloat || 0,
-                float_shares: summary?.defaultKeyStatistics?.floatShares || 0,
-                sector: summary?.summaryProfile?.sector || "Unknown",
-                industry: summary?.summaryProfile?.industry || "Unknown",
-                earnings_date: earningsDateStr,
-                earnings_soon: earningsSoon,
-            });
-            console.log(`[BUY] ${match.ticker} (${match.setup_type}) RS ${match.rs_rank.toFixed(0)} - EPS: ${epsGrowth == null ? 'n/a' : (epsGrowth * 100).toFixed(1) + '%'}, Rev: ${revGrowth == null ? 'n/a' : (revGrowth * 100).toFixed(1) + '%'}${earningsSoon ? ' - EARNINGS ' + earningsDateStr : ''}`);
+            summary = await quoteSummaryWithRetry(match.ticker);
         } catch (e) {
             fundStats.failed++;
             console.log(`[FUNDAMENTALS ERROR] ${match.ticker}: ${e.name}: ${String(e.message).slice(0, 200)}`);
-            finalMatches.push({ ...match, eps_growth: null, rev_growth: null, earnings_date: "Unknown", sector: "Unknown", industry: "Unknown" });
         }
-        await new Promise(r => setTimeout(r, 300));
+        let next = null, earnErr = null;
+        try {
+            next = await upcomingEarnings(match.ticker, asOf, { summary });
+        } catch (e) {
+            earnErr = String(e.message).slice(0, 200);
+        }
+        if (!next) fundStats.earnings_unknown++;
+        const earn = earningsInfo(next, asOf, match.sessions_left);
+        const epsGrowth = summary?.financialData?.earningsGrowth ?? null;
+        const revGrowth = summary?.financialData?.revenueGrowth ?? null;
+        finalMatches.push({
+            ...match,
+            eps_growth: epsGrowth,
+            rev_growth: revGrowth,
+            growth_ok: summary ? (epsGrowth ?? 0) >= 0.20 || (revGrowth ?? 0) >= 0.20 : null,
+            short_percent: summary?.defaultKeyStatistics?.shortPercentOfFloat || 0,
+            float_shares: summary?.defaultKeyStatistics?.floatShares || 0,
+            sector: summary?.summaryProfile?.sector || "Unknown",
+            industry: summary?.summaryProfile?.industry || "Unknown",
+            ...earn,
+            ...(earnErr ? { earnings_error: earnErr } : {}),
+        });
+        {
+            console.log(`[BUY] ${match.ticker} ${match.timing_status} (${match.setup_type}) RS ${match.rs_rank.toFixed(0)}`
+                + ` - EPS: ${epsGrowth == null ? 'n/a' : (epsGrowth * 100).toFixed(1) + '%'}, Rev: ${revGrowth == null ? 'n/a' : (revGrowth * 100).toFixed(1) + '%'}`
+                + ` - earnings ${earn.earnings_date}${earn.earnings_no_buy_session ? ` (no buy on ${earn.earnings_no_buy_session})` : ''}${earnErr ? ` [lookup failed: ${earnErr}]` : ''}`);
+        }
+        await sleep(300);
     }
-    console.log(`Fundamentals: ${fundStats.failed}/${fundStats.checked} lookups failed.`);
+    console.log(`Fundamentals: ${fundStats.failed}/${fundStats.checked} lookups failed; earnings date unknown for ${fundStats.earnings_unknown}.`);
 
     const output = {
         timestamp: new Date().toISOString(),
@@ -427,8 +418,9 @@ async function run() {
             tracked_families: RULES.trackFamilies.map(f => FAMILY_LABELS[f]),
             track_note: RULES.trackNote,
             regime: REGIME_TEXT[RULES.regime], stop: STOP_TEXT[RULES.stop], exit: EXIT_TEXT[RULES.exit],
+            entry: `Buy stop at the pivot (limit +${RULES.gapLimitPct}%), valid ${RULES.entryWindow} sessions; no fill on an earnings-reaction session`,
+            tiers: { ready: RULES.readyWithinPct, soon: RULES.soonWithinPct },
         },
-        watch_rules: WATCH,
         regime,
         idle_cash,
         context,
@@ -439,38 +431,56 @@ async function run() {
             failure_rate: Number(failureRate.toFixed(4)),
             fundamentals_checked: fundStats.checked,
             fundamentals_failed: fundStats.failed,
+            earnings_unknown: fundStats.earnings_unknown,
         },
         matches: finalMatches,
         tracked,
-        watchlist,
     };
 
     if (!fs.existsSync(path.dirname(outPath))) fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
-    console.log(`Saved results: ${finalMatches.length} buy setups, ${tracked.length} tracked, ${watchlist.length} watchlist leaders.`);
+    console.log(`Saved results: ${finalMatches.length} buy setups, ${tracked.length} tracked.`);
 }
 
-// Short reason a watchlist leader is not a buy signal.
-function whyNotBuy(st, ranks, marketOn) {
-    // Separately tracked families (HTF): name the filter that failed, or the
-    // de-duplication (the same pattern was already counted earlier).
-    if (RULES.trackFamilies.includes(st.fam)) {
-        const r = filterReason(st, ranks, marketOn);
-        return `${FAMILY_LABELS[st.fam]} (tracked, not a buy rule): ${r || 'repeat of an earlier flag'}`;
+// The next `k` NYSE sessions after `iso` (exclusive).
+function nextSessions(iso, k) {
+    const out = [];
+    let t = Date.parse(`${iso}T12:00:00Z`);
+    while (out.length < k) {
+        t += 86400e3;
+        const d = new Date(t).toISOString().slice(0, 10);
+        if (isTradingDay(d)) out.push(d);
     }
-    if (!RULES.families.includes(st.fam)) return st.fam === 'GAP' ? 'Power gap (watch for a setup)' : 'Setup not in buy rules';
-    return filterReason(st, ranks, marketOn) || 'Repeat setup (de-duplicated)';
+    return out;
+}
+// First NYSE session on or after `iso`.
+function sessionOnOrAfter(iso) {
+    return isTradingDay(iso) ? iso : nextSessions(iso, 1)[0];
 }
 
-function filterReason(st, ranks, marketOn) {
-    const f = st.feats;
-    if (!marketOn) return `Market filter off (${REGIME_TEXT[RULES.regime]})`;
-    if (RULES.rsMin > 0 && !(ranks.rs >= RULES.rsMin)) return `RS ${ranks.rs.toFixed(0)} < ${RULES.rsMin}`;
-    if (RULES.dvPctMin > 0 && !(ranks.dvPct >= RULES.dvPctMin)) return `Liquidity rank ${ranks.dvPct.toFixed(0)} < ${RULES.dvPctMin}`;
-    if (!(f.dv >= RULES.dvMin)) return `Dollar volume below $${RULES.dvMin / 1e6}M`;
-    if (f.upLow52 < RULES.upLow52Min) return `Only +${f.upLow52.toFixed(0)}% off 52w low`;
-    if (f.depth52 > RULES.depth52Max) return `${f.depth52.toFixed(0)}% below 52w high`;
-    return null;
+// Card fields for the next earnings release. The reaction session is the
+// release day (before the open / during the session) or the next session
+// (after the close); unknown time flags both. If one falls inside the buy
+// stop's remaining window, the order must not be live that session (a
+// trigger there voids the setup, as in the study).
+function earningsInfo(next, asOf, sessionsLeft) {
+    if (!next) return { earnings_date: 'Unknown', earnings_time: null, earnings_soon: false, earnings_no_buy_session: null, earnings_events: [] };
+    const day = sessionOnOrAfter(next.date);
+    const react = [];
+    if (day !== next.date || next.amc !== true) react.push(day);
+    if (day === next.date && next.amc !== false) react.push(nextSessions(day, 1)[0]);
+    const window = nextSessions(asOf, Math.max(0, sessionsLeft));
+    const hit = react.find(d => window.includes(d)) || null;
+    const days = Math.round((Date.parse(next.date) - Date.parse(asOf)) / 86400e3);
+    return {
+        earnings_date: next.date,
+        earnings_time: next.amc === true ? 'after close' : next.amc === false ? 'before open' : null,
+        earnings_estimate: !!next.estimate,
+        earnings_source: next.source,
+        earnings_soon: days >= 0 && days <= 7,
+        earnings_no_buy_session: hit,
+        earnings_events: [{ date: next.date, amc: next.amc ?? null }],
+    };
 }
 
 run();

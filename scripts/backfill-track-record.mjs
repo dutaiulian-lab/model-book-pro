@@ -20,8 +20,9 @@ import {
 } from './lib/leader-rules.mjs';
 import {
     computeOutcome, fetchDailyBars, pickFields, readJson, signalId,
-    writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH,
+    writeTrackRecord, TRACK_RECORD_PATH, PICK_DAYS_PATH, earningsNear, voidOnEarnings,
 } from './lib/track-record.mjs';
+import { secEarnings } from './lib/earnings.mjs';
 
 const BACKFILL_YEARS = Number(process.argv[2] || 3);
 // History fetched per ticker: the backfill window plus 2 years of warm-up
@@ -82,7 +83,8 @@ async function main() {
                 const c = S.c[st.s];
                 const m = {
                     ticker, family: st.fam, setup_type: FAMILY_LABELS[st.fam], price: c,
-                    timing_status: c >= st.pivot * 0.98 ? 'AT_PIVOT' : 'NEAR_PIVOT',
+                    timing_status: c >= st.pivot * (1 - RULES.readyWithinPct / 100) ? 'READY'
+                        : c >= st.pivot * (1 - RULES.soonWithinPct / 100) ? 'SOON' : 'FAR',
                     recent_pivot: st.pivot, struct_stop: st.structStop,
                     suggested_stop: initialStop(st.pivot, st.structStop),
                     suggested_stop_pct: RULES.stopMaxPct, up_from_low52: st.feats.upLow52,
@@ -119,6 +121,24 @@ async function main() {
         if (c.tier === 'track') continue;
         for (const ld of c.listed) if (days[ld] && !days[ld].tickers.includes(c.sig.ticker)) days[ld].tickers.push(c.sig.ticker);
     }
+
+    // F7 earnings rule: a fill on an earnings-reaction session is voided. Only
+    // signals that filled can change; earnings dates from SEC (8-K Item 2.02).
+    const filled = signals.filter(s => s.outcome?.entry_date);
+    const tick = [...new Set(filled.map(s => s.ticker))];
+    let voided = 0, secFailed = 0;
+    console.log(`Earnings dates for ${tick.length} tickers with fills (SEC)...`);
+    for (const t of tick) {
+        let ev;
+        try { ev = await secEarnings(t, FROM); } catch (e) { secFailed++; continue; }
+        for (const s of filled.filter(x => x.ticker === t)) {
+            const near = earningsNear(s.signal_date, ev);
+            if (near.length) s.earnings = near;
+            if (voidOnEarnings(s, spyDates)) voided++;
+        }
+    }
+    console.log(`Earnings rule: ${voided} fills voided; SEC lookup failed for ${secFailed} tickers.`);
+    if (secFailed > tick.length * 0.2) throw new Error('Too many SEC earnings lookups failed; not writing.');
 
     // Keep any live history; replace previous backfill data.
     const prevRecord = readJson(TRACK_RECORD_PATH, { signals: [] });

@@ -16,13 +16,29 @@ const CTX_BADGE = {
   red: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
 };
 
-// Health of an untriggered setup at `price`. The buy stop stays live for the
-// whole entry window under the current rules, but a close below the 50-DMA (the
-// exit rule for a position) or below the stop a fill at the pivot would use
-// means the setup broke down while waiting: flag it instead of calling it
-// "near pivot". Display only; see research/reports/cancel-pending-study.md.
-export const NEAR_PIVOT_PCT = 5;
-export function setupHealth(match, price) {
+// Health of an untriggered setup at `price`. Tiers (rules.json display, via
+// market-state rules): READY within readyWithinPct% of the buy stop, SOON within
+// soonWithinPct%, FAR deeper (hidden: in 20 years only 5 of 1,115 trades filled
+// from there; research/reports/quality-study.md). The buy stop stays live for
+// the whole entry window, but a close below the 50-DMA (the exit rule for a
+// position) or below the stop a fill at the pivot would use means the setup
+// broke down while waiting: flagged, display only (cancelling such orders
+// lowered returns; research/reports/cancel-pending-study.md).
+export const READY_PCT = 2;
+export const SOON_PCT = 10;
+export function tierOf(distPivot, rules) {
+  const ready = rules?.readyWithinPct ?? READY_PCT;
+  const soon = rules?.soonWithinPct ?? SOON_PCT;
+  return distPivot >= -ready ? 'READY' : distPivot >= -soon ? 'SOON' : 'FAR';
+}
+// Tier on the scan's close (stable through the session; live quotes only move
+// the badge's distance).
+export function scanTier(match, rules) {
+  if (['READY', 'SOON', 'FAR'].includes(match.timing_status)) return match.timing_status;
+  const pivot = match.buy_stop ?? match.recent_pivot;
+  return pivot > 0 && match.price > 0 ? tierOf((match.price / pivot - 1) * 100, rules) : 'SOON';
+}
+export function setupHealth(match, price, rules) {
   // Same pivot fallback as the card's buy stop (older files lack buy_stop).
   const pivot = match.buy_stop ?? match.recent_pivot ?? price;
   const distPivot = pivot > 0 ? (price / pivot - 1) * 100 : 0;
@@ -34,9 +50,8 @@ export function setupHealth(match, price) {
     reasons.push(`below the $${match.suggested_stop.toFixed(2)} stop a fill at the pivot would use`);
   }
   if (match.sma50 > 0 && close < match.sma50) reasons.push(`below the 50-DMA ($${match.sma50.toFixed(2)})`);
-  const stage = distPivot > 0 ? 'TRIGGERED' : reasons.length ? 'BROKEN'
-    : distPivot >= -2 ? 'AT_PIVOT' : distPivot >= -NEAR_PIVOT_PCT ? 'NEAR_PIVOT' : 'BELOW_PIVOT';
-  return { distPivot, reasons, stage, broken: stage === 'BROKEN' };
+  const stage = distPivot > 0 ? 'TRIGGERED' : tierOf(distPivot, rules);
+  return { distPivot, reasons, stage, broken: stage !== 'TRIGGERED' && reasons.length > 0 };
 }
 
 export default function ScreenerDashboard({ onHealthChange }) {
@@ -264,7 +279,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
   const timestamp = data?.timestamp || new Date().toISOString();
   const totalScanned = data?.total_scanned || 6000;
 
-  const watchlist = data?.watchlist || [];
   const regime = data?.regime;
   const idle = data?.idle_cash;
   const context = data?.context; // display-only market context (rules.json context)
@@ -279,11 +293,19 @@ export default function ScreenerDashboard({ onHealthChange }) {
     ['BASE', 'Base Breakouts', 'blue'],
     ['HTF', 'High Tight Flags', 'purple'],
   ].filter(([f]) => !rules?.families || rules.families.includes(f));
-  const famCount = (f) => matches.filter(m => m.family === f).length;
-  const readyCount = matches.filter(m => m.timing_status === 'AT_PIVOT').length;
+  // Only actionable setups are listed: ready now and soon. Far-below-pivot
+  // setups stay live orders (and are tracked) but are not shown as cards.
+  const visible = matches.filter(m => scanTier(m, rules) !== 'FAR');
+  const farMatches = matches.filter(m => scanTier(m, rules) === 'FAR');
+  const famCount = (f) => visible.filter(m => m.family === f).length;
+  const readyCount = visible.filter(m => scanTier(m, rules) === 'READY').length;
+  const soonCount = visible.length - readyCount;
+  const readyPct = rules?.readyWithinPct ?? READY_PCT;
+  const soonPct = rules?.soonWithinPct ?? SOON_PCT;
 
-  const filteredMatches = matches.filter(m => {
-    if (selectedTab === 'READY') return m.timing_status === 'AT_PIVOT';
+  const filteredMatches = visible.filter(m => {
+    if (selectedTab === 'READY') return scanTier(m, rules) === 'READY';
+    if (selectedTab === 'SOON') return scanTier(m, rules) === 'SOON';
     if (FAMILY_TABS.some(([f]) => f === selectedTab)) return m.family === selectedTab;
     return true;
   });
@@ -363,11 +385,11 @@ export default function ScreenerDashboard({ onHealthChange }) {
               <Target className="w-3 h-3"/> Leaders
             </div>
             <div className="text-lg font-mono font-bold text-emerald-500 leading-tight mt-1">
-              {matches.length}
+              {visible.length}
               <span className="text-[10px] font-sans font-bold uppercase text-muted-foreground ml-1.5">setups</span>
             </div>
             <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
-              {readyCount} at pivot
+              {readyCount} ready · {soonCount} soon
             </div>
           </div>
         </div>
@@ -443,7 +465,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 {regimeOff ? 'Off' : 'On'}
               </span>
             ),
-            sub: regimeOff ? 'No new buys · watchlist only' : 'New buys allowed',
+            sub: regimeOff ? 'No new buys' : 'New buys allowed',
           },
           {
             label: 'SPY vs 200-day',
@@ -482,6 +504,9 @@ export default function ScreenerDashboard({ onHealthChange }) {
           (rules?.dvPctMin ?? 85) > 0 ? `Top ${100 - (rules?.dvPctMin ?? 85)}% liquidity` : `$${((rules?.dvMin ?? 10e6) / 1e6).toFixed(0)}M+ daily volume`,
           `≥ +${rules?.upLow52Min ?? 100}% off 52w low`,
           rules?.depth52Max != null ? `≤ ${rules.depth52Max}% off high` : null,
+          Number.isFinite(rules?.gapLimitPct) ? `Buy limit pivot +${rules.gapLimitPct}%` : null,
+          rules?.skipEarningsSession ? 'No fill on earnings day' : null,
+          rules?.dealPin ? 'No deal-pinned stocks' : null,
         ].filter(Boolean);
         return (
           <div className={`rounded-2xl border overflow-hidden ${regimeOff ? 'border-rose-500/30 bg-rose-500/5' : 'border-border/80 bg-card'}`}>
@@ -552,7 +577,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 : 'bg-card border border-border text-muted-foreground hover:text-foreground'
             }`}
           >
-            All Leaders ({matches.length})
+            All ({visible.length})
           </button>
           <button
             onClick={() => setSelectedTab('READY')}
@@ -561,10 +586,21 @@ export default function ScreenerDashboard({ onHealthChange }) {
                 ? 'bg-emerald-600 text-white shadow ring-2 ring-emerald-400/40'
                 : 'bg-card border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
             }`}
-            title="Closed within 2% of the buy stop"
+            title={`Closed within ${readyPct}% of the buy stop: the order can fill next session`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            🎯 At Pivot ({readyCount})
+            🎯 Ready now ({readyCount})
+          </button>
+          <button
+            onClick={() => setSelectedTab('SOON')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              selectedTab === 'SOON'
+                ? 'bg-blue-600 text-white shadow ring-2 ring-blue-400/40'
+                : 'bg-card border border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10'
+            }`}
+            title={`Closed ${readyPct}-${soonPct}% below the buy stop: needs a push to trigger within the window`}
+          >
+            ⏳ Soon ({soonCount})
           </button>
           {FAMILY_TABS.map(([fam, label]) => (
             <button
@@ -596,6 +632,11 @@ export default function ScreenerDashboard({ onHealthChange }) {
       </div>
 
       {/* SETUP CARDS GRID */}
+      {farMatches.length > 0 && (
+        <div className="text-[11px] font-mono text-muted-foreground -mt-2" title="Their buy stops stay live and they are recorded in the track record, but in 20 years only 5 of 1,115 trades filled from this far below the pivot (avg -0.13R).">
+          Hidden, more than {soonPct}% below the pivot: {farMatches.map(m => m.ticker).join(', ')}
+        </div>
+      )}
       {dropped && dropped.tickers.length > 0 && (
         <div className="text-[11px] font-mono text-muted-foreground -mt-2">
           Dropped since {dropped.date}: {dropped.tickers.join(', ')}
@@ -609,7 +650,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
           <h3 className="text-base font-bold text-foreground">No Setups in this Category Today</h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
             {regimeOff
-              ? 'The market filter is off, so the rules take no new buys. Leaders still setting up are on the watchlist below.'
+              ? 'The market filter is off, so the rules take no new buys.'
               : `No RS-${rules?.rsMin ?? 90}+ liquid leader has an untriggered setup in this category. Cash is a position.`}
           </p>
         </div>
@@ -617,11 +658,13 @@ export default function ScreenerDashboard({ onHealthChange }) {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
           {(() => {
             const healthByTicker = new Map(filteredMatches.map(m =>
-              [m.ticker, setupHealth(m, livePrices[m.ticker] || m.price)]));
+              [m.ticker, setupHealth(m, livePrices[m.ticker] || m.price, rules)]));
             const sorted = [...filteredMatches].sort((a, b) => {
               const priceA = livePrices[a.ticker] || a.price;
               const priceB = livePrices[b.ticker] || b.price;
-              // Broken setups last.
+              // Ready before soon, broken setups last.
+              const tA = scanTier(a, rules) === 'READY' ? 0 : 1, tB = scanTier(b, rules) === 'READY' ? 0 : 1;
+              if (tA !== tB) return tA - tB;
               const brokenA = healthByTicker.get(a.ticker).broken, brokenB = healthByTicker.get(b.ticker).broken;
               if (brokenA !== brokenB) return brokenA ? 1 : -1;
               const pivA = a.buy_stop ?? a.ema21, pivB = b.buy_stop ?? b.ema21;
@@ -676,9 +719,18 @@ export default function ScreenerDashboard({ onHealthChange }) {
                   key={match.ticker}
                   data-screener-card="true"
                   className={`bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col group relative ${
-                    health.broken ? 'border-rose-500/40 opacity-75 hover:opacity-100' : 'border-border/80 hover:border-primary/50'
+                    health.broken ? 'border-rose-500/40 opacity-75 hover:opacity-100'
+                      : match.family === 'HTF' ? 'border-purple-500/60 ring-2 ring-purple-500/20 bg-gradient-to-br from-purple-500/[0.06] to-transparent hover:border-purple-500'
+                      : 'border-border/80 hover:border-primary/50'
                   }`}
                 >
+                  {match.family === 'HTF' && (
+                    <div className="-mt-5 -mx-5 mb-3 px-5 py-1.5 rounded-t-2xl bg-purple-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-between gap-2"
+                      title="Pole of +100% or more within 40 sessions, then a tight flag no more than 25% deep near the 52-week high. 2007-2026: +0.55R per trade (164 trades), the most explosive Model Book pattern.">
+                      <span>🚀 High Tight Flag</span>
+                      <span className="font-mono normal-case tracking-normal opacity-90">rare · most explosive pattern</span>
+                    </div>
+                  )}
                   {/* CARD TOP ROW: BADGE & ACTIONS */}
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${badgeBg}`}>
@@ -746,22 +798,22 @@ export default function ScreenerDashboard({ onHealthChange }) {
                           <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-amber-500/20" title="Live price is above the buy stop">
                             ⚡ TRIGGERED
                           </span>
-                        ) : health.stage === 'AT_PIVOT' ? (
-                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                            🎯 AT PIVOT
-                          </span>
                         ) : health.broken ? (
                           <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-rose-500/20" title={`Closed ${health.reasons.join(' and ')}`}>
                             ⚠️ BROKEN
                           </span>
-                        ) : health.stage === 'NEAR_PIVOT' ? (
+                        ) : health.stage === 'READY' ? (
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            🎯 READY NOW
+                          </span>
+                        ) : health.stage === 'SOON' ? (
                           <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[10px] font-black border border-blue-500/20">
-                            ⏳ NEAR PIVOT
+                            ⏳ SOON
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1.5 text-muted-foreground bg-muted px-2 py-0.5 rounded text-[10px] font-black border border-border" title={`More than ${NEAR_PIVOT_PCT}% below the buy stop`}>
-                            ⏳ BELOW PIVOT
+                          <span className="flex items-center gap-1.5 text-muted-foreground bg-muted px-2 py-0.5 rounded text-[10px] font-black border border-border" title={`More than ${soonPct}% below the buy stop`}>
+                            💤 FAR BELOW PIVOT
                           </span>
                         )}
                         <span className="font-mono text-muted-foreground text-[11px] whitespace-nowrap">
@@ -769,7 +821,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         </span>
                       </div>
                       <div className="text-[10px] font-mono font-bold text-muted-foreground whitespace-nowrap">
-                        Buy &gt; <span className="text-foreground">${buyStop.toFixed(2)}</span> · Stop <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className="text-amber-600 dark:text-amber-400">-{stopPct.toFixed(1)}%</span>)
+                        Buy &gt; <span className="text-foreground">${buyStop.toFixed(2)}</span>{match.buy_limit ? <span title="Stop-limit: skip the trade if it opens above this"> (lim ${match.buy_limit.toFixed(2)})</span> : null} · Stop <span className="text-foreground">${stopPrice.toFixed(2)}</span> (<span className="text-amber-600 dark:text-amber-400">-{stopPct.toFixed(1)}%</span>)
                       </div>
                     </div>
 
@@ -801,11 +853,20 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         </div>
                       </div>
                     </div>
-                    {match.earnings_soon && (
-                      <div className="mt-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                        ⚠️ Earnings {match.earnings_date}: a gap can jump the stop
+                    {match.earnings_no_buy_session ? (
+                      <div className="mt-2 text-[11px] leading-snug font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5"
+                        title="2007-2026: buy stops filled on the earnings gap itself averaged -0.55R; holding a position through later earnings averaged +0.6R or better, so that is fine.">
+                        ⚠️ Earnings {match.earnings_date}{match.earnings_time ? ` ${match.earnings_time}` : ''}: no buy on {match.earnings_no_buy_session}. Cancel the buy stop for that session; if the report gaps it through the pivot, skip the trade.
                       </div>
-                    )}
+                    ) : match.earnings_date && match.earnings_date !== 'Unknown' ? (
+                      <div className="mt-2 text-[10px] font-mono text-muted-foreground" title="Holding through earnings after the fill is part of the tested rules.">
+                        📅 Earnings {match.earnings_date}{match.earnings_time ? ` (${match.earnings_time})` : ''}{match.earnings_estimate ? ', estimated' : ''}
+                      </div>
+                    ) : match.earnings_date === 'Unknown' ? (
+                      <div className="mt-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                        Earnings date unknown: check it before placing the order (no buy on the report session).
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* EXPANDABLE DEEP-DIVE METRICS */}
@@ -820,7 +881,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Crosshair className="w-3.5 h-3.5"/> Buy Stop (valid {match.sessions_left ?? 5} more session{match.sessions_left === 1 ? '' : 's'})</span>
                         <span className="font-mono font-bold text-foreground bg-muted px-2 py-0.5 rounded text-[10px] whitespace-nowrap truncate min-w-0">
-                          ${buyStop.toFixed(2)}
+                          ${buyStop.toFixed(2)}{match.buy_limit ? ` · limit $${match.buy_limit.toFixed(2)}` : ''}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -952,45 +1013,6 @@ export default function ScreenerDashboard({ onHealthChange }) {
         </div>
       )}
 
-      {/* LEADER WATCHLIST (not buy signals) */}
-      {watchlist.length > 0 && (
-        <div className="bg-card border border-border/80 rounded-2xl p-5 shadow-sm space-y-3">
-          <div>
-            <h3 className="text-sm font-black text-foreground">👀 Leader Watchlist ({watchlist.length})</h3>
-            <p className="text-[11px] text-muted-foreground">
-              RS ≥ {data?.watch_rules?.rsMin ?? 90} stocks with a setup or power gap today that miss a buy rule. Not buy signals:
-              in the 20-year test this looser list caught more Model Book leaders but lost money when traded.
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-[10px] uppercase text-muted-foreground text-left">
-                  <th className="py-1 pr-3">Ticker</th><th className="pr-3">Setup</th><th className="pr-3 text-right">Price</th>
-                  <th className="pr-3 text-right">Pivot</th><th className="pr-3 text-right">RS</th><th className="pr-3 text-right">Liq.</th>
-                  <th className="pr-3 text-right">Run-up</th><th className="pr-3">Why not a buy</th>
-                </tr>
-              </thead>
-              <tbody>
-                {watchlist.map((w) => (
-                  <tr key={w.ticker} className="border-t border-border/50">
-                    <td className="py-1.5 pr-3 font-bold">
-                      <a href={`https://www.tradingview.com/chart/?symbol=${w.ticker}`} target="_blank" rel="noreferrer" className="hover:underline">{w.ticker}</a>
-                    </td>
-                    <td className="pr-3 whitespace-nowrap">{w.setup_type}{w.gap_pct != null ? ` +${w.gap_pct.toFixed(0)}%` : ''}</td>
-                    <td className="pr-3 text-right font-mono">${w.price?.toFixed(2)}</td>
-                    <td className="pr-3 text-right font-mono">${w.buy_stop?.toFixed(2)}</td>
-                    <td className="pr-3 text-right font-mono">{w.rs_rank?.toFixed(0)}</td>
-                    <td className="pr-3 text-right font-mono">{w.dv_rank?.toFixed(0)}</td>
-                    <td className="pr-3 text-right font-mono">{w.up_from_low52 != null ? `+${w.up_from_low52.toFixed(0)}%` : ''}</td>
-                    <td className="pr-3 text-muted-foreground">{w.why_not_buy}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

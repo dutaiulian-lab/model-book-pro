@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, AlertTriangle, Info, ExternalLink } from 'lucide-react';
 import PortfolioPanel from './PortfolioPanel';
 
-const TIMING_LABELS = { AT_PIVOT: 'At Pivot (≤2%)', NEAR_PIVOT: 'Near Pivot', READY_AT_PAD: 'Ready at Pad', BREAKING_OUT: 'At Pivot', COILING: 'Coiling' };
+const TIMING_LABELS = { READY: 'Ready now (≤2%)', SOON: 'Soon (2-10%)', FAR: 'Far (>10% below)', AT_PIVOT: 'At Pivot (≤2%, pre-F7)', NEAR_PIVOT: 'Near Pivot (pre-F7)', READY_AT_PAD: 'Ready at Pad', BREAKING_OUT: 'At Pivot', COILING: 'Coiling' };
 const MIN_LIVE_CLOSED = 20;
 const PAGE = 100;
 

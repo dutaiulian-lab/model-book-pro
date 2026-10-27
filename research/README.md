@@ -21,6 +21,25 @@ with the report and, when the procedure picks different rules, the new
 `rules.json`. Merging it switches the live screener; the daily workflow then
 rebuilds the simulated track record with the new rules.
 
+## Entry-quality rules (2026-10-27)
+
+`quality-study.mjs` tests rules that would skip or hide live setups on the
+same events (live buy rules and exit), with the restudy account conventions.
+Earnings dates come from SEC EDGAR (8-K Item 2.02 earnings releases,
+`fetch-earnings.mjs` -> `data/earnings.json`, about 15 minutes for ~1,600 tickers).
+Report: `reports/quality-study.md`. Adopted in rules.json F7 (`entry`, `dealPin`,
+`display`): High Tight Flags as a buy family, no fill on an earnings-reaction
+session, buy-stop limit 3% above the pivot, pending-deal stocks skipped, and
+setups more than 10% below the pivot hidden on the dashboard. Rejected: skipping
+stocks with earnings inside the holding period (those trades are among the
+best), structural-risk and extension caps. These rules are not part of the
+grid search; `restudy.mjs --apply` keeps them.
+
+```
+node research/fetch-earnings.mjs
+node --max-old-space-size=16000 research/quality-study.mjs
+```
+
 ## Survivorship bias
 
 Yahoo only serves stocks that still trade. Stocks that went bankrupt, were

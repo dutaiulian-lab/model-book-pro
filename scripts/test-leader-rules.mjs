@@ -1,7 +1,7 @@
 // Unit tests for the configurable trade model in lib/leader-rules.mjs.
 //   node scripts/test-leader-rules.mjs
 import assert from 'assert';
-import { initialStop, simulateTrade, regimeOn, RULES, idleCashByDate, classify, marketContext, CONTEXT } from './lib/leader-rules.mjs';
+import { initialStop, simulateTrade, regimeOn, RULES, idleCashByDate, classify, marketContext, CONTEXT, earningsBars, dealPin } from './lib/leader-rules.mjs';
 
 const near = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
 let n = 0;
@@ -177,6 +177,51 @@ test('market context: narrow market and breadth thrust flags', () => {
     assert.equal(ids(marketContext(4, [...flat(18, 10), 25, 30, 35, 40, 45, 50, 52, 54, 56, 58, 59, 61, ...flat(61, 9)])), '');
     // Thrust older than the display window (20 sessions) is no longer shown.
     assert.equal(ids(marketContext(4, [...flat(18, 5), 62, ...flat(65, 25)])), '');
+});
+
+test('F7 buy-stop limit: no fill when the trigger bar opens > gapLimitPct above the pivot', () => {
+    const S = series([105]);
+    S.o[60] = PIVOT * 1.031; S.h[60] = PIVOT * 1.05; S.c[60] = PIVOT * 1.04;
+    const tr = simulateTrade(S, SIG, PIVOT, STRUCT, 'TIGHT', 'c50', 'fix7', { gapLimitPct: 3 });
+    assert.equal(tr.status, 'no_entry');
+    assert.equal(tr.reason, 'gap_limit');
+    S.o[60] = PIVOT * 1.029;
+    assert.equal(simulateTrade(S, SIG, PIVOT, STRUCT, 'TIGHT', 'c50', 'fix7', { gapLimitPct: 3 }).status !== 'no_entry', true);
+    S.o[60] = PIVOT * 1.2;
+    assert.equal(simulateTrade(S, SIG, PIVOT, STRUCT, 'TIGHT', 'c50', 'fix7', { gapLimitPct: Infinity }).status !== 'no_entry', true);
+});
+
+test('F7 earnings session: no fill on an earnings-reaction bar', () => {
+    const S = series([105]);
+    const tr = simulateTrade(S, SIG, PIVOT, STRUCT, 'TIGHT', 'c50', 'fix7', { earnBars: new Set([60]), skipEarnings: true });
+    assert.equal(tr.status, 'no_entry');
+    assert.equal(tr.reason, 'earnings');
+    // Earnings after the fill: hold through it.
+    assert.equal(simulateTrade(S, SIG, PIVOT, STRUCT, 'TIGHT', 'c50', 'fix7', { earnBars: new Set([61]), skipEarnings: true }).status, 'open');
+    assert.equal(simulateTrade(S, SIG, PIVOT, STRUCT, 'TIGHT', 'c50', 'fix7', { earnBars: new Set([60]), skipEarnings: false }).status, 'open');
+});
+
+test('earningsBars: after close -> next session, before open -> same session, unknown -> both', () => {
+    const d = ['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30'];
+    assert.deepEqual([...earningsBars(d, [{ date: '2026-10-27', amc: true }])], [2]);
+    assert.deepEqual([...earningsBars(d, [{ date: '2026-10-27', amc: false }])], [1]);
+    assert.deepEqual([...earningsBars(d, [{ date: '2026-10-27', amc: null }])].sort(), [1, 2]);
+    // Released on a non-session day (weekend): the next session reacts.
+    assert.deepEqual([...earningsBars(['2026-10-23', '2026-10-26'], [{ date: '2026-10-25', amc: true }])], [1]);
+});
+
+test('dealPin: +15% jump on 4x volume, then a flat tape', () => {
+    const N = 80, c = new Float64Array(N).fill(50), h = new Float64Array(N), l = new Float64Array(N), v = new Float64Array(N).fill(1e6);
+    for (let k = 0; k < N; k++) { h[k] = c[k] * 1.02; l[k] = c[k] * 0.98; }
+    const jump = 70;
+    for (let k = jump; k < N; k++) { c[k] = 60; h[k] = 60.2; l[k] = 59.9; }
+    v[jump] = 8e6;
+    const S = { c, h, l, v, vol50: new Float64Array(N).fill(1e6) };
+    const cfg = { jumpPct: 15, volMult: 4, lookback: 15, minQuietSessions: 3, rangeMaxPct: 1 };
+    assert.equal(dealPin(S, 79, cfg), 9);
+    assert.equal(dealPin(S, 71, cfg), 0);           // too soon after the jump
+    for (let k = jump + 1; k < N; k++) { h[k] = 61.5; l[k] = 58.5; } // still volatile: not a pin
+    assert.equal(dealPin(S, 79, cfg), 0);
 });
 
 console.log(`\nAll ${n} tests passed.`);

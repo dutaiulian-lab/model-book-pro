@@ -370,6 +370,12 @@ if (flag('--apply') && changed) {
         trackNote: notBuy.length ? `under these filters in the ${TODAY} re-study, ${notBuy.map(famNote).join('; ')}.` : '',
         ...Object.fromEntries(FIELDS.filter(k => k !== 'families').map(k => [k, proposal[k]])),
         ...(current.idleCash ? { idleCash: current.idleCash, idleCashNote: current.idleCashNote } : {}),
+        // Entry quality rules (2026-10-27 quality study, research/quality-study.mjs) are
+        // not part of the grid search; keep them.
+        ...(current.entry ? { entry: current.entry } : {}),
+        ...(current.dealPin ? { dealPin: current.dealPin } : {}),
+        ...(current.display ? { display: current.display } : {}),
+        ...(current.entryNote ? { entryNote: current.entryNote } : {}),
         // Market context thresholds (display only) are calibrated separately; keep them.
         ...(current.context ? { context: current.context } : {}),
     };

@@ -31,11 +31,19 @@
 //            peak (a later high within 2% does not restart it), <= 25% deep,
 //            close within 7% of the flag high; pivot = flag high (2026-10-06).
 //   Families in `trackFamilies` pass the same filters but are NOT buy signals:
-//   they are shown and tracked separately (HTF since 2026-10: the old definition
-//   made ~0R per trade over 2007-2026; the tightened one +0.5R, but negative in 2026).
+//   they are shown and tracked separately (HTF was tracked 2026-10-03..27; it
+//   is a buy family again since F7: +0.55R per trade 2007-2026, +0.43R since 2023).
+//   Deal pin (rules.json dealPin): skipped when the stock jumped >= jumpPct% on
+//   >= volMult x its 50-day volume within `lookback` sessions and has traded
+//   with an average daily range below rangeMaxPct% for >= minQuietSessions
+//   sessions since (a pending acquisition).
 //
 // Trade plan:
 //   Entry: buy stop at the pivot, valid for 5 sessions after the signal day.
+//          Stop-limit: no fill when the trigger session opens more than
+//          entry.gapLimitPct % above the pivot. No fill on a session that reacts
+//          to an earnings release (entry.skipEarningsSession); the setup is then
+//          void, as in the study (research/quality-study.mjs).
 //   Stop:  struct (structural low), clamp (structural, clamped to 3%-8% below
 //          the fill), min5 (structural, but at least 5% below), fix7, fix10.
 //   Exit:  c50 first close below the 50-day SMA; c50t21 the same, but the 21-day
@@ -68,12 +76,15 @@ export const RULES = {
     families: CFG.families, trackFamilies: CFG.trackFamilies || [], trackNote: CFG.trackNote || '',
     regime: CFG.regime, stop: CFG.stop, exit: CFG.exit,
     entryWindow: 5, stopMinPct: 3, stopMaxPct: 8, trailAfterGainPct: 20,
+    gapLimitPct: CFG.entry?.gapLimitPct ?? Infinity,
+    skipEarningsSession: !!CFG.entry?.skipEarningsSession,
+    dealPin: CFG.dealPin || null,
+    readyWithinPct: CFG.display?.readyWithinPct ?? 2,
+    soonWithinPct: CFG.display?.soonWithinPct ?? Infinity,
     maxHold: CFG.exit === 't20' ? 20 : 252,
     // Universe used for RS / dollar-volume percentiles and breadth.
     rankPriceMin: 5, rankDvMin: 5e6,
 };
-// Watchlist (not buy signals): leaders with any setup, looser liquidity, any market.
-export const WATCH = { rsMin: 90, dvPctMin: 70 };
 
 // Plain-language rule text for the dashboard / track record.
 export const REGIME_TEXT = {
@@ -277,6 +288,23 @@ function rollIdxMax(h, s, w) {
     return j;
 }
 
+// Pending-acquisition pattern at bar s (rules.json dealPin): a jump of jumpPct%
+// on volMult x the prior 50-day volume within `lookback` sessions, followed by
+// >= minQuietSessions sessions whose average daily range is below rangeMaxPct%.
+// Returns the sessions since the jump, or 0.
+export function dealPin(S, s, cfg = RULES.dealPin) {
+    if (!cfg) return 0;
+    const { c, h, l, v, vol50 } = S;
+    let jump = -1;
+    for (let k = Math.max(1, s - cfg.lookback); k <= s - cfg.minQuietSessions; k++) {
+        if (c[k] / c[k - 1] - 1 >= cfg.jumpPct / 100 && v[k] >= cfg.volMult * vol50[k - 1]) jump = k;
+    }
+    if (jump < 0) return 0;
+    let sum = 0;
+    for (let k = jump + 1; k <= s; k++) sum += (h[k] - l[k]) / c[k];
+    return sum / (s - jump) * 100 < cfg.rangeMaxPct ? s - jump : 0;
+}
+
 // Raw setup detection at bar s (before leadership/liquidity/regime filters).
 // Returns { feats, cands } or null if the stock fails the common pre-filters.
 export function detect(S, s, { withGap = false } = {}) {
@@ -374,7 +402,7 @@ export function detect(S, s, { withGap = false } = {}) {
         }
     }
     return {
-        feats: { rawPrice: raw, dv, upLow52, depth52, adr, ipoAge, isIpo, tmpl, dist10, dist21 },
+        feats: { rawPrice: raw, dv, upLow52, depth52, adr, ipoAge, isIpo, tmpl, dist10, dist21, pin: dealPin(S, s) },
         cands,
     };
 }
@@ -422,6 +450,7 @@ function passesFilters(setup, ranks, mkt, families) {
     if (f.rawPrice < RULES.priceMin) return false;
     if (f.upLow52 < RULES.upLow52Min) return false;
     if (f.depth52 > RULES.depth52Max) return false;
+    if (f.pin) return false;
     return true;
 }
 export function passesBuyRules(setup, ranks, mkt) {
@@ -430,10 +459,6 @@ export function passesBuyRules(setup, ranks, mkt) {
 // Families tracked separately (same filters, not buy signals), e.g. HTF.
 export function passesTrackRules(setup, ranks, mkt) {
     return RULES.trackFamilies.length > 0 && passesFilters(setup, ranks, mkt, RULES.trackFamilies);
-}
-export function passesWatch(setup, ranks) {
-    if (setup.fam === 'RANGE' && setup.trap) return false;
-    return ranks.rs >= WATCH.rsMin && ranks.dvPct >= WATCH.dvPctMin && setup.feats.dv >= RULES.dvMin && setup.feats.rawPrice >= RULES.priceMin;
 }
 
 // Pick one setup per ticker: lowest pivot, then family priority.
@@ -453,15 +478,38 @@ export function initialStop(P, struct, type = RULES.stop) {
     return x > 0 && x < P ? x : NaN;
 }
 
+// Bar indices of the sessions that react to earnings releases. events:
+// [{ date: 'YYYY-MM-DD', amc: true|false|null }] (amc: released after the close;
+// null: time unknown, both that session and the next are flagged).
+export function earningsBars(dates, events) {
+    const out = new Set();
+    if (!events?.length) return out;
+    const first = (d) => { let lo = 0, hi = dates.length; while (lo < hi) { const m = (lo + hi) >> 1; if (dates[m] < d) lo = m + 1; else hi = m; } return lo; };
+    for (const e of events) {
+        const k = first(e.date);
+        if (k >= dates.length) continue;
+        const same = dates[k] === e.date;
+        if (!same || e.amc !== true) out.add(k);
+        if (same && e.amc !== false && k + 1 < dates.length) out.add(k + 1);
+    }
+    return out;
+}
+
 // Simulate the trade for a setup at bar s (pivot, structStop, fam). Returns
 // { status: 'no_entry' | 'pending' | 'open' | 'closed', ... } using bars up to S.n-1.
-// Same rules as the research simulator (research/build-events.mjs `simulate`).
-export function simulateTrade(S, s, pivot, structStop, fam, exitType = RULES.exit, stopType = RULES.stop) {
+// Same rules as the research simulator (research/build-events.mjs `simulate`),
+// plus the F7 entry rules: opts.earnBars (Set of bar indices, see earningsBars)
+// voids a trigger on an earnings-reaction session; RULES.gapLimitPct voids a
+// trigger session that opens too far above the pivot (stop-limit order).
+export function simulateTrade(S, s, pivot, structStop, fam, exitType = RULES.exit, stopType = RULES.stop, opts = {}) {
     const { o, h, l, c, sma10, sma50, ema21 } = S;
     const n = S.n;
     let eb = -1;
     for (let m = s + 1; m <= Math.min(n - 1, s + RULES.entryWindow); m++) if (h[m] > pivot) { eb = m; break; }
     if (eb < 0) return n - 1 - s >= RULES.entryWindow ? { status: 'no_entry' } : { status: 'pending', days_waiting: n - 1 - s };
+    const gapLimit = opts.gapLimitPct ?? RULES.gapLimitPct;
+    if (o[eb] > pivot * (1 + gapLimit / 100)) return { status: 'no_entry', reason: 'gap_limit', eb };
+    if ((opts.skipEarnings ?? RULES.skipEarningsSession) && opts.earnBars?.has(eb)) return { status: 'no_entry', reason: 'earnings', eb };
     const P = Math.max(o[eb], pivot);
     let struct = structStop;
     if (fam !== 'RANGE') for (let q = s + 1; q < eb; q++) struct = Math.min(struct, l[q] * 0.995);

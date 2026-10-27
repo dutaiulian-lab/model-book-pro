@@ -8,7 +8,9 @@
 //     lists it every day its buy stop is live, but it is recorded once.
 //   - Entry: buy stop at the pivot, valid ENTRY_WINDOW sessions after the
 //     setup day. Fills at the pivot, or at the open if the stock gaps above it.
-//     No break within the window = "not triggered".
+//     No break within the window = "not triggered". Since F7 (2026-10-27) a
+//     trigger session that opens more than entry.gapLimitPct above the pivot,
+//     or that reacts to an earnings release, voids the setup (no fill).
 //   - Initial stop: the structural stop (for non-coil setups lowered to any
 //     low printed while waiting), clamped to 3%-8% below the fill. On the entry
 //     day only a close below the stop counts; afterwards any touch exits, at
@@ -26,7 +28,7 @@ import { simulatePortfolio } from './portfolio.mjs';
 import path from 'path';
 import {
     RULES, RULES_VERSION, FAMILY_LABELS, REGIME_TEXT, STOP_TEXT, EXIT_TEXT, prepare, simulateTrade, parseChart,
-    IDLE, idleCashByDate, idleCashText,
+    IDLE, idleCashByDate, idleCashText, earningsBars,
 } from './leader-rules.mjs';
 
 export const ENTRY_WINDOW = RULES.entryWindow;
@@ -43,7 +45,7 @@ export const TRACK_RECORD_PATH = path.join(process.cwd(), 'public', 'track-recor
 export const PICK_DAYS_PATH = path.join(process.cwd(), 'public', 'pick-days.json');
 
 export const SETTINGS = {
-    entry: `Buy stop at the pivot, valid ${ENTRY_WINDOW} sessions after the setup day`,
+    entry: `Buy stop at the pivot (limit +${RULES.gapLimitPct}%), valid ${ENTRY_WINDOW} sessions after the setup day; no fill on an earnings-reaction session`,
     stop: STOP_TEXT[RULES.stop],
     exit: `${EXIT_TEXT[RULES.exit]}, or session ${MAX_HOLD_DAYS}`,
     market: REGIME_TEXT[RULES.regime],
@@ -84,7 +86,27 @@ export function pickFields(m, refDate) {
         rs_3mo: round(m.relative_strength_3mo, 1),
         ref_date: refDate,
         ref_close: round(m.price, 4),
+        ...(m.earnings_events?.length ? { earnings: m.earnings_events } : {}),
     };
+}
+
+// Earnings releases that matter for a signal: from the setup day to 20
+// calendar days later (covers the 5-session entry window).
+export function earningsNear(signalDate, events) {
+    const end = new Date(Date.parse(signalDate) + 20 * 86400e3).toISOString().slice(0, 10);
+    return (events || []).filter(e => e.date >= signalDate && e.date <= end).map(e => ({ date: e.date, amc: e.amc ?? null }));
+}
+
+// F7 earnings rule applied after the fact (the backfill computes outcomes
+// before it knows earnings dates): a fill on an earnings-reaction session is
+// voided. `dates`: the trading calendar (SPY dates).
+export function voidOnEarnings(sig, dates) {
+    const o = sig.outcome;
+    if (!RULES.skipEarningsSession || !o?.entry_date || !sig.earnings?.length) return false;
+    const k = dates.indexOf(o.entry_date);
+    if (k < 0 || !earningsBars(dates, sig.earnings).has(k)) return false;
+    sig.outcome = { status: 'no_entry', note: `Triggered on an earnings session (${o.entry_date}); no fill` };
+    return true;
 }
 
 // Account return (% of account) for a trade returning `retPct` with `riskPct`
@@ -110,8 +132,17 @@ export function computeOutcome(sig, bars, spyByDate, S = null) {
         if (Math.abs(k - 1) > 0.03) { pivot *= k; structStop *= k; }
     }
     S ||= prepare(bars);
-    const tr = simulateTrade(S, s, pivot, structStop, sig.family || 'RANGE');
-    if (tr.status === 'no_entry') return { status: 'no_entry', note: `Pivot not broken within ${ENTRY_WINDOW} sessions` };
+    const earnBars = earningsBars(S.dates || bars.map(b => b.date), sig.earnings);
+    // Signals recorded before F7 keep the entry model they were listed under.
+    const f7 = !sig.rules || sig.rules >= '2026-10-27';
+    const tr = simulateTrade(S, s, pivot, structStop, sig.family || 'RANGE', undefined, undefined,
+        f7 ? { earnBars } : { gapLimitPct: Infinity, skipEarnings: false });
+    if (tr.status === 'no_entry') {
+        const note = tr.reason === 'gap_limit' ? `Opened more than ${RULES.gapLimitPct}% above the pivot on ${bars[tr.eb].date}; no fill (buy-stop limit)`
+            : tr.reason === 'earnings' ? `Triggered on an earnings session (${bars[tr.eb].date}); no fill`
+            : `Pivot not broken within ${ENTRY_WINDOW} sessions`;
+        return { status: 'no_entry', note, ...(tr.reason ? { reason: tr.reason } : {}) };
+    }
     if (tr.status === 'pending') return { status: 'pending', days_waiting: tr.days_waiting };
 
     const eb = tr.eb, entry = tr.entry;
