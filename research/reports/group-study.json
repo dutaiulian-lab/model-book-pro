@@ -1,0 +1,3459 @@
+{
+ "generated": "2026-10-27T05:04:35.590Z",
+ "buckets": {
+  "indRank": [
+   {
+    "label": "0-20 (weakest)",
+    "all": {
+     "n": 38,
+     "win": 47.368421052631575,
+     "avgR": 1.7138376204591048,
+     "totR": 65.12582957744598,
+     "se": 0.69306176999376
+    },
+    "recent": {
+     "n": 18,
+     "win": 44.44444444444444,
+     "avgR": 1.936547264456749,
+     "totR": 34.85785076022148,
+     "se": 1.1750414476187017
+    },
+    "h1": {
+     "n": 3,
+     "win": 100,
+     "avgR": 2.696463962395986,
+     "totR": 8.089391887187958,
+     "se": 0.7933511396947726
+    },
+    "h2": {
+     "n": 35,
+     "win": 42.857142857142854,
+     "avgR": 1.6296125054359436,
+     "totR": 57.036437690258026,
+     "se": 0.7476731708088398
+    }
+   },
+   {
+    "label": "20-40",
+    "all": {
+     "n": 86,
+     "win": 27.906976744186046,
+     "avgR": 0.16004282455934687,
+     "totR": 13.763682912103832,
+     "se": 0.25166533681556646
+    },
+    "recent": {
+     "n": 42,
+     "win": 26.190476190476193,
+     "avgR": 0.20326719492939965,
+     "totR": 8.537222187034786,
+     "se": 0.3805306504489186
+    },
+    "h1": {
+     "n": 18,
+     "win": 38.88888888888889,
+     "avgR": 0.690626366270913,
+     "totR": 12.431274592876434,
+     "se": 0.6535132980595774
+    },
+    "h2": {
+     "n": 68,
+     "win": 25,
+     "avgR": 0.0195942399886382,
+     "totR": 1.3324083192273974,
+     "se": 0.26456141156291707
+    }
+   },
+   {
+    "label": "40-60",
+    "all": {
+     "n": 182,
+     "win": 30.21978021978022,
+     "avgR": 0.6208090777867116,
+     "totR": 112.9872521571815,
+     "se": 0.2727479175713206
+    },
+    "recent": {
+     "n": 100,
+     "win": 31,
+     "avgR": 0.9562056829407811,
+     "totR": 95.62056829407811,
+     "se": 0.4384502553621624
+    },
+    "h1": {
+     "n": 37,
+     "win": 32.432432432432435,
+     "avgR": 0.5705390733641547,
+     "totR": 21.109945714473724,
+     "se": 0.4847339542669669
+    },
+    "h2": {
+     "n": 145,
+     "win": 29.655172413793103,
+     "avgR": 0.6336365961566054,
+     "totR": 91.87730644270778,
+     "se": 0.31921085961446966
+    }
+   },
+   {
+    "label": "60-80",
+    "all": {
+     "n": 340,
+     "win": 30.294117647058822,
+     "avgR": 0.6339832972406464,
+     "totR": 215.5543210618198,
+     "se": 0.18337055906534852
+    },
+    "recent": {
+     "n": 124,
+     "win": 35.483870967741936,
+     "avgR": 0.9636941722804501,
+     "totR": 119.4980773627758,
+     "se": 0.3264623030489857
+    },
+    "h1": {
+     "n": 85,
+     "win": 35.294117647058826,
+     "avgR": 0.5897153396378545,
+     "totR": 50.125803869217634,
+     "se": 0.27622037045211834
+    },
+    "h2": {
+     "n": 255,
+     "win": 28.627450980392155,
+     "avgR": 0.6487392831082438,
+     "totR": 165.42851719260216,
+     "se": 0.2264871245342147
+    }
+   },
+   {
+    "label": "80-100 (leading)",
+    "all": {
+     "n": 521,
+     "win": 32.437619961612285,
+     "avgR": 0.3347841771618926,
+     "totR": 174.42255630134605,
+     "se": 0.11824777279640944
+    },
+    "recent": {
+     "n": 176,
+     "win": 35.79545454545455,
+     "avgR": 0.5498722942588343,
+     "totR": 96.77752378955483,
+     "se": 0.23732674569285053
+    },
+    "h1": {
+     "n": 148,
+     "win": 31.756756756756754,
+     "avgR": 0.0721056601331519,
+     "totR": 10.67163769970648,
+     "se": 0.1485147661865642
+    },
+    "h2": {
+     "n": 373,
+     "win": 32.707774798927616,
+     "avgR": 0.43901050563442245,
+     "totR": 163.75091860163957,
+     "se": 0.15396400264348062
+    }
+   }
+  ],
+  "ind63": [
+   {
+    "label": "0-20 (weakest)",
+    "all": {
+     "n": 102,
+     "win": 35.294117647058826,
+     "avgR": 0.7433358894697591,
+     "totR": 75.82026072591543,
+     "se": 0.31474006597465437
+    },
+    "recent": {
+     "n": 47,
+     "win": 31.914893617021278,
+     "avgR": 0.752157708748858,
+     "totR": 35.35141231119633,
+     "se": 0.5159494040466226
+    },
+    "h1": {
+     "n": 21,
+     "win": 47.61904761904761,
+     "avgR": 0.8831436226055736,
+     "totR": 18.546016074717045,
+     "se": 0.5343370690972501
+    },
+    "h2": {
+     "n": 81,
+     "win": 32.098765432098766,
+     "avgR": 0.7070894401382517,
+     "totR": 57.27424465119839,
+     "se": 0.371234459126612
+    }
+   },
+   {
+    "label": "20-40",
+    "all": {
+     "n": 153,
+     "win": 32.6797385620915,
+     "avgR": 0.35701684882024337,
+     "totR": 54.62357786949724,
+     "se": 0.20724322918233284
+    },
+    "recent": {
+     "n": 64,
+     "win": 29.6875,
+     "avgR": 0.34982767315523233,
+     "totR": 22.38897108193487,
+     "se": 0.3382888377512595
+    },
+    "h1": {
+     "n": 38,
+     "win": 42.10526315789473,
+     "avgR": 0.9908522083178947,
+     "totR": 37.65238391608,
+     "se": 0.48594256289977167
+    },
+    "h2": {
+     "n": 115,
+     "win": 29.565217391304348,
+     "avgR": 0.14757559959493252,
+     "totR": 16.97119395341724,
+     "se": 0.22069035575658746
+    }
+   },
+   {
+    "label": "40-60",
+    "all": {
+     "n": 199,
+     "win": 35.175879396984925,
+     "avgR": 0.8078924093112331,
+     "totR": 160.77058945293538,
+     "se": 0.2619341627520207
+    },
+    "recent": {
+     "n": 74,
+     "win": 31.08108108108108,
+     "avgR": 1.0665040856881722,
+     "totR": 78.92130234092474,
+     "se": 0.5673116262903196
+    },
+    "h1": {
+     "n": 47,
+     "win": 51.06382978723404,
+     "avgR": 0.9719790918703013,
+     "totR": 45.68301731790416,
+     "se": 0.36325694110153806
+    },
+    "h2": {
+     "n": 152,
+     "win": 30.263157894736842,
+     "avgR": 0.7571550798357317,
+     "totR": 115.08757213503122,
+     "se": 0.3238993161759106
+    }
+   },
+   {
+    "label": "60-80",
+    "all": {
+     "n": 335,
+     "win": 29.850746268656714,
+     "avgR": 0.6839094583667926,
+     "totR": 229.10966855287552,
+     "se": 0.19090057688296946
+    },
+    "recent": {
+     "n": 126,
+     "win": 36.507936507936506,
+     "avgR": 1.1426411104344187,
+     "totR": 143.97277991473675,
+     "se": 0.31852022614687064
+    },
+    "h1": {
+     "n": 77,
+     "win": 22.07792207792208,
+     "avgR": -0.21801848148370717,
+     "totR": -16.787423074245453,
+     "se": 0.2195993944148078
+    },
+    "h2": {
+     "n": 258,
+     "win": 32.17054263565892,
+     "avgR": 0.9530895024307015,
+     "totR": 245.89709162712097,
+     "se": 0.2364839179560006
+    }
+   },
+   {
+    "label": "80-100 (leading)",
+    "all": {
+     "n": 378,
+     "win": 29.894179894179896,
+     "avgR": 0.16277657515522112,
+     "totR": 61.529545408673584,
+     "se": 0.1315408561494949
+    },
+    "recent": {
+     "n": 149,
+     "win": 36.241610738255034,
+     "avgR": 0.5010521929186063,
+     "totR": 74.65677674487233,
+     "se": 0.2673840415643735
+    },
+    "h1": {
+     "n": 108,
+     "win": 29.629629629629626,
+     "avgR": 0.16050055119450446,
+     "totR": 17.33405952900648,
+     "se": 0.19066410929365127
+    },
+    "h2": {
+     "n": 270,
+     "win": 30,
+     "avgR": 0.1636869847395078,
+     "totR": 44.1954858796671,
+     "se": 0.16762283449366014
+    }
+   }
+  ],
+  "secRank": [
+   {
+    "label": "0-20 (weakest)",
+    "all": {
+     "n": 74,
+     "win": 39.189189189189186,
+     "avgR": 2.2463385551362425,
+     "totR": 166.22905308008194,
+     "se": 0.729595830337104
+    },
+    "recent": {
+     "n": 36,
+     "win": 44.44444444444444,
+     "avgR": 3.487529621563024,
+     "totR": 125.55106637626886,
+     "se": 1.2000410286047412
+    },
+    "h1": {
+     "n": 18,
+     "win": 44.44444444444444,
+     "avgR": 0.5610976960096095,
+     "totR": 10.09975852817297,
+     "se": 0.5459711920719013
+    },
+    "h2": {
+     "n": 56,
+     "win": 37.5,
+     "avgR": 2.7880231169983745,
+     "totR": 156.12929455190897,
+     "se": 0.9365723777535957
+    }
+   },
+   {
+    "label": "20-40",
+    "all": {
+     "n": 113,
+     "win": 33.6283185840708,
+     "avgR": 0.7437412317479606,
+     "totR": 84.04275918751955,
+     "se": 0.29521855924262475
+    },
+    "recent": {
+     "n": 53,
+     "win": 32.075471698113205,
+     "avgR": 1.0507507218786005,
+     "totR": 55.68978825956583,
+     "se": 0.5183827669631815
+    },
+    "h1": {
+     "n": 40,
+     "win": 40,
+     "avgR": 0.7958696059882641,
+     "totR": 31.834784239530563,
+     "se": 0.4071648056943837
+    },
+    "h2": {
+     "n": 73,
+     "win": 30.136986301369863,
+     "avgR": 0.7151777390135478,
+     "totR": 52.20797494798899,
+     "se": 0.39878028925521025
+    }
+   },
+   {
+    "label": "40-60",
+    "all": {
+     "n": 217,
+     "win": 33.6405529953917,
+     "avgR": 0.8956142363657805,
+     "totR": 194.34828929137439,
+     "se": 0.22675652672550953
+    },
+    "recent": {
+     "n": 100,
+     "win": 38,
+     "avgR": 0.9427825288008899,
+     "totR": 94.27825288008898,
+     "se": 0.3302899733367309
+    },
+    "h1": {
+     "n": 52,
+     "win": 34.61538461538461,
+     "avgR": 1.0303472402290657,
+     "totR": 53.57805649191141,
+     "se": 0.45025556740447764
+    },
+    "h2": {
+     "n": 165,
+     "win": 33.33333333333333,
+     "avgR": 0.8531529260573514,
+     "totR": 140.77023279946297,
+     "se": 0.26220953022446153
+    }
+   },
+   {
+    "label": "60-80",
+    "all": {
+     "n": 295,
+     "win": 31.52542372881356,
+     "avgR": 0.23665059805153157,
+     "totR": 69.81192642520182,
+     "se": 0.1438113040145006
+    },
+    "recent": {
+     "n": 98,
+     "win": 33.6734693877551,
+     "avgR": 0.4322292260369476,
+     "totR": 42.358464151620865,
+     "se": 0.3001492811005831
+    },
+    "h1": {
+     "n": 101,
+     "win": 34.65346534653465,
+     "avgR": 0.27206275966894433,
+     "totR": 27.47833872656338,
+     "se": 0.2098211889784061
+    },
+    "h2": {
+     "n": 194,
+     "win": 29.896907216494846,
+     "avgR": 0.21821436958061052,
+     "totR": 42.33358769863844,
+     "se": 0.18943093855984158
+    }
+   },
+   {
+    "label": "80-100 (leading)",
+    "all": {
+     "n": 527,
+     "win": 29.22201138519924,
+     "avgR": 0.1789651312856481,
+     "totR": 94.31462418753654,
+     "se": 0.10634067153937936
+    },
+    "recent": {
+     "n": 178,
+     "win": 29.775280898876407,
+     "avgR": 0.18084081475821773,
+     "totR": 32.18966502696276,
+     "se": 0.19104238084750597
+    },
+    "h1": {
+     "n": 123,
+     "win": 28.455284552845526,
+     "avgR": -0.0005899841283879629,
+     "totR": -0.07256804779171944,
+     "se": 0.15718911234155722
+    },
+    "h2": {
+     "n": 404,
+     "win": 29.455445544554454,
+     "avgR": 0.2336316639488323,
+     "totR": 94.38719223532826,
+     "se": 0.13007813227582093
+    }
+   }
+  ],
+  "lead": [
+   {
+    "label": "0 other leaders",
+    "all": {
+     "n": 139,
+     "win": 32.37410071942446,
+     "avgR": 0.5532967732857457,
+     "totR": 76.90825148671865,
+     "se": 0.22827799892854617
+    },
+    "recent": {
+     "n": 43,
+     "win": 39.53488372093023,
+     "avgR": 1.0768567692748336,
+     "totR": 46.304841078817844,
+     "se": 0.4622830992911111
+    },
+    "h1": {
+     "n": 54,
+     "win": 38.88888888888889,
+     "avgR": 0.7383916172440406,
+     "totR": 39.87314733117819,
+     "se": 0.36269236251101195
+    },
+    "h2": {
+     "n": 85,
+     "win": 28.235294117647058,
+     "avgR": 0.4357071077122408,
+     "totR": 37.035104155540466,
+     "se": 0.29299098497491516
+    }
+   },
+   {
+    "label": "1",
+    "all": {
+     "n": 142,
+     "win": 22.535211267605636,
+     "avgR": 0.2238045714165963,
+     "totR": 31.780249141156673,
+     "se": 0.2520872967869279
+    },
+    "recent": {
+     "n": 47,
+     "win": 25.53191489361702,
+     "avgR": 1.19085680217819,
+     "totR": 55.970269702374935,
+     "se": 0.6287725269048225
+    },
+    "h1": {
+     "n": 58,
+     "win": 24.137931034482758,
+     "avgR": -0.08447847682340391,
+     "totR": -4.899751655757427,
+     "se": 0.24668759995889689
+    },
+    "h2": {
+     "n": 84,
+     "win": 21.428571428571427,
+     "avgR": 0.4366666761537393,
+     "totR": 36.6800007969141,
+     "se": 0.3889320935411227
+    }
+   },
+   {
+    "label": "2-3",
+    "all": {
+     "n": 243,
+     "win": 35.80246913580247,
+     "avgR": 0.40583920743557866,
+     "totR": 98.61892740684561,
+     "se": 0.15181184431051667
+    },
+    "recent": {
+     "n": 83,
+     "win": 36.144578313253014,
+     "avgR": 0.47435895034886266,
+     "totR": 39.3717928789556,
+     "se": 0.2616889413918042
+    },
+    "h1": {
+     "n": 91,
+     "win": 40.65934065934066,
+     "avgR": 0.5369992020852086,
+     "totR": 48.86692738975398,
+     "se": 0.23617739579358035
+    },
+    "h2": {
+     "n": 152,
+     "win": 32.89473684210527,
+     "avgR": 0.32731578958612917,
+     "totR": 49.75200001709163,
+     "se": 0.19698182784634657
+    }
+   },
+   {
+    "label": "4-7",
+    "all": {
+     "n": 268,
+     "win": 32.83582089552239,
+     "avgR": 0.9241793892353273,
+     "totR": 247.6800763150677,
+     "se": 0.23113067188653724
+    },
+    "recent": {
+     "n": 111,
+     "win": 39.63963963963964,
+     "avgR": 1.450798867916403,
+     "totR": 161.03867433872074,
+     "se": 0.4311658044215032
+    },
+    "h1": {
+     "n": 52,
+     "win": 26.923076923076923,
+     "avgR": 0.17685719636770394,
+     "totR": 9.196574211120605,
+     "se": 0.33678600073276316
+    },
+    "h2": {
+     "n": 216,
+     "win": 34.25925925925926,
+     "avgR": 1.1040902875182736,
+     "totR": 238.4835021039471,
+     "se": 0.27366570829674336
+    }
+   },
+   {
+    "label": "8+",
+    "all": {
+     "n": 375,
+     "win": 31.2,
+     "avgR": 0.338309700426956,
+     "totR": 126.8661376601085,
+     "se": 0.16524915971912504
+    },
+    "recent": {
+     "n": 176,
+     "win": 30.681818181818183,
+     "avgR": 0.2988958204249767,
+     "totR": 52.605664394795895,
+     "se": 0.24911580035810182
+    },
+    "h1": {
+     "n": 36,
+     "win": 36.11111111111111,
+     "avgR": 0.26086545797685784,
+     "totR": 9.391156487166882,
+     "se": 0.3466882442695885
+    },
+    "h2": {
+     "n": 339,
+     "win": 30.678466076696164,
+     "avgR": 0.34653386776678946,
+     "totR": 117.47498117294163,
+     "se": 0.17904604295790805
+    }
+   }
+  ],
+  "unknown": {
+   "n": 62,
+   "win": 30.64516129032258,
+   "avgR": 0.5096799725246045,
+   "totR": 31.60015829652548,
+   "se": 0.31025614887260444
+  },
+  "leadShare": [
+   {
+    "label": "<5% of members RS 90+",
+    "all": {
+     "n": 169,
+     "win": 31.360946745562128,
+     "avgR": 0.5700337156300714,
+     "totR": 96.33569794148207,
+     "se": 0.21172356965520195
+    },
+    "recent": {
+     "n": 61,
+     "win": 32.78688524590164,
+     "avgR": 0.7802132623361759,
+     "totR": 47.59300900250673,
+     "se": 0.37450660555076415
+    },
+    "h1": {
+     "n": 61,
+     "win": 37.704918032786885,
+     "avgR": 0.7527607086984838,
+     "totR": 45.91840323060751,
+     "se": 0.34893981703767174
+    },
+    "h2": {
+     "n": 108,
+     "win": 27.77777777777778,
+     "avgR": 0.4668268028784681,
+     "totR": 50.41729471087456,
+     "se": 0.2657984661722738
+    }
+   },
+   {
+    "label": "5-10%",
+    "all": {
+     "n": 147,
+     "win": 33.33333333333333,
+     "avgR": 0.9250615795846192,
+     "totR": 135.98405219893903,
+     "se": 0.28212477697126154
+    },
+    "recent": {
+     "n": 78,
+     "win": 43.58974358974359,
+     "avgR": 1.6407581141146903,
+     "totR": 127.97913290094584,
+     "se": 0.4411090484884936
+    },
+    "h1": {
+     "n": 31,
+     "win": 32.25806451612903,
+     "avgR": 0.8101013651297938,
+     "totR": 25.11314231902361,
+     "se": 0.5376371798695174
+    },
+    "h2": {
+     "n": 116,
+     "win": 33.62068965517241,
+     "avgR": 0.9557837058613398,
+     "totR": 110.87090987991542,
+     "se": 0.3273201448442867
+    }
+   },
+   {
+    "label": "10-20%",
+    "all": {
+     "n": 439,
+     "win": 26.65148063781321,
+     "avgR": 0.4165775472025656,
+     "totR": 182.87754322192632,
+     "se": 0.16864217102669274
+    },
+    "recent": {
+     "n": 190,
+     "win": 27.368421052631582,
+     "avgR": 0.6206988560918131,
+     "totR": 117.93278265744448,
+     "se": 0.2951528776798346
+    },
+    "h1": {
+     "n": 81,
+     "win": 25.925925925925924,
+     "avgR": -0.05717482458351663,
+     "totR": -4.631160791264847,
+     "se": 0.2283890937286118
+    },
+    "h2": {
+     "n": 358,
+     "win": 26.81564245810056,
+     "avgR": 0.5237673296457853,
+     "totR": 187.50870401319116,
+     "se": 0.1998035756221415
+    }
+   },
+   {
+    "label": "20%+",
+    "all": {
+     "n": 412,
+     "win": 36.407766990291265,
+     "avgR": 0.4045057006008489,
+     "totR": 166.65634864754975,
+     "se": 0.13030302698782767
+    },
+    "recent": {
+     "n": 131,
+     "win": 38.93129770992366,
+     "avgR": 0.47165128116616767,
+     "totR": 61.78631783276796,
+     "se": 0.2574721866473369
+    },
+    "h1": {
+     "n": 118,
+     "win": 38.13559322033898,
+     "avgR": 0.3053192288567454,
+     "totR": 36.02766900509596,
+     "se": 0.17646803145618822
+    },
+    "h2": {
+     "n": 294,
+     "win": 35.714285714285715,
+     "avgR": 0.4443152368790945,
+     "totR": 130.6286796424538,
+     "se": 0.16824977644723849
+    }
+   }
+  ]
+ },
+ "book": {
+  "stats": {
+   "n": 122,
+   "top20": 29.508196721311474,
+   "top40": 51.63934426229508,
+   "bottom40": 29.508196721311474,
+   "medRank": 64,
+   "lead2": 72.95081967213115
+  },
+  "trades": {
+   "top20": 44.64438731790917,
+   "top40": 73.7789203084833,
+   "bottom40": 10.62553556126821,
+   "medRank": 77.23577235772358,
+   "lead2": 75.92116538131962
+  },
+  "rows": [
+   {
+    "ticker": "ALAB",
+    "year": 2024,
+    "date": "2024-09-10",
+    "fwd63": 219,
+    "ind": "Semiconductors",
+    "indRank": 6,
+    "ind63": 2,
+    "lead": 4,
+    "secRank": 9
+   },
+   {
+    "ticker": "AMC",
+    "year": 2021,
+    "date": "2021-03-03",
+    "fwd63": 629,
+    "ind": "Movies/Entertainment",
+    "indRank": 96,
+    "ind63": 98,
+    "lead": 1,
+    "secRank": 64
+   },
+   {
+    "ticker": "AMD",
+    "year": 2016,
+    "date": "2016-02-29",
+    "fwd63": 115,
+    "ind": "Semiconductors",
+    "indRank": 69,
+    "ind63": 59,
+    "lead": 6,
+    "secRank": 55
+   },
+   {
+    "ticker": "AMD",
+    "year": 2018,
+    "date": "2018-06-25",
+    "fwd63": 116,
+    "ind": "Semiconductors",
+    "indRank": 28,
+    "ind63": 10,
+    "lead": 2,
+    "secRank": 82
+   },
+   {
+    "ticker": "AMD",
+    "year": 2019,
+    "date": "2019-10-02",
+    "fwd63": 73,
+    "ind": "Semiconductors",
+    "indRank": 88,
+    "ind63": 88,
+    "lead": 8,
+    "secRank": 73
+   },
+   {
+    "ticker": "AMD",
+    "year": 2021,
+    "date": "2021-05-05",
+    "fwd63": 53,
+    "ind": "Semiconductors",
+    "indRank": 38,
+    "ind63": 11,
+    "lead": 3,
+    "secRank": 36
+   },
+   {
+    "ticker": "AMR",
+    "year": 2022,
+    "date": "2022-01-27",
+    "fwd63": 151,
+    "ind": "Coal Mining",
+    "indRank": 100,
+    "ind63": 80,
+    "lead": 5,
+    "secRank": 100
+   },
+   {
+    "ticker": "ANAB",
+    "year": 2017,
+    "date": "2017-08-23",
+    "fwd63": 275,
+    "ind": "Biotechnology: Pharmaceutical Preparations",
+    "indRank": 50,
+    "ind63": 53,
+    "lead": 15,
+    "secRank": 82
+   },
+   {
+    "ticker": "ANF",
+    "year": 2023,
+    "date": "2023-05-23",
+    "fwd63": 121,
+    "ind": "Clothing/Shoe/Accessory Stores",
+    "indRank": 5,
+    "ind63": 2,
+    "lead": 0,
+    "secRank": 64
+   },
+   {
+    "ticker": "APP",
+    "year": 2023,
+    "date": "2023-05-10",
+    "fwd63": 109,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 18,
+    "ind63": 6,
+    "lead": 2,
+    "secRank": 36
+   },
+   {
+    "ticker": "APP",
+    "year": 2024,
+    "date": "2024-09-09",
+    "fwd63": 365,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 28,
+    "ind63": 21,
+    "lead": 4,
+    "secRank": 9
+   },
+   {
+    "ticker": "ARM",
+    "year": 2023,
+    "date": "2023-11-09",
+    "fwd63": 189,
+    "ind": "Semiconductors",
+    "indRank": 32,
+    "ind63": 13,
+    "lead": 7,
+    "secRank": 100
+   },
+   {
+    "ticker": "ARVN",
+    "year": 2019,
+    "date": "2019-10-18",
+    "fwd63": 230,
+    "ind": "Biotechnology: Pharmaceutical Preparations",
+    "indRank": 20,
+    "ind63": 22,
+    "lead": 7,
+    "secRank": 18
+   },
+   {
+    "ticker": "ARWR",
+    "year": 2019,
+    "date": "2019-09-26",
+    "fwd63": 146,
+    "ind": "Biotechnology: Pharmaceutical Preparations",
+    "indRank": 16,
+    "ind63": 11,
+    "lead": 7,
+    "secRank": 9
+   },
+   {
+    "ticker": "ASAN",
+    "year": 2021,
+    "date": "2021-05-13",
+    "fwd63": 180,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 5,
+    "ind63": 3,
+    "lead": 3,
+    "secRank": 18
+   },
+   {
+    "ticker": "ASTS",
+    "year": 2024,
+    "date": "2024-05-15",
+    "fwd63": 1212,
+    "ind": "Telecommunications Equipment",
+    "indRank": 19,
+    "ind63": 24,
+    "lead": 1,
+    "secRank": 73
+   },
+   {
+    "ticker": "BEAM",
+    "year": 2020,
+    "date": "2020-10-14",
+    "fwd63": 293,
+    "ind": "Biotechnology: Biological Products (No Diagnostic Substances)",
+    "indRank": 90,
+    "ind63": 39,
+    "lead": 15,
+    "secRank": 73
+   },
+   {
+    "ticker": "BNTX",
+    "year": 2021,
+    "date": "2021-03-08",
+    "fwd63": 164,
+    "ind": "Biotechnology: Biological Products (No Diagnostic Substances)",
+    "indRank": 30,
+    "ind63": 9,
+    "lead": 12,
+    "secRank": 36
+   },
+   {
+    "ticker": "CAVA",
+    "year": 2024,
+    "date": "2024-07-24",
+    "fwd63": 75,
+    "ind": "Restaurants",
+    "indRank": 10,
+    "ind63": 3,
+    "lead": 3,
+    "secRank": 45
+   },
+   {
+    "ticker": "CEG",
+    "year": 2022,
+    "date": "2022-06-14",
+    "fwd63": 62,
+    "ind": "Electric Utilities: Central",
+    "indRank": 90,
+    "ind63": 70,
+    "lead": 1,
+    "secRank": 91
+   },
+   {
+    "ticker": "CELH",
+    "year": 2020,
+    "date": "2020-05-07",
+    "fwd63": 359,
+    "ind": "Beverages (Production/Distribution)",
+    "indRank": 48,
+    "ind63": 66,
+    "lead": 1,
+    "secRank": 73
+   },
+   {
+    "ticker": "CHGG",
+    "year": 2017,
+    "date": "2017-04-26",
+    "fwd63": 74,
+    "ind": "Other Consumer Services",
+    "indRank": 85,
+    "ind63": 76,
+    "lead": 5,
+    "secRank": 27
+   },
+   {
+    "ticker": "COIN",
+    "year": 2023,
+    "date": "2023-09-27",
+    "fwd63": 159,
+    "ind": "Finance: Consumer Services",
+    "indRank": 71,
+    "ind63": 13,
+    "lead": 7,
+    "secRank": 64
+   },
+   {
+    "ticker": "CROX",
+    "year": 2018,
+    "date": "2018-10-10",
+    "fwd63": 65,
+    "ind": "Shoe Manufacturing",
+    "indRank": 91,
+    "ind63": 77,
+    "lead": 0,
+    "secRank": 64
+   },
+   {
+    "ticker": "CRWD",
+    "year": 2020,
+    "date": "2020-03-16",
+    "fwd63": 200,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 80,
+    "ind63": 81,
+    "lead": 11,
+    "secRank": 82
+   },
+   {
+    "ticker": "CRWD",
+    "year": 2023,
+    "date": "2023-10-26",
+    "fwd63": 75,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 77,
+    "ind63": 52,
+    "lead": 22,
+    "secRank": 91
+   },
+   {
+    "ticker": "CUBI",
+    "year": 2021,
+    "date": "2021-01-04",
+    "fwd63": 74,
+    "ind": "Major Banks",
+    "indRank": 40,
+    "ind63": 80,
+    "lead": 1,
+    "secRank": 36
+   },
+   {
+    "ticker": "DOCU",
+    "year": 2019,
+    "date": "2019-08-27",
+    "fwd63": 60,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 80,
+    "ind63": 53,
+    "lead": 16,
+    "secRank": 82
+   },
+   {
+    "ticker": "DOCU",
+    "year": 2020,
+    "date": "2020-04-03",
+    "fwd63": 141,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 81,
+    "ind63": 83,
+    "lead": 10,
+    "secRank": 82
+   },
+   {
+    "ticker": "DQ",
+    "year": 2020,
+    "date": "2020-10-30",
+    "fwd63": 217,
+    "ind": "Semiconductors",
+    "indRank": 82,
+    "ind63": 53,
+    "lead": 9,
+    "secRank": 82
+   },
+   {
+    "ticker": "DVN",
+    "year": 2021,
+    "date": "2021-08-20",
+    "fwd63": 69,
+    "ind": "Oil & Gas Production",
+    "indRank": 74,
+    "ind63": 15,
+    "lead": 9,
+    "secRank": 55
+   },
+   {
+    "ticker": "EAT",
+    "year": 2024,
+    "date": "2024-10-25",
+    "fwd63": 89,
+    "ind": "Restaurants",
+    "indRank": 48,
+    "ind63": 86,
+    "lead": 2,
+    "secRank": 55
+   },
+   {
+    "ticker": "ELF",
+    "year": 2022,
+    "date": "2022-05-24",
+    "fwd63": 81,
+    "ind": "Package Goods/Cosmetics",
+    "indRank": 50,
+    "ind63": 50,
+    "lead": 0,
+    "secRank": 27
+   },
+   {
+    "ticker": "ELF",
+    "year": 2023,
+    "date": "2023-11-29",
+    "fwd63": 83,
+    "ind": "Package Goods/Cosmetics",
+    "indRank": 52,
+    "ind63": 33,
+    "lead": 1,
+    "secRank": 64
+   },
+   {
+    "ticker": "ENPH",
+    "year": 2020,
+    "date": "2020-09-24",
+    "fwd63": 160,
+    "ind": "Semiconductors",
+    "indRank": 77,
+    "ind63": 40,
+    "lead": 8,
+    "secRank": 82
+   },
+   {
+    "ticker": "ETSY",
+    "year": 2017,
+    "date": "2017-11-29",
+    "fwd63": 58,
+    "ind": "Business Services",
+    "indRank": 50,
+    "ind63": 35,
+    "lead": 2,
+    "secRank": 64
+   },
+   {
+    "ticker": "ETSY",
+    "year": 2018,
+    "date": "2018-02-05",
+    "fwd63": 70,
+    "ind": "Business Services",
+    "indRank": 80,
+    "ind63": 65,
+    "lead": 2,
+    "secRank": 82
+   },
+   {
+    "ticker": "ETSY",
+    "year": 2020,
+    "date": "2020-04-02",
+    "fwd63": 218,
+    "ind": "Business Services",
+    "indRank": 69,
+    "ind63": 66,
+    "lead": 5,
+    "secRank": 27
+   },
+   {
+    "ticker": "FSLR",
+    "year": 2007,
+    "date": "2007-09-17",
+    "fwd63": 165,
+    "ind": "Semiconductors",
+    "indRank": 52,
+    "ind63": 45,
+    "lead": 3,
+    "secRank": 55
+   },
+   {
+    "ticker": "FSLR",
+    "year": 2022,
+    "date": "2022-06-14",
+    "fwd63": 119,
+    "ind": "Semiconductors",
+    "indRank": 47,
+    "ind63": 47,
+    "lead": 6,
+    "secRank": 9
+   },
+   {
+    "ticker": "FSLY",
+    "year": 2020,
+    "date": "2020-05-05",
+    "fwd63": 411,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 91,
+    "ind63": 83,
+    "lead": 9,
+    "secRank": 82
+   },
+   {
+    "ticker": "FVRR",
+    "year": 2020,
+    "date": "2020-04-07",
+    "fwd63": 252,
+    "ind": "Business Services",
+    "indRank": 77,
+    "ind63": 65,
+    "lead": 4,
+    "secRank": 27
+   },
+   {
+    "ticker": "GEV",
+    "year": 2024,
+    "date": "2024-08-13",
+    "fwd63": 95,
+    "ind": "Consumer Electronics/Appliances",
+    "indRank": 61,
+    "ind63": 45,
+    "lead": 3,
+    "secRank": 36
+   },
+   {
+    "ticker": "GGAL",
+    "year": 2024,
+    "date": "2024-07-30",
+    "fwd63": 100,
+    "ind": "Commercial Banks",
+    "indRank": 82,
+    "ind63": 57,
+    "lead": 2,
+    "secRank": 100
+   },
+   {
+    "ticker": "GOOS",
+    "year": 2017,
+    "date": "2017-10-25",
+    "fwd63": 77,
+    "ind": "Apparel",
+    "indRank": 17,
+    "ind63": 34,
+    "lead": 0,
+    "secRank": 64
+   },
+   {
+    "ticker": "GSHD",
+    "year": 2018,
+    "date": "2018-06-05",
+    "fwd63": 94,
+    "ind": "Specialty Insurers",
+    "indRank": 39,
+    "ind63": 17,
+    "lead": 1,
+    "secRank": 45
+   },
+   {
+    "ticker": "HOOD",
+    "year": 2024,
+    "date": "2024-11-01",
+    "fwd63": 126,
+    "ind": "Investment Bankers/Brokers/Service",
+    "indRank": 97,
+    "ind63": 93,
+    "lead": 2,
+    "secRank": 100
+   },
+   {
+    "ticker": "INMD",
+    "year": 2019,
+    "date": "2019-08-13",
+    "fwd63": 224,
+    "ind": "Biotechnology: Electromedical & Electrotherapeutic Apparatus",
+    "indRank": 48,
+    "ind63": 90,
+    "lead": 0,
+    "secRank": 55
+   },
+   {
+    "ticker": "INSP",
+    "year": 2018,
+    "date": "2018-05-07",
+    "fwd63": 93,
+    "ind": "Medical/Dental Instruments",
+    "indRank": 82,
+    "ind63": 89,
+    "lead": 10,
+    "secRank": 91
+   },
+   {
+    "ticker": "LNTH",
+    "year": 2022,
+    "date": "2022-01-28",
+    "fwd63": 168,
+    "ind": "Biotechnology: In Vitro & In Vivo Diagnostic Substances",
+    "indRank": 13,
+    "ind63": 9,
+    "lead": 0,
+    "secRank": 9
+   },
+   {
+    "ticker": "MDB",
+    "year": 2018,
+    "date": "2018-12-21",
+    "fwd63": 106,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 76,
+    "ind63": 47,
+    "lead": 6,
+    "secRank": 45
+   },
+   {
+    "ticker": "MDGL",
+    "year": 2017,
+    "date": "2017-09-07",
+    "fwd63": 400,
+    "ind": "Biotechnology: Pharmaceutical Preparations",
+    "indRank": 80,
+    "ind63": 84,
+    "lead": 20,
+    "secRank": 100
+   },
+   {
+    "ticker": "MELI",
+    "year": 2020,
+    "date": "2020-04-03",
+    "fwd63": 119,
+    "ind": "Business Services",
+    "indRank": 70,
+    "ind63": 66,
+    "lead": 4,
+    "secRank": 27
+   },
+   {
+    "ticker": "META",
+    "year": 2023,
+    "date": "2023-01-03",
+    "fwd63": 72,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 1,
+    "ind63": 2,
+    "lead": 1,
+    "secRank": 9
+   },
+   {
+    "ticker": "MRNA",
+    "year": 2021,
+    "date": "2021-05-10",
+    "fwd63": 206,
+    "ind": "Biotechnology: Biological Products (No Diagnostic Substances)",
+    "indRank": 9,
+    "ind63": 0,
+    "lead": 7,
+    "secRank": 9
+   },
+   {
+    "ticker": "MSTR",
+    "year": 2020,
+    "date": "2020-11-06",
+    "fwd63": 586,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 89,
+    "ind63": 89,
+    "lead": 17,
+    "secRank": 82
+   },
+   {
+    "ticker": "MSTR",
+    "year": 2024,
+    "date": "2024-08-22",
+    "fwd63": 254,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 32,
+    "ind63": 22,
+    "lead": 9,
+    "secRank": 18
+   },
+   {
+    "ticker": "NET",
+    "year": 2020,
+    "date": "2020-09-08",
+    "fwd63": 149,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 91,
+    "ind63": 68,
+    "lead": 16,
+    "secRank": 91
+   },
+   {
+    "ticker": "NET",
+    "year": 2021,
+    "date": "2021-05-13",
+    "fwd63": 83,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 5,
+    "ind63": 3,
+    "lead": 3,
+    "secRank": 18
+   },
+   {
+    "ticker": "NIO",
+    "year": 2020,
+    "date": "2020-04-09",
+    "fwd63": 461,
+    "ind": "Auto Manufacturing",
+    "indRank": 64,
+    "ind63": 55,
+    "lead": 1,
+    "secRank": 45
+   },
+   {
+    "ticker": "NKTR",
+    "year": 2017,
+    "date": "2017-11-01",
+    "fwd63": 277,
+    "ind": "Biotechnology: Pharmaceutical Preparations",
+    "indRank": 46,
+    "ind63": 47,
+    "lead": 18,
+    "secRank": 82
+   },
+   {
+    "ticker": "NVDA",
+    "year": 2016,
+    "date": "2016-09-27",
+    "fwd63": 76,
+    "ind": "Semiconductors",
+    "indRank": 89,
+    "ind63": 96,
+    "lead": 8,
+    "secRank": 82
+   },
+   {
+    "ticker": "NVDA",
+    "year": 2023,
+    "date": "2023-12-05",
+    "fwd63": 99,
+    "ind": "Semiconductors",
+    "indRank": 26,
+    "ind63": 24,
+    "lead": 3,
+    "secRank": 91
+   },
+   {
+    "ticker": "NVDA",
+    "year": 2024,
+    "date": "2024-01-02",
+    "fwd63": 85,
+    "ind": "Semiconductors",
+    "indRank": 35,
+    "ind63": 34,
+    "lead": 5,
+    "secRank": 91
+   },
+   {
+    "ticker": "OKLO",
+    "year": 2024,
+    "date": "2024-09-03",
+    "fwd63": 298,
+    "ind": "Electric Utilities: Central",
+    "indRank": 66,
+    "ind63": 75,
+    "lead": 3,
+    "secRank": 91
+   },
+   {
+    "ticker": "OKTA",
+    "year": 2018,
+    "date": "2018-02-08",
+    "fwd63": 76,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 69,
+    "ind63": 50,
+    "lead": 9,
+    "secRank": 73
+   },
+   {
+    "ticker": "OKTA",
+    "year": 2019,
+    "date": "2019-03-15",
+    "fwd63": 63,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 93,
+    "ind63": 92,
+    "lead": 19,
+    "secRank": 91
+   },
+   {
+    "ticker": "OXY",
+    "year": 2022,
+    "date": "2022-01-07",
+    "fwd63": 86,
+    "ind": "Oil & Gas Production",
+    "indRank": 97,
+    "ind63": 57,
+    "lead": 20,
+    "secRank": 100
+   },
+   {
+    "ticker": "PANW",
+    "year": 2013,
+    "date": "2013-11-13",
+    "fwd63": 76,
+    "ind": "Computer peripheral equipment",
+    "indRank": 57,
+    "ind63": 37,
+    "lead": 2,
+    "secRank": 100
+   },
+   {
+    "ticker": "PINS",
+    "year": 2020,
+    "date": "2020-07-27",
+    "fwd63": 118,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 85,
+    "ind63": 87,
+    "lead": 8,
+    "secRank": 91
+   },
+   {
+    "ticker": "PLMR",
+    "year": 2019,
+    "date": "2019-05-16",
+    "fwd63": 78,
+    "ind": "Property-Casualty Insurers",
+    "indRank": 93,
+    "ind63": 88,
+    "lead": 3,
+    "secRank": 45
+   },
+   {
+    "ticker": "PLTR",
+    "year": 2020,
+    "date": "2020-10-26",
+    "fwd63": 292,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 88,
+    "ind63": 63,
+    "lead": 16,
+    "secRank": 82
+   },
+   {
+    "ticker": "PLTR",
+    "year": 2023,
+    "date": "2023-05-01",
+    "fwd63": 157,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 34,
+    "ind63": 59,
+    "lead": 12,
+    "secRank": 45
+   },
+   {
+    "ticker": "PLTR",
+    "year": 2024,
+    "date": "2024-11-04",
+    "fwd63": 169,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 48,
+    "ind63": 85,
+    "lead": 11,
+    "secRank": 73
+   },
+   {
+    "ticker": "PRTA",
+    "year": 2021,
+    "date": "2021-05-13",
+    "fwd63": 172,
+    "ind": "Biotechnology: Pharmaceutical Preparations",
+    "indRank": 4,
+    "ind63": 4,
+    "lead": 9,
+    "secRank": 9
+   },
+   {
+    "ticker": "PTON",
+    "year": 2020,
+    "date": "2020-04-09",
+    "fwd63": 141,
+    "ind": "Recreational Games/Products/Toys",
+    "indRank": 43,
+    "ind63": 38,
+    "lead": 0,
+    "secRank": 27
+   },
+   {
+    "ticker": "PYPL",
+    "year": 2017,
+    "date": "2017-04-18",
+    "fwd63": 37,
+    "ind": "Diversified Commercial Services",
+    "indRank": 78,
+    "ind63": 72,
+    "lead": 1,
+    "secRank": 73
+   },
+   {
+    "ticker": "RBRK",
+    "year": 2024,
+    "date": "2024-09-13",
+    "fwd63": 143,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 32,
+    "ind63": 54,
+    "lead": 12,
+    "secRank": 9
+   },
+   {
+    "ticker": "RDDT",
+    "year": 2024,
+    "date": "2024-09-10",
+    "fwd63": 194,
+    "ind": "EDP Services",
+    "indRank": 42,
+    "ind63": 64,
+    "lead": 7,
+    "secRank": 9
+   },
+   {
+    "ticker": "RKLB",
+    "year": 2024,
+    "date": "2024-08-30",
+    "fwd63": 335,
+    "ind": "Military/Government/Technical",
+    "indRank": 95,
+    "ind63": 86,
+    "lead": 3,
+    "secRank": 36
+   },
+   {
+    "ticker": "ROKU",
+    "year": 2017,
+    "date": "2017-10-03",
+    "fwd63": 166,
+    "ind": "Cable & Other Pay Television Services",
+    "indRank": 18,
+    "ind63": 24,
+    "lead": 0,
+    "secRank": 45
+   },
+   {
+    "ticker": "ROKU",
+    "year": 2019,
+    "date": "2019-01-03",
+    "fwd63": 114,
+    "ind": "Cable & Other Pay Television Services",
+    "indRank": 58,
+    "ind63": 75,
+    "lead": 0,
+    "secRank": 82
+   },
+   {
+    "ticker": "SE",
+    "year": 2019,
+    "date": "2019-01-02",
+    "fwd63": 111,
+    "ind": "Other Consumer Services",
+    "indRank": 89,
+    "ind63": 84,
+    "lead": 3,
+    "secRank": 27
+   },
+   {
+    "ticker": "SE",
+    "year": 2020,
+    "date": "2020-03-23",
+    "fwd63": 195,
+    "ind": "Other Consumer Services",
+    "indRank": 59,
+    "ind63": 57,
+    "lead": 3,
+    "secRank": 36
+   },
+   {
+    "ticker": "SEDG",
+    "year": 2017,
+    "date": "2017-05-05",
+    "fwd63": 78,
+    "ind": "Semiconductors",
+    "indRank": 92,
+    "ind63": 74,
+    "lead": 12,
+    "secRank": 100
+   },
+   {
+    "ticker": "SEDG",
+    "year": 2019,
+    "date": "2019-11-18",
+    "fwd63": 85,
+    "ind": "Semiconductors",
+    "indRank": 92,
+    "ind63": 76,
+    "lead": 15,
+    "secRank": 91
+   },
+   {
+    "ticker": "SHOP",
+    "year": 2017,
+    "date": "2017-02-08",
+    "fwd63": 74,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 59,
+    "ind63": 20,
+    "lead": 1,
+    "secRank": 64
+   },
+   {
+    "ticker": "SHOP",
+    "year": 2019,
+    "date": "2019-11-11",
+    "fwd63": 75,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 40,
+    "ind63": 30,
+    "lead": 2,
+    "secRank": 91
+   },
+   {
+    "ticker": "SHOP",
+    "year": 2020,
+    "date": "2020-04-02",
+    "fwd63": 197,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 82,
+    "ind63": 79,
+    "lead": 11,
+    "secRank": 82
+   },
+   {
+    "ticker": "SMCI",
+    "year": 2023,
+    "date": "2023-12-11",
+    "fwd63": 353,
+    "ind": "Computer Manufacturing",
+    "indRank": 89,
+    "ind63": 65,
+    "lead": 1,
+    "secRank": 91
+   },
+   {
+    "ticker": "SMCI",
+    "year": 2024,
+    "date": "2024-01-02",
+    "fwd63": 256,
+    "ind": "Computer Manufacturing",
+    "indRank": 80,
+    "ind63": 32,
+    "lead": 1,
+    "secRank": 91
+   },
+   {
+    "ticker": "SN",
+    "year": 2024,
+    "date": "2024-07-25",
+    "fwd63": 55,
+    "ind": "Consumer Electronics/Appliances",
+    "indRank": 58,
+    "ind63": 41,
+    "lead": 1,
+    "secRank": 45
+   },
+   {
+    "ticker": "SNAP",
+    "year": 2020,
+    "date": "2020-03-18",
+    "fwd63": 161,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 71,
+    "ind63": 61,
+    "lead": 5,
+    "secRank": 64
+   },
+   {
+    "ticker": "SOUN",
+    "year": 2024,
+    "date": "2024-09-27",
+    "fwd63": 401,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 22,
+    "ind63": 20,
+    "lead": 9,
+    "secRank": 18
+   },
+   {
+    "ticker": "SPCE",
+    "year": 2020,
+    "date": "2020-11-02",
+    "fwd63": 223,
+    "ind": "Transportation Services",
+    "indRank": 39,
+    "ind63": 83,
+    "lead": 0,
+    "secRank": 55
+   },
+   {
+    "ticker": "STNG",
+    "year": 2022,
+    "date": "2022-03-16",
+    "fwd63": 108,
+    "ind": "Marine Transportation",
+    "indRank": 82,
+    "ind63": 92,
+    "lead": 11,
+    "secRank": 27
+   },
+   {
+    "ticker": "TDOC",
+    "year": 2020,
+    "date": "2020-01-27",
+    "fwd63": 103,
+    "ind": "Medical/Nursing Services",
+    "indRank": 96,
+    "ind63": 97,
+    "lead": 1,
+    "secRank": 82
+   },
+   {
+    "ticker": "TLRY",
+    "year": 2018,
+    "date": "2018-07-19",
+    "fwd63": 562,
+    "ind": "Medicinal Chemicals and Botanical Products",
+    "indRank": 44,
+    "ind63": 12,
+    "lead": 3,
+    "secRank": 100
+   },
+   {
+    "ticker": "TMDX",
+    "year": 2022,
+    "date": "2022-02-23",
+    "fwd63": 125,
+    "ind": "Biotechnology: Electromedical & Electrotherapeutic Apparatus",
+    "indRank": 27,
+    "ind63": 51,
+    "lead": 0,
+    "secRank": 9
+   },
+   {
+    "ticker": "TSLA",
+    "year": 2013,
+    "date": "2013-02-26",
+    "fwd63": 220,
+    "ind": "Auto Manufacturing",
+    "indRank": 66,
+    "ind63": 40,
+    "lead": 1,
+    "secRank": 45
+   },
+   {
+    "ticker": "TSLA",
+    "year": 2019,
+    "date": "2019-11-01",
+    "fwd63": 183,
+    "ind": "Auto Manufacturing",
+    "indRank": 68,
+    "ind63": 70,
+    "lead": 0,
+    "secRank": 55
+   },
+   {
+    "ticker": "TSLA",
+    "year": 2020,
+    "date": "2020-04-03",
+    "fwd63": 186,
+    "ind": "Auto Manufacturing",
+    "indRank": 65,
+    "ind63": 58,
+    "lead": 0,
+    "secRank": 45
+   },
+   {
+    "ticker": "TTD",
+    "year": 2018,
+    "date": "2018-04-03",
+    "fwd63": 98,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 78,
+    "ind63": 71,
+    "lead": 4,
+    "secRank": 91
+   },
+   {
+    "ticker": "TTD",
+    "year": 2020,
+    "date": "2020-04-03",
+    "fwd63": 179,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 76,
+    "ind63": 64,
+    "lead": 4,
+    "secRank": 82
+   },
+   {
+    "ticker": "TWLO",
+    "year": 2018,
+    "date": "2018-02-08",
+    "fwd63": 130,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 69,
+    "ind63": 50,
+    "lead": 9,
+    "secRank": 73
+   },
+   {
+    "ticker": "TWLO",
+    "year": 2020,
+    "date": "2020-04-03",
+    "fwd63": 192,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 81,
+    "ind63": 83,
+    "lead": 11,
+    "secRank": 82
+   },
+   {
+    "ticker": "UBER",
+    "year": 2023,
+    "date": "2023-10-26",
+    "fwd63": 65,
+    "ind": "Business Services",
+    "indRank": 68,
+    "ind63": 73,
+    "lead": 4,
+    "secRank": 73
+   },
+   {
+    "ticker": "UPST",
+    "year": 2021,
+    "date": "2021-03-08",
+    "fwd63": 263,
+    "ind": "Finance: Consumer Services",
+    "indRank": 54,
+    "ind63": 81,
+    "lead": 13,
+    "secRank": 55
+   },
+   {
+    "ticker": "UPST",
+    "year": 2023,
+    "date": "2023-05-02",
+    "fwd63": 462,
+    "ind": "Finance: Consumer Services",
+    "indRank": 24,
+    "ind63": 27,
+    "lead": 5,
+    "secRank": 9
+   },
+   {
+    "ticker": "VITL",
+    "year": 2024,
+    "date": "2024-02-08",
+    "fwd63": 148,
+    "ind": "Packaged Foods",
+    "indRank": 12,
+    "ind63": 19,
+    "lead": 1,
+    "secRank": 9
+   },
+   {
+    "ticker": "VRT",
+    "year": 2023,
+    "date": "2023-05-04",
+    "fwd63": 150,
+    "ind": "Industrial Machinery/Components",
+    "indRank": 59,
+    "ind63": 52,
+    "lead": 5,
+    "secRank": 36
+   },
+   {
+    "ticker": "VRT",
+    "year": 2024,
+    "date": "2024-09-06",
+    "fwd63": 88,
+    "ind": "Industrial Machinery/Components",
+    "indRank": 39,
+    "ind63": 33,
+    "lead": 5,
+    "secRank": 9
+   },
+   {
+    "ticker": "VST",
+    "year": 2023,
+    "date": "2023-12-21",
+    "fwd63": 88,
+    "ind": "Electric Utilities: Central",
+    "indRank": 6,
+    "ind63": 10,
+    "lead": 0,
+    "secRank": 0
+   },
+   {
+    "ticker": "VST",
+    "year": 2024,
+    "date": "2024-02-14",
+    "fwd63": 119,
+    "ind": "Electric Utilities: Central",
+    "indRank": 7,
+    "ind63": 16,
+    "lead": 0,
+    "secRank": 0
+   },
+   {
+    "ticker": "WGS",
+    "year": 2024,
+    "date": "2024-02-12",
+    "fwd63": 459,
+    "ind": "Medical/Nursing Services",
+    "indRank": 23,
+    "ind63": 51,
+    "lead": 0,
+    "secRank": 73
+   },
+   {
+    "ticker": "XYZ",
+    "year": 2016,
+    "date": "2016-01-28",
+    "fwd63": 76,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 64,
+    "ind63": 56,
+    "lead": 5,
+    "secRank": 82
+   },
+   {
+    "ticker": "XYZ",
+    "year": 2020,
+    "date": "2020-04-03",
+    "fwd63": 172,
+    "ind": "Computer Software: Prepackaged Software",
+    "indRank": 81,
+    "ind63": 83,
+    "lead": 11,
+    "secRank": 82
+   },
+   {
+    "ticker": "ZG",
+    "year": 2020,
+    "date": "2020-03-18",
+    "fwd63": 158,
+    "ind": "Business Services",
+    "indRank": 68,
+    "ind63": 65,
+    "lead": 2,
+    "secRank": 27
+   },
+   {
+    "ticker": "ZIM",
+    "year": 2021,
+    "date": "2021-01-28",
+    "fwd63": 212,
+    "ind": "Marine Transportation",
+    "indRank": 16,
+    "ind63": 34,
+    "lead": 2,
+    "secRank": 64
+   },
+   {
+    "ticker": "ZM",
+    "year": 2020,
+    "date": "2020-04-07",
+    "fwd63": 134,
+    "ind": "Computer Software: Programming Data Processing",
+    "indRank": 76,
+    "ind63": 58,
+    "lead": 4,
+    "secRank": 82
+   },
+   {
+    "ticker": "ZS",
+    "year": 2019,
+    "date": "2019-01-02",
+    "fwd63": 74,
+    "ind": "EDP Services",
+    "indRank": 74,
+    "ind63": 57,
+    "lead": 6,
+    "secRank": 55
+   },
+   {
+    "ticker": "ZS",
+    "year": 2020,
+    "date": "2020-03-12",
+    "fwd63": 160,
+    "ind": "EDP Services",
+    "indRank": 73,
+    "ind63": 77,
+    "lead": 7,
+    "secRank": 91
+   }
+  ]
+ },
+ "policies": {
+  "base": {
+   "label": "Live F7 rules (no group rule)",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 12.432696759840045,
+     "med": 13.50678835562693,
+     "p90": 14.783670588549302,
+     "dd": 21.451788709227717
+    },
+    "rsCash": {
+     "cagr": 13.465743930309348,
+     "dd": 21.45178870922771,
+     "taken": 605,
+     "yr": {
+      "2007": 13.40234195471286,
+      "2008": 4.2333151928060975,
+      "2009": -1.3679411102453964,
+      "2010": 6.5508496599045785,
+      "2011": -12.411145099961818,
+      "2012": 12.831215613197799,
+      "2013": 2.590170227095401,
+      "2014": 6.573051487409454,
+      "2015": 15.390038621697366,
+      "2016": -5.9274655362028135,
+      "2017": 19.452333886990036,
+      "2018": 0.8120606444246947,
+      "2019": -15.377400362320316,
+      "2020": 100.61494247529748,
+      "2021": 48.018921311007134,
+      "2022": -6.833221118802624,
+      "2023": 1.472338647579674,
+      "2024": 34.32661305342884,
+      "2025": 63.79590618174349,
+      "2026": 31.65079379111986
+     }
+    },
+    "rsSpy": {
+     "cagr": 15.771065538363338,
+     "dd": 23.826408503845354,
+     "yr": {
+      "2007": 12.67468399967675,
+      "2008": 4.33474555880391,
+      "2009": 12.377710541861164,
+      "2010": -0.5534851522842055,
+      "2011": -11.896377026886185,
+      "2012": 23.495383238709078,
+      "2013": 18.165336393240405,
+      "2014": 11.078470965386789,
+      "2015": 16.28496036567466,
+      "2016": 0.9636059374633188,
+      "2017": 22.505435812989273,
+      "2018": -2.0966760185436417,
+      "2019": -6.910494458450945,
+      "2020": 75.8280287589207,
+      "2021": 59.66491885817238,
+      "2022": -16.190225010937386,
+      "2023": 6.352664925790763,
+      "2024": 39.87829931489506,
+      "2025": 60.06189215820798,
+      "2026": 30.35374802316295
+     }
+    },
+    "r23Spy": {
+     "cagr": 35.39225095779717,
+     "dd": 21.502878596341596
+    },
+    "h1": 9.24038263487481,
+    "h2": 22.330937275151097
+   }
+  },
+  "f40": {
+   "label": "Filter: skip industry rank < 40",
+   "all": {
+    "n": 1105,
+    "win": 31.312217194570135,
+    "avgR": 0.4837685862596134,
+    "totR": 534.5642878168728,
+    "se": 0.09290602168176458
+   },
+   "recent": {
+    "n": 406,
+    "win": 34.23645320197045,
+    "avgR": 0.7708263908664288,
+    "totR": 312.9555146917701,
+    "se": 0.1804820213482624
+   },
+   "acct": {
+    "mc": {
+     "p10": 11.409868268176515,
+     "med": 12.075442077400854,
+     "p90": 13.321441402364265,
+     "dd": 30.371484293096877
+    },
+    "rsCash": {
+     "cagr": 12.789914011415027,
+     "dd": 31.4498273959201,
+     "taken": 565,
+     "yr": {
+      "2007": 10.796791785776417,
+      "2008": 4.2333151928060975,
+      "2009": -1.3679411102453964,
+      "2010": 5.714295644205225,
+      "2011": -12.411145099961852,
+      "2012": 8.983688552098323,
+      "2013": 1.9729365055704662,
+      "2014": 9.595608179611737,
+      "2015": 16.432427215316014,
+      "2016": -5.927465536202847,
+      "2017": 20.985015837198894,
+      "2018": -0.47578642058058174,
+      "2019": -13.603853709076875,
+      "2020": 93.58422147309251,
+      "2021": 17.736075842586608,
+      "2022": -5.0956961875245455,
+      "2023": 3.982925219688549,
+      "2024": 60.534742540446594,
+      "2025": 45.81215883176477,
+      "2026": 39.25880156708408
+     }
+    },
+    "rsSpy": {
+     "cagr": 15.938690784302478,
+     "dd": 32.05074554475078,
+     "yr": {
+      "2007": 9.470183765440844,
+      "2008": 4.33474555880391,
+      "2009": 12.409407622233925,
+      "2010": -0.8518487415078879,
+      "2011": -11.89637702688625,
+      "2012": 19.258635655541223,
+      "2013": 19.40623303995126,
+      "2014": 15.067352416559654,
+      "2015": 17.009895497157814,
+      "2016": 0.963605937463341,
+      "2017": 24.12168409789195,
+      "2018": -2.782135385544615,
+      "2019": -4.701800476961515,
+      "2020": 68.69735367793682,
+      "2021": 37.43290140369204,
+      "2022": -14.604974583621466,
+      "2023": 8.541022265460851,
+      "2024": 70.98645093511924,
+      "2025": 46.587104806101955,
+      "2026": 37.43678881891419
+     }
+    },
+    "r23Spy": {
+     "cagr": 42.30524747044755,
+     "dd": 27.02153044655721
+    },
+    "h1": 9.085744794332772,
+    "h2": 22.873724528420915
+   }
+  },
+  "f50": {
+   "label": "Filter: skip industry rank < 50",
+   "all": {
+    "n": 1033,
+    "win": 31.07454017424976,
+    "avgR": 0.4717787474424047,
+    "totR": 487.3474461080041,
+    "se": 0.09651997693950398
+   },
+   "recent": {
+    "n": 365,
+    "win": 34.24657534246575,
+    "avgR": 0.788156580118692,
+    "totR": 287.6771517433226,
+    "se": 0.19400075117184867
+   },
+   "acct": {
+    "mc": {
+     "p10": 9.70885993183559,
+     "med": 10.618856483746875,
+     "p90": 11.415344890550427,
+     "dd": 31.058254393928348
+    },
+    "rsCash": {
+     "cagr": 10.298701038182735,
+     "dd": 31.82350944748893,
+     "taken": 552,
+     "yr": {
+      "2007": 13.219952605376228,
+      "2008": -1.5788314452612306,
+      "2009": -1.3679411102454075,
+      "2010": 5.874161038598391,
+      "2011": -11.460604991598867,
+      "2012": 2.003273830109298,
+      "2013": 2.9980789383803996,
+      "2014": 9.595608179599768,
+      "2015": 16.43242721531597,
+      "2016": -5.927465536202803,
+      "2017": 20.901672850619256,
+      "2018": -2.916002901061221,
+      "2019": -12.643633155120092,
+      "2020": 94.68141095472848,
+      "2021": 2.945193969259541,
+      "2022": -5.093674145945548,
+      "2023": -2.7321428718602547,
+      "2024": 34.396426171557735,
+      "2025": 49.963656154291726,
+      "2026": 39.072507570158656
+     }
+    },
+    "rsSpy": {
+     "cagr": 14.157411026277567,
+     "dd": 32.88536682293499,
+     "yr": {
+      "2007": 11.155427617387325,
+      "2008": -1.5788314452612418,
+      "2009": 12.409407622233948,
+      "2010": -0.5178003086917071,
+      "2011": -10.591201014836106,
+      "2012": 11.638126661402692,
+      "2013": 20.53139730324316,
+      "2014": 15.067352416550662,
+      "2015": 17.00989549715757,
+      "2016": 0.9636059374633854,
+      "2017": 25.276302309412934,
+      "2018": -4.554765168317909,
+      "2019": -3.1470994915536954,
+      "2020": 75.43335516913984,
+      "2021": 20.823403211858892,
+      "2022": -14.507504517300173,
+      "2023": 4.485694541586249,
+      "2024": 48.05651901247228,
+      "2025": 53.822912285153855,
+      "2026": 36.293966885746265
+     }
+    },
+    "r23Spy": {
+     "cagr": 36.992196665028665,
+     "dd": 25.872625472780765
+    },
+    "h1": 8.22151207973607,
+    "h2": 20.08093245236713
+   }
+  },
+  "f67": {
+   "label": "Filter: industry rank >= 67 only (unknown kept)",
+   "all": {
+    "n": 827,
+    "win": 32.285368802902056,
+    "avgR": 0.4794566303313098,
+    "totR": 396.51063328399323,
+    "se": 0.10418409871046896
+   },
+   "recent": {
+    "n": 267,
+    "win": 36.70411985018727,
+    "avgR": 0.7781169163516621,
+    "totR": 207.7572166658938,
+    "se": 0.21052341747711562
+   },
+   "acct": {
+    "mc": {
+     "p10": 9.986341695049372,
+     "med": 10.673824081021799,
+     "p90": 11.334982910418123,
+     "dd": 20.18014275862654
+    },
+    "rsCash": {
+     "cagr": 10.365316985737905,
+     "dd": 20.17331192774166,
+     "taken": 487,
+     "yr": {
+      "2007": 4.520048598347248,
+      "2008": -1.5788314452612418,
+      "2009": -0.7225858188745105,
+      "2010": 5.950026510005935,
+      "2011": -14.15356215935194,
+      "2012": 3.0142224758971325,
+      "2013": 2.7132692886051135,
+      "2014": 2.95113085325025,
+      "2015": 8.94163416780247,
+      "2016": -5.9274655362028135,
+      "2017": 23.351018326291985,
+      "2018": -2.4477234990216035,
+      "2019": -6.552974246785737,
+      "2020": 91.0904997293967,
+      "2021": 11.526744764237318,
+      "2022": -1.3526380516811987,
+      "2023": 2.281594971543721,
+      "2024": 29.136702364799394,
+      "2025": 62.8802954033395,
+      "2026": 32.57019652958457
+     }
+    },
+    "rsSpy": {
+     "cagr": 14.606155455926073,
+     "dd": 24.74777617693642,
+     "yr": {
+      "2007": 1.4640560333288644,
+      "2008": -1.5788314452612306,
+      "2009": 12.95279070913642,
+      "2010": 2.005587648802609,
+      "2011": -14.210889461904108,
+      "2012": 12.646725612241184,
+      "2013": 21.120425575869838,
+      "2014": 8.910322439384831,
+      "2015": 8.134365468962223,
+      "2016": 0.9636059374634298,
+      "2017": 27.862440428151448,
+      "2018": -2.310408706349232,
+      "2019": 5.552771800759326,
+      "2020": 75.56346141179495,
+      "2021": 29.766670708715548,
+      "2022": -10.940275719510195,
+      "2023": 11.915197350377893,
+      "2024": 48.3299215170089,
+      "2025": 59.397252048591454,
+      "2026": 29.803552306367752
+     }
+    },
+    "r23Spy": {
+     "cagr": 39.10983478808867,
+     "dd": 20.48522538291339
+    },
+    "h1": 5.89923768296694,
+    "h2": 24.054458283493553
+   }
+  },
+  "f80": {
+   "label": "Filter: industry rank >= 80 only (unknown kept)",
+   "all": {
+    "n": 583,
+    "win": 32.24699828473413,
+    "avgR": 0.35338373001350176,
+    "totR": 206.02271459787153,
+    "se": 0.11072632290806607
+   },
+   "recent": {
+    "n": 182,
+    "win": 35.16483516483517,
+    "avgR": 0.5375652144775613,
+    "totR": 97.83686903491616,
+    "se": 0.23248008306171183
+   },
+   "acct": {
+    "mc": {
+     "p10": 6.154592572095385,
+     "med": 6.429923652611436,
+     "p90": 6.843817593615942,
+     "dd": 21.64880570204877
+    },
+    "rsCash": {
+     "cagr": 6.460678824035204,
+     "dd": 21.64892328217745,
+     "taken": 393,
+     "yr": {
+      "2007": 3.0810346028618874,
+      "2008": -1.5788314452612418,
+      "2009": -0.9936901255139463,
+      "2010": 3.9377585549633665,
+      "2011": -12.45525319680435,
+      "2012": -1.944264654657668,
+      "2013": -1.979000258327912,
+      "2014": 5.119908542265161,
+      "2015": 8.255757678925036,
+      "2016": -3.963770759950991,
+      "2017": 10.506866917647617,
+      "2018": -0.5377355535718165,
+      "2019": -0.1282401599088212,
+      "2020": 68.58294521025017,
+      "2021": -4.542857028751801,
+      "2022": -1.3526380516811987,
+      "2023": -1.5434824550244475,
+      "2024": 12.234282847356258,
+      "2025": 39.807836193174715,
+      "2026": 32.83007171294621
+     }
+    },
+    "rsSpy": {
+     "cagr": 11.722340443645972,
+     "dd": 20.440737817919306,
+     "yr": {
+      "2007": 1.5865628662576237,
+      "2008": -1.5788314452612418,
+      "2009": 14.313476098144463,
+      "2010": 3.0383708876872806,
+      "2011": -11.588069743176742,
+      "2012": 8.992058221036459,
+      "2013": 18.813285826191304,
+      "2014": 13.040825652221999,
+      "2015": 5.9910022074405545,
+      "2016": 2.458570184718223,
+      "2017": 17.05008546791671,
+      "2018": -0.6505878467612525,
+      "2019": 12.89805470715699,
+      "2020": 52.31291581717448,
+      "2021": 14.718883948201778,
+      "2022": -10.94027571951024,
+      "2023": 11.241455241169817,
+      "2024": 33.19542280096026,
+      "2025": 36.54138565318581,
+      "2026": 30.10289915966695
+     }
+    },
+    "r23Spy": {
+     "cagr": 29.550436366781184,
+     "dd": 16.3045180358277
+    },
+    "h1": 5.8894931768813,
+    "h2": 18.017164733251477
+   }
+  },
+  "fLead2": {
+   "label": "Filter: >= 2 other RS-90 leaders in the industry",
+   "all": {
+    "n": 948,
+    "win": 32.80590717299578,
+    "avgR": 0.5324528477621807,
+    "totR": 504.7652996785473,
+    "se": 0.1026362252762352
+   },
+   "recent": {
+    "n": 376,
+    "win": 34.308510638297875,
+    "avgR": 0.6757326512176425,
+    "totR": 254.07547685783356,
+    "se": 0.18475727844898618
+   },
+   "acct": {
+    "mc": {
+     "p10": 11.55534005661687,
+     "med": 12.176813753851823,
+     "p90": 12.798858242132205,
+     "dd": 19.346947036261376
+    },
+    "rsCash": {
+     "cagr": 12.370696193052133,
+     "dd": 16.54203182043253,
+     "taken": 530,
+     "yr": {
+      "2007": 12.140031984282285,
+      "2008": 5.272787617057562,
+      "2009": 1.8658093390421904,
+      "2010": 0.5261414973857681,
+      "2011": -12.523064023573427,
+      "2012": 6.008053474013231,
+      "2013": 7.486279161688603,
+      "2014": 7.948852928392003,
+      "2015": 8.103982066003045,
+      "2016": -4.990991269397361,
+      "2017": 28.465465289848566,
+      "2018": 2.9981272047513663,
+      "2019": -9.19050412071013,
+      "2020": 92.42193186602532,
+      "2021": 48.05960613711289,
+      "2022": -6.097157403035036,
+      "2023": -5.814295778800527,
+      "2024": 25.27623989056147,
+      "2025": 43.065466973952596,
+      "2026": 37.43220146770063
+     }
+    },
+    "rsSpy": {
+     "cagr": 16.027849114461866,
+     "dd": 22.09176632622404,
+     "yr": {
+      "2007": 10.147363912291517,
+      "2008": 5.3762126853603265,
+      "2009": 16.263914983989736,
+      "2010": -2.4974210792596763,
+      "2011": -12.929164235305945,
+      "2012": 16.943826181880794,
+      "2013": 22.872415156342285,
+      "2014": 14.310466242859011,
+      "2015": 8.73831302918273,
+      "2016": 1.7235554822696564,
+      "2017": 35.56019767716756,
+      "2018": 4.578941539375125,
+      "2019": 1.2302625792497413,
+      "2020": 73.31110820596956,
+      "2021": 66.41824094034037,
+      "2022": -15.506090787171212,
+      "2023": 2.071397149300691,
+      "2024": 34.31046158199349,
+      "2025": 41.9099644635065,
+      "2026": 32.48670164419993
+     }
+    },
+    "r23Spy": {
+     "cagr": 28.825637951398917,
+     "dd": 17.4264157468129
+    },
+    "h1": 8.63038039859858,
+    "h2": 23.857423748555775
+   }
+  },
+  "c80": {
+   "label": "Conviction: 1.5% risk when industry rank >= 80",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 12.191512722234933,
+     "med": 13.444964753653599,
+     "p90": 15.004800705471432,
+     "dd": 21.95499207248839
+    },
+    "rsCash": {
+     "cagr": 14.975769540138373,
+     "dd": 21.954992072488384,
+     "taken": 552,
+     "yr": {
+      "2007": 9.225065351458994,
+      "2008": 3.813765035622807,
+      "2009": -1.3220093107703335,
+      "2010": 8.782380162422632,
+      "2011": -14.318256204609225,
+      "2012": 13.491899199909717,
+      "2013": -0.021521054447504184,
+      "2014": 7.9861829547559715,
+      "2015": 12.13614538442689,
+      "2016": -6.719735379374681,
+      "2017": 22.097328934369443,
+      "2018": 4.084271344229418,
+      "2019": -15.548487567406543,
+      "2020": 124.47263305298826,
+      "2021": 42.19319411437055,
+      "2022": -5.1392920762178935,
+      "2023": 4.339148955061756,
+      "2024": 47.01084546040693,
+      "2025": 88.5226397504927,
+      "2026": 24.75101261024615
+     }
+    },
+    "rsSpy": {
+     "cagr": 17.280026566829964,
+     "dd": 22.094510554357917,
+     "yr": {
+      "2007": 8.180671510242309,
+      "2008": 3.9283005925788705,
+      "2009": 11.314665764408582,
+      "2010": 0.9245941497836085,
+      "2011": -12.713215330594297,
+      "2012": 24.913375074252997,
+      "2013": 14.019119535338342,
+      "2014": 15.595077645917655,
+      "2015": 13.29930284915497,
+      "2016": -0.2584591785839918,
+      "2017": 26.62026883141222,
+      "2018": -1.4027194372353002,
+      "2019": -6.792859721858269,
+      "2020": 89.73332216359621,
+      "2021": 54.45273196458918,
+      "2022": -11.340353061972476,
+      "2023": 9.478316996694813,
+      "2024": 49.59962408916076,
+      "2025": 84.38395375190512,
+      "2026": 23.81613586287028
+     }
+    },
+    "r23Spy": {
+     "cagr": 42.30565172971805,
+     "dd": 20.519514823440936
+    },
+    "h1": 8.834010200451182,
+    "h2": 26.203970411907097
+   }
+  },
+  "c80w": {
+   "label": "Conviction: 1.5% risk rank >= 80, 0.5% risk rank < 40",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 11.227382320114977,
+     "med": 13.051099634125297,
+     "p90": 14.271607224939032,
+     "dd": 30.15790539045004
+    },
+    "rsCash": {
+     "cagr": 14.671247258225906,
+     "dd": 30.55631056149355,
+     "taken": 590,
+     "yr": {
+      "2007": 10.61887102443726,
+      "2008": 3.813765035622829,
+      "2009": -1.3220093107703446,
+      "2010": 6.868347948462539,
+      "2011": -14.318256204609225,
+      "2012": 12.334765852782304,
+      "2013": -0.05104342003968698,
+      "2014": 11.554571420854941,
+      "2015": 12.65131590490045,
+      "2016": -6.719735379374692,
+      "2017": 22.880536623373683,
+      "2018": 2.321864461942824,
+      "2019": -13.78354576528057,
+      "2020": 121.04823244960615,
+      "2021": 22.74962071254787,
+      "2022": -4.259310923373205,
+      "2023": 3.8094752206931037,
+      "2024": 67.20355243105038,
+      "2025": 63.81790628226061,
+      "2026": 35.98863319705969
+     }
+    },
+    "rsSpy": {
+     "cagr": 17.363331785241254,
+     "dd": 30.83907338493414,
+     "yr": {
+      "2007": 12.26883999683739,
+      "2008": 3.9283005925788705,
+      "2009": 11.330433616129486,
+      "2010": -0.8278655077689323,
+      "2011": -12.713215330594318,
+      "2012": 23.581060680229893,
+      "2013": 14.65628114109947,
+      "2014": 17.714541291347352,
+      "2015": 13.660193884715532,
+      "2016": -0.25845917858413614,
+      "2017": 27.455395386259916,
+      "2018": -1.8462757282065811,
+      "2019": -5.1680037221074615,
+      "2020": 86.14353962557462,
+      "2021": 35.21821277460355,
+      "2022": -10.507326503005876,
+      "2023": 9.4174464958815,
+      "2024": 77.55430652368179,
+      "2025": 56.9431932052928,
+      "2026": 35.729345887347954
+     }
+    },
+    "r23Spy": {
+     "cagr": 46.22206884371365,
+     "dd": 21.74631559372937
+    },
+    "h1": 9.21545836213764,
+    "h2": 25.920061819172258
+   }
+  },
+  "c67": {
+   "label": "Conviction: 1.5% risk when industry rank >= 67",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 12.591217273634324,
+     "med": 13.693111096728195,
+     "p90": 14.692663806217944,
+     "dd": 22.621919461263534
+    },
+    "rsCash": {
+     "cagr": 14.330808169559583,
+     "dd": 22.621919461263545,
+     "taken": 536,
+     "yr": {
+      "2007": 7.942678672257886,
+      "2008": 3.8123700547931794,
+      "2009": -1.6406793153491805,
+      "2010": 8.20170609312787,
+      "2011": -14.280216242111843,
+      "2012": 14.884142851694282,
+      "2013": 2.7487625376434233,
+      "2014": 7.068765228542784,
+      "2015": 11.634041422585039,
+      "2016": -6.79770597355478,
+      "2017": 22.05776341013386,
+      "2018": 3.098863093521209,
+      "2019": -15.569087733748932,
+      "2020": 144.85047328258983,
+      "2021": 29.77279216829767,
+      "2022": -5.139292076217872,
+      "2023": 1.8196721752110845,
+      "2024": 53.69768819317506,
+      "2025": 70.06798440683934,
+      "2026": 22.396543337089938
+     }
+    },
+    "rsSpy": {
+     "cagr": 17.192652202278612,
+     "dd": 25.629898571217495,
+     "yr": {
+      "2007": 6.666206538307362,
+      "2008": 3.9265314911106186,
+      "2009": 11.059010808640979,
+      "2010": 0.2569034845412155,
+      "2011": -14.193723040462592,
+      "2012": 26.049373724588932,
+      "2013": 16.581093914350987,
+      "2014": 10.841217688807658,
+      "2015": 13.267546458023105,
+      "2016": -0.22153137100853204,
+      "2017": 26.52391832164167,
+      "2018": 0.8213871182513932,
+      "2019": -6.513305210423881,
+      "2020": 109.01102837408843,
+      "2021": 64.2064780010311,
+      "2022": -11.340353061972507,
+      "2023": 7.834098418916358,
+      "2024": 73.74544672250727,
+      "2025": 63.85522126586287,
+      "2026": 5.202334813362719
+     }
+    },
+    "r23Spy": {
+     "cagr": 36.83812837190112,
+     "dd": 25.62989857121753
+    },
+    "h1": 8.500371570803477,
+    "h2": 26.225512403040916
+   }
+  },
+  "cLead": {
+   "label": "Conviction: 1.5% risk when >= 2 other RS-90 leaders in the industry",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 12.108690698037528,
+     "med": 13.834199320301789,
+     "p90": 15.285872208127294,
+     "dd": 23.520975987993303
+    },
+    "rsCash": {
+     "cagr": 14.069027532740797,
+     "dd": 23.346636111184388,
+     "taken": 526,
+     "yr": {
+      "2007": 4.74313871233194,
+      "2008": 7.189782408697232,
+      "2009": -0.6355429368957721,
+      "2010": 6.4438281284884935,
+      "2011": -16.322535550388896,
+      "2012": 17.61629130357656,
+      "2013": 7.071575806201702,
+      "2014": 17.182035486438263,
+      "2015": 16.355757778286574,
+      "2016": -6.797705973554768,
+      "2017": 22.332608814494925,
+      "2018": 6.960120440929529,
+      "2019": -16.171067664057205,
+      "2020": 144.49581058032464,
+      "2021": 32.09515809866173,
+      "2022": -8.832239353131255,
+      "2023": -7.816502336084952,
+      "2024": 50.02133652192602,
+      "2025": 54.74146544952798,
+      "2026": 21.96105953392975
+     }
+    },
+    "rsSpy": {
+     "cagr": 17.010261264168847,
+     "dd": 24.708826212864818,
+     "yr": {
+      "2007": 3.4704419926798735,
+      "2008": 7.350053323050343,
+      "2009": 12.630501000958505,
+      "2010": -1.011152231610568,
+      "2011": -14.809728670374966,
+      "2012": 28.980316698005538,
+      "2013": 19.295479553576822,
+      "2014": 23.176908944595233,
+      "2015": 18.389855120485123,
+      "2016": -0.22153137100857645,
+      "2017": 26.531961398845905,
+      "2018": 5.522766758793662,
+      "2019": -7.285412243195244,
+      "2020": 106.96482962137472,
+      "2021": 46.22964270531078,
+      "2022": -16.208770957629515,
+      "2023": -1.3471793835680312,
+      "2024": 68.06132306257786,
+      "2025": 47.86880253478654,
+      "2026": 21.8905749284376
+     }
+    },
+    "r23Spy": {
+     "cagr": 34.02427958832342,
+     "dd": 24.70882621286484
+    },
+    "h1": 10.547270989485868,
+    "h2": 23.40118553750323
+   }
+  },
+  "r125": {
+   "label": "Control: 1.25% risk on every trade",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 12.745913371930872,
+     "med": 13.95003721847381,
+     "p90": 15.346579867871956,
+     "dd": 22.30355016465252
+    },
+    "rsCash": {
+     "cagr": 14.61406777939418,
+     "dd": 22.303550164652506,
+     "taken": 534,
+     "yr": {
+      "2007": 7.50401762966435,
+      "2008": 5.195155639872739,
+      "2009": -1.8597149435547022,
+      "2010": 8.621052088193304,
+      "2011": -15.951665847015706,
+      "2012": 16.990216000221437,
+      "2013": 5.575384226878177,
+      "2014": 7.1124950933023845,
+      "2015": 16.184486485821846,
+      "2016": -6.504924864161343,
+      "2017": 20.90641035987284,
+      "2018": 3.7716505858989002,
+      "2019": -16.6937561437007,
+      "2020": 144.47742338096643,
+      "2021": 44.52692129612645,
+      "2022": -4.83419622138822,
+      "2023": 0.5178622536263111,
+      "2024": 59.711630605263366,
+      "2025": 41.85038811150681,
+      "2026": 26.352556033284856
+     }
+    },
+    "rsSpy": {
+     "cagr": 18.061125919089037,
+     "dd": 22.442857422919314,
+     "yr": {
+      "2007": 6.779540392651295,
+      "2008": 5.3163166040745,
+      "2009": 11.295339015129425,
+      "2010": 4.422169238651197,
+      "2011": -14.656862308859232,
+      "2012": 28.063525514573296,
+      "2013": 20.29211844201335,
+      "2014": 12.756055350954076,
+      "2015": 17.62513236006933,
+      "2016": 0.21785336407833533,
+      "2017": 25.43612582223671,
+      "2018": 2.628170829802401,
+      "2019": -8.130271897990726,
+      "2020": 114.29096140190408,
+      "2021": 57.72159364173266,
+      "2022": -11.766285274635436,
+      "2023": 6.057987922006758,
+      "2024": 64.1793318530804,
+      "2025": 53.58822443446398,
+      "2026": 22.69531396298834
+     }
+    },
+    "r23Spy": {
+     "cagr": 37.420332202064046,
+     "dd": 20.520348218401534
+    },
+    "h1": 9.92298811286203,
+    "h2": 26.575899390490633
+   }
+  },
+  "r15": {
+   "label": "Control: 1.5% risk on every trade",
+   "all": {
+    "n": 1229,
+    "win": 31.570382424735556,
+    "avgR": 0.4991487390613691,
+    "totR": 613.4538003064226,
+    "se": 0.088265581676563
+   },
+   "recent": {
+    "n": 466,
+    "win": 33.90557939914164,
+    "avgR": 0.7647008318434042,
+    "totR": 356.35058763902634,
+    "se": 0.16774045285577982
+   },
+   "acct": {
+    "mc": {
+     "p10": 11.454918458245423,
+     "med": 12.812928541609136,
+     "p90": 13.847234435015277,
+     "dd": 31.643825871644633
+    },
+    "rsCash": {
+     "cagr": 12.369522083054152,
+     "dd": 32.83512966062287,
+     "taken": 492,
+     "yr": {
+      "2007": 6.2814135284452455,
+      "2008": 7.264783769311189,
+      "2009": -1.9649437760017485,
+      "2010": 10.29383569315705,
+      "2011": -16.29571682480282,
+      "2012": 19.780461355671306,
+      "2013": 6.112675496630238,
+      "2014": 4.395988601614875,
+      "2015": 12.904949640956275,
+      "2016": -6.797705973554768,
+      "2017": 24.04606927620474,
+      "2018": 7.156046165607677,
+      "2019": -17.62465820249519,
+      "2020": 150.52367453926223,
+      "2021": 10.551017224361846,
+      "2022": -7.605391522571992,
+      "2023": -6.4172647658805815,
+      "2024": 41.30378089469144,
+      "2025": 58.612252570278976,
+      "2026": 17.757313852371446
+     }
+    },
+    "rsSpy": {
+     "cagr": 14.996051460402704,
+     "dd": 33.03395297702053,
+     "yr": {
+      "2007": 5.7388616814207705,
+      "2008": 7.46553448373517,
+      "2009": 10.659093107205099,
+      "2010": 2.552093296965907,
+      "2011": -17.28193632163292,
+      "2012": 31.402993022670465,
+      "2013": 20.64281717883909,
+      "2014": 8.23110914011087,
+      "2015": 14.942963819711053,
+      "2016": -0.22153137100854314,
+      "2017": 28.41645473437393,
+      "2018": 4.353066332142874,
+      "2019": -9.257785649288397,
+      "2020": 112.55783548013851,
+      "2021": 22.0212213986555,
+      "2022": -14.547180316140373,
+      "2023": 0.5458733075988986,
+      "2024": 44.81695681931781,
+      "2025": 58.822678915660155,
+      "2026": 20.259107648860496
+     }
+    },
+    "r23Spy": {
+     "cagr": 31.47233060481467,
+     "dd": 23.92609731728175
+    },
+    "h1": 9.283424172307031,
+    "h2": 20.557998728851956
+   }
+  }
+ },
+ "yearSplit": {
+  "2007": {
+   "lead": {
+    "n": 28,
+    "win": 32.142857142857146,
+    "avgR": 0.2650113430406366,
+    "totR": 7.420317605137825,
+    "se": 0.37186148560724547
+   },
+   "rest": {
+    "n": 34,
+    "win": 38.23529411764706,
+    "avgR": 1.3012439299593954,
+    "totR": 44.24229361861944,
+    "se": 0.6343242188140314
+   }
+  },
+  "2008": {
+   "lead": {
+    "n": 0,
+    "win": null,
+    "avgR": null,
+    "totR": 0,
+    "se": null
+   },
+   "rest": {
+    "n": 0,
+    "win": null,
+    "avgR": null,
+    "totR": 0,
+    "se": null
+   }
+  },
+  "2009": {
+   "lead": {
+    "n": 8,
+    "win": 25,
+    "avgR": -0.46820566803216934,
+    "totR": -3.7456453442573547,
+    "se": 0.355390586133659
+   },
+   "rest": {
+    "n": 7,
+    "win": 42.857142857142854,
+    "avgR": 0.03777508224759783,
+    "totR": 0.2644255757331848,
+    "se": 0.47528650640329034
+   }
+  },
+  "2010": {
+   "lead": {
+    "n": 12,
+    "win": 33.33333333333333,
+    "avgR": 0.8530621416866779,
+    "totR": 10.236745700240135,
+    "se": 0.7666424239029755
+   },
+   "rest": {
+    "n": 28,
+    "win": 42.857142857142854,
+    "avgR": 0.8270383312233857,
+    "totR": 23.1570732742548,
+    "se": 0.5097085639649733
+   }
+  },
+  "2011": {
+   "lead": {
+    "n": 8,
+    "win": 12.5,
+    "avgR": -0.7779627814888954,
+    "totR": -6.223702251911163,
+    "se": 0.37368500902750496
+   },
+   "rest": {
+    "n": 10,
+    "win": 0,
+    "avgR": -0.7647435143589973,
+    "totR": -7.6474351435899734,
+    "se": 0.12035513557683977
+   }
+  },
+  "2012": {
+   "lead": {
+    "n": 15,
+    "win": 33.33333333333333,
+    "avgR": 0.014754875500996908,
+    "totR": 0.2213231325149536,
+    "se": 0.3789383445182283
+   },
+   "rest": {
+    "n": 6,
+    "win": 66.66666666666666,
+    "avgR": 2.797796686490377,
+    "totR": 16.78678011894226,
+    "se": 1.3039561504208297
+   }
+  },
+  "2013": {
+   "lead": {
+    "n": 22,
+    "win": 31.818181818181817,
+    "avgR": -0.15127520635724068,
+    "totR": -3.328054539859295,
+    "se": 0.3375939558659653
+   },
+   "rest": {
+    "n": 16,
+    "win": 37.5,
+    "avgR": -0.058492779498919845,
+    "totR": -0.9358844719827175,
+    "se": 0.3793912748485155
+   }
+  },
+  "2014": {
+   "lead": {
+    "n": 37,
+    "win": 43.24324324324324,
+    "avgR": 0.20584547944442444,
+    "totR": 7.6162827394437045,
+    "se": 0.248884059213529
+   },
+   "rest": {
+    "n": 30,
+    "win": 33.33333333333333,
+    "avgR": 0.25874692847331365,
+    "totR": 7.7624078541994095,
+    "se": 0.3269377210170692
+   }
+  },
+  "2015": {
+   "lead": {
+    "n": 7,
+    "win": 14.285714285714285,
+    "avgR": -0.22152848754610335,
+    "totR": -1.5506994128227234,
+    "se": 0.5641383749586296
+   },
+   "rest": {
+    "n": 8,
+    "win": 37.5,
+    "avgR": 0.758957713842392,
+    "totR": 6.071661710739136,
+    "se": 0.8701267775572274
+   }
+  },
+  "2016": {
+   "lead": {
+    "n": 11,
+    "win": 18.181818181818183,
+    "avgR": 0.0022790973836725407,
+    "totR": 0.02507007122039795,
+    "se": 0.739965183731854
+   },
+   "rest": {
+    "n": 4,
+    "win": 25,
+    "avgR": 0.5137733817100525,
+    "totR": 2.05509352684021,
+    "se": 1.3142107840853043
+   }
+  },
+  "2017": {
+   "lead": {
+    "n": 46,
+    "win": 28.26086956521739,
+    "avgR": -0.031754526775330305,
+    "totR": -1.460708231665194,
+    "se": 0.3713053616191455
+   },
+   "rest": {
+    "n": 22,
+    "win": 36.36363636363637,
+    "avgR": 0.48678410866043786,
+    "totR": 10.709250390529633,
+    "se": 0.5790298148988101
+   }
+  },
+  "2018": {
+   "lead": {
+    "n": 16,
+    "win": 37.5,
+    "avgR": -0.22367138683330268,
+    "totR": -3.578742189332843,
+    "se": 0.3237835873471293
+   },
+   "rest": {
+    "n": 25,
+    "win": 16,
+    "avgR": -0.6323425665497779,
+    "totR": -15.80856416374445,
+    "se": 0.1704260115463308
+   }
+  },
+  "2019": {
+   "lead": {
+    "n": 19,
+    "win": 21.052631578947366,
+    "avgR": 0.17298690268867895,
+    "totR": 3.2867511510849,
+    "se": 0.582184950865247
+   },
+   "rest": {
+    "n": 39,
+    "win": 20.51282051282051,
+    "avgR": 0.1614622664757264,
+    "totR": 6.2970283925533295,
+    "se": 0.4339527724885285
+   }
+  },
+  "2020": {
+   "lead": {
+    "n": 72,
+    "win": 40.27777777777778,
+    "avgR": 1.236802699872189,
+    "totR": 89.04979439079762,
+    "se": 0.4261379998041388
+   },
+   "rest": {
+    "n": 63,
+    "win": 41.269841269841265,
+    "avgR": 1.3366631409005514,
+    "totR": 84.20977787673473,
+    "se": 0.5639110395652532
+   }
+  },
+  "2021": {
+   "lead": {
+    "n": 35,
+    "win": 17.142857142857142,
+    "avgR": -0.36170282874788556,
+    "totR": -12.659599006175995,
+    "se": 0.22808643508418044
+   },
+   "rest": {
+    "n": 67,
+    "win": 11.940298507462686,
+    "avgR": -0.3750277466293591,
+    "totR": -25.12685902416706,
+    "se": 0.2730481523500675
+   }
+  },
+  "2022": {
+   "lead": {
+    "n": 9,
+    "win": 11.11111111111111,
+    "avgR": -0.8515668114026388,
+    "totR": -7.664101302623749,
+    "se": 0.20280344549191784
+   },
+   "rest": {
+    "n": 3,
+    "win": 0,
+    "avgR": -1.0398941437403362,
+    "totR": -3.1196824312210083,
+    "se": 0.0011756777918022108
+   }
+  },
+  "2023": {
+   "lead": {
+    "n": 24,
+    "win": 41.66666666666667,
+    "avgR": 0.9005193449556828,
+    "totR": 21.612464278936386,
+    "se": 0.5685140130568913
+   },
+   "rest": {
+    "n": 58,
+    "win": 34.48275862068966,
+    "avgR": 1.130911396495227,
+    "totR": 65.59286099672318,
+    "se": 0.5003604500259186
+   }
+  },
+  "2024": {
+   "lead": {
+    "n": 27,
+    "win": 18.51851851851852,
+    "avgR": -0.18195377345438357,
+    "totR": -4.912751883268356,
+    "se": 0.41921317611019954
+   },
+   "rest": {
+    "n": 113,
+    "win": 31.858407079646017,
+    "avgR": 1.1501398491631962,
+    "totR": 129.96580295544118,
+    "se": 0.42609117536462343
+   }
+  },
+  "2025": {
+   "lead": {
+    "n": 47,
+    "win": 40.42553191489361,
+    "avgR": 0.9274682626920812,
+    "totR": 43.591008346527815,
+    "se": 0.5781439605247447
+   },
+   "rest": {
+    "n": 75,
+    "win": 32,
+    "avgR": 0.7533065516750018,
+    "totR": 56.49799137562513,
+    "se": 0.407668702658895
+   }
+  },
+  "2026": {
+   "lead": {
+    "n": 78,
+    "win": 37.17948717948718,
+    "avgR": 0.4677795262481922,
+    "totR": 36.48680304735899,
+    "se": 0.3312092722175233
+   },
+   "rest": {
+    "n": 38,
+    "win": 36.84210526315789,
+    "avgR": 0.16992271779791304,
+    "totR": 6.457063276320696,
+    "se": 0.35022272927407716
+   }
+  }
+ }
+}

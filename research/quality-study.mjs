@@ -60,7 +60,8 @@ function passes(r, { fams, dvPctMin = RULES.dvPctMin, dvPctMax = Infinity }) {
     if (C.adr[r] < 0) return false;
     return true;
 }
-const BUY_FAMS = RULES.families.map(f => fi[f]);
+// Baseline = the pre-F7 buy families (HTF is evaluated separately below).
+const BUY_FAMS = RULES.families.filter(f => f !== 'HTF').map(f => fi[f]);
 const STUDY_YEARS = L.YEARS.filter(y => y >= 2007);
 const RECENT = STUDY_YEARS.filter(y => y >= 2023);
 

@@ -143,7 +143,8 @@ export function simulatePortfolio(trades, { riskPct = 1, maxPos = 0.25, maxOpen 
         if (preFill && gi >= fa && gi <= fb && idleRet) equity += Math.max(0, equity - used) * idleRet[gi];
         for (const t of todays) {
             if (held.has(t.tid) || open.length >= maxOpen) { skipped++; continue; }
-            const size = Math.min(equity * riskPct / 100 / (t.risk / 100), equity * maxPos);
+            // t.riskMult: per-trade conviction sizing (1 = riskPct).
+            const size = Math.min(equity * riskPct * (t.riskMult ?? 1) / 100 / (t.risk / 100), equity * maxPos);
             if (size > equity - used + 1e-9) { skipped++; continue; }
             open.push({ ...t, cost: size }); used += size; held.add(t.tid); taken++; takenRows.push(t.r);
         }

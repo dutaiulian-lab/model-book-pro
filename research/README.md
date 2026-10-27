@@ -40,6 +40,16 @@ node research/fetch-earnings.mjs
 node --max-old-space-size=16000 research/quality-study.mjs
 ```
 
+## Group / theme study (2026-10-27)
+
+`group-study.mjs` tests whether setups in leading industry groups (Nasdaq
+industry classification, `fetch-industries.mjs` -> `data/industries.json`;
+group rank = mean member RS rank, point-in-time) do better, and compares
+filtering and conviction sizing on them. Report: `reports/group-study.md`.
+Result: no edge. Setups in the top-20% industries averaged +0.33R vs +0.63R in
+the 40-80% band (both halves of the sample); filters cut CAGR, and 1.5% risk on
+leading-group setups did no better than 1.25% risk on every trade. Not adopted.
+
 ## Survivorship bias
 
 Yahoo only serves stocks that still trade. Stocks that went bankrupt, were
