@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-10-30T22:17:06.063Z",
+  "as_of": "2026-10-30",
+  "rules_version": "2026-10-27 (F7)",
+  "rules": {
+    "rsMin": 90,
+    "dvPctMin": 85,
+    "dvMin": 10000000,
+    "priceMin": 10,
+    "upLow52Min": 100,
+    "depth52Max": 35,
+    "families": [
+      "RANGE",
+      "TIGHT",
+      "BASE",
+      "HTF"
+    ],
+    "trackFamilies": [],
+    "trackNote": "",
+    "regime": "spy200",
+    "stop": "clamp",
+    "exit": "c50t21",
+    "entryWindow": 5,
+    "stopMinPct": 3,
+    "stopMaxPct": 8,
+    "trailAfterGainPct": 20,
+    "gapLimitPct": 3,
+    "skipEarningsSession": true,
+    "dealPin": {
+      "jumpPct": 15,
+      "volMult": 4,
+      "lookback": 15,
+      "minQuietSessions": 3,
+      "rangeMaxPct": 1
+    },
+    "readyWithinPct": 2,
+    "soonWithinPct": 10,
+    "maxHold": 252,
+    "rankPriceMin": 5,
+    "rankDvMin": 5000000
+  },
+  "rules_text": {
+    "families": [
+      "Launchpad Coil",
+      "Tight Range",
+      "Base Breakout",
+      "High Tight Flag"
+    ],
+    "tracked_families": [],
+    "track_note": "",
+    "regime": "SPY above its 200-day SMA",
+    "stop": "Structural stop clamped to 3%-8% below the fill",
+    "exit": "First close below the 50-day SMA (21-day EMA once a close is 20%+ above the fill)",
+    "entry": "Buy stop at the pivot (limit +3%), valid 5 sessions; no fill on an earnings-reaction session",
+    "tiers": {
+      "ready": 2,
+      "soon": 10
+    }
+  },
+  "regime": {
+    "rule": "spy200",
+    "rule_text": "SPY above its 200-day SMA",
+    "on": true,
+    "spy_above_200": true,
+    "spy_above_50": false,
+    "breadth_50": 47.1,
+    "spy_close": 755.719970703125,
+    "spy_sma200": 728.85
+  },
+  "idle_cash": {
+    "mode": "spy200band",
+    "band": 3,
+    "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
+    "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
+    "on": true,
+    "spy_vs_200": 3.69
+  },
+  "context": {
+    "spy": {
+      "value": 3.7,
+      "state": "uptrend",
+      "label": "Uptrend",
+      "color": "green",
+      "meaning": "Healthy trend, historically the best balance of risk and reward: SPY was higher 3 months later about 3 times in 4, and 10% drops were rare (about 1 in 13)."
+    },
+    "breadth": {
+      "value": 47.1,
+      "change10": 15.8,
+      "state": "mixed",
+      "label": "Mixed",
+      "color": "yellow",
+      "meaning": "No clear direction; money is rotating between sectors."
+    },
+    "flags": [],
+    "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
+  },
+  "total_scanned": 6216,
+  "ranking_universe": 2757,
+  "stats": {
+    "ok": 6192,
+    "no_data": 24,
+    "fetch_failed": 0,
+    "retries": 0,
+    "failure_rate": 0,
+    "fundamentals_checked": 0,
+    "fundamentals_failed": 0,
+    "earnings_unknown": 0
+  },
+  "matches": [],
+  "tracked": []
+}
