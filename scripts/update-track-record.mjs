@@ -72,11 +72,24 @@ async function main() {
             s.outcome = { ...s.outcome, status: 'expired' };
         }
     }
-    const toRefresh = signals.filter(s => s.source !== 'legacy' && OPEN.has(s.outcome?.status));
+    // Trades closed in the last 10 days are refreshed too: Yahoo revises
+    // preliminary opens/closes for a day or two (ILMN's 2026-10-30 gap exit was
+    // stored at a 253.84 open that Yahoo later finalized at 255.77).
+    const settled = new Date(Date.now() - 10 * 86400e3).toISOString().slice(0, 10);
+    const toRefresh = signals.filter(s => s.source !== 'legacy' && (OPEN.has(s.outcome?.status)
+        || (s.outcome?.status === 'closed' && s.outcome.exit_date >= settled)));
     // SPY covers the backfill window too, for the account simulation.
     const spy = (await fetchDailyBars('SPY', SPY_RANGE))?.bars;
     if (!spy) throw new Error('Could not fetch SPY');
-    if (toRefresh.length) {
+    // Evening runs (GitHub's late schedule, ~01:00 UTC) have received series
+    // from Yahoo without the latest session. Refreshing with them rolled every
+    // open outcome and the account back one session until the next scan, so a
+    // stale SPY series keeps the stored outcomes and account as they are.
+    const spyLast = spy[spy.length - 1].date;
+    const known = [state?.as_of, record.portfolio?.live?.stats?.to].filter(Boolean).sort().pop();
+    const stale = !!known && spyLast < known;
+    if (stale) console.log(`Yahoo's SPY series ends ${spyLast}, older than ${known}; keeping the stored outcomes and account.`);
+    if (toRefresh.length && !stale) {
         const spyByDate = new Map(spy.map(b => [b.date, b]));
         const tickers = [...new Set(toRefresh.map(s => s.ticker))];
         const barsByTicker = new Map();
@@ -101,18 +114,21 @@ async function main() {
             }
         }
         if (secFailed) console.log(`SEC earnings lookup failed for ${secFailed} tickers (kept the stored dates).`);
-        let updated = 0;
+        let updated = 0, behind = 0;
         for (const s of toRefresh) {
             const bars = barsByTicker.get(s.ticker);
             if (!bars) continue;
+            // Same guard per ticker: a series missing the latest session would
+            // roll the outcome back (halted / delisted tickers stay as stored).
+            if (bars[bars.length - 1].date < spyLast) { behind++; continue; }
             s.outcome = computeOutcome(s, bars, spyByDate);
             updated++;
         }
-        console.log(`Refreshed ${updated}/${toRefresh.length} open signals (${tickers.length} tickers).`);
+        console.log(`Refreshed ${updated}/${toRefresh.length} open signals (${tickers.length} tickers)${behind ? `; ${behind} kept (bars older than ${spyLast})` : ''}.`);
     }
 
     const { summary, signals: _s, generated_at, settings, ...extra } = record;
-    writeTrackRecord(signals, days, extra, spy);
+    writeTrackRecord(signals, days, extra, stale ? null : spy);
     console.log(`Track record: ${signals.length} signals across ${Object.keys(days).length} scan days.`);
 }
 

@@ -64,11 +64,13 @@ async function fetchYahooData(ticker) {
   }
 }
 
-// Fundamentals lookup with retry. Failures are usually transient (rate
-// limiting right after the price scan, or cookie/crumb refresh), so back off
-// 2s then 4s. validateResult:false keeps type coercion but stops minor Yahoo
-// schema drift on a single field from failing the whole lookup.
-async function quoteSummaryWithRetry(ticker, attempts = 3) {
+// Fundamentals lookup with retry. Failures are usually transient: right after
+// the ~6,000-ticker price scan Yahoo often answers the crumb request with 429
+// for a while (about 1 in 3 scan days in Oct-Nov 2026 lost every card's
+// fundamentals with 2s/4s backoff), so back off 5s, 15s, 45s.
+// validateResult:false keeps type coercion but stops minor Yahoo schema drift
+// on a single field from failing the whole lookup.
+async function quoteSummaryWithRetry(ticker, attempts = 4) {
     for (let i = 0; ; i++) {
         try {
             return await yf.quoteSummary(
@@ -77,7 +79,7 @@ async function quoteSummaryWithRetry(ticker, attempts = 3) {
                 { validateResult: false });
         } catch (e) {
             if (i >= attempts - 1) throw e;
-            await sleep(2000 * 2 ** i);
+            await sleep(5000 * 3 ** i);
         }
     }
 }
@@ -472,6 +474,15 @@ function earningsInfo(next, asOf, sessionsLeft) {
     const window = nextSessions(asOf, Math.max(0, sessionsLeft));
     const hit = react.find(d => window.includes(d)) || null;
     const days = Math.round((Date.parse(next.date) - Date.parse(asOf)) / 86400e3);
+    // Reported before the open on the setup day itself: already behind us
+    // (that session was the reaction); the next date is usually not out yet.
+    if (next.date === asOf && next.amc === false) {
+        return {
+            earnings_date: next.date, earnings_time: 'before open', earnings_estimate: false, earnings_source: next.source,
+            earnings_reported: true, earnings_soon: false, earnings_no_buy_session: null,
+            earnings_events: [{ date: next.date, amc: false }],
+        };
+    }
     return {
         earnings_date: next.date,
         earnings_time: next.amc === true ? 'after close' : next.amc === false ? 'before open' : null,

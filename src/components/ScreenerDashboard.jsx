@@ -858,6 +858,10 @@ export default function ScreenerDashboard({ onHealthChange }) {
                         title="2007-2026: buy stops filled on the earnings gap itself averaged -0.55R; holding a position through later earnings averaged +0.6R or better, so that is fine.">
                         ⚠️ Earnings {match.earnings_date}{match.earnings_time ? ` ${match.earnings_time}` : ''}: no buy on {match.earnings_no_buy_session}. Cancel the buy stop for that session; if the report gaps it through the pivot, skip the trade.
                       </div>
+                    ) : match.earnings_reported ? (
+                      <div className="mt-2 text-[10px] font-mono text-muted-foreground" title="The setup day was the earnings reaction; the next report is usually about 3 months out.">
+                        📅 Reported {match.earnings_date} before the open (the setup day); next date not out yet
+                      </div>
                     ) : match.earnings_date && match.earnings_date !== 'Unknown' ? (
                       <div className="mt-2 text-[10px] font-mono text-muted-foreground" title="Holding through earnings after the fill is part of the tested rules.">
                         📅 Earnings {match.earnings_date}{match.earnings_time ? ` (${match.earnings_time})` : ''}{match.earnings_estimate ? ', estimated' : ''}
@@ -957,7 +961,7 @@ export default function ScreenerDashboard({ onHealthChange }) {
                       {match.earnings_date && match.earnings_date !== "Unknown" && (
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0"><Clock className="w-3.5 h-3.5"/> Earnings Date</span>
-                          <span className="font-mono text-muted-foreground whitespace-nowrap truncate min-w-0">{match.earnings_date}</span>
+                          <span className="font-mono text-muted-foreground whitespace-nowrap truncate min-w-0">{match.earnings_date}{match.earnings_reported ? ' (reported)' : ''}</span>
                         </div>
                       )}
                     </div>
