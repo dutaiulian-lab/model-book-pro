@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-11-07T09:22:13.595Z",
-  "as_of": "2026-11-06",
+  "timestamp": "2026-11-09T22:18:21.767Z",
+  "as_of": "2026-11-09",
   "rules_version": "2026-10-27 (F7)",
   "rules": {
     "rsMin": 90,
@@ -63,9 +63,9 @@
     "on": true,
     "spy_above_200": true,
     "spy_above_50": false,
-    "breadth_50": 49,
-    "spy_close": 735.2899780273438,
-    "spy_sma200": 730.38
+    "breadth_50": 57.4,
+    "spy_close": 752.6900024414062,
+    "spy_sma200": 730.7
   },
   "idle_cash": {
     "mode": "spy200band",
@@ -73,19 +73,19 @@
     "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
     "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
     "on": true,
-    "spy_vs_200": 0.67
+    "spy_vs_200": 3.01
   },
   "context": {
     "spy": {
-      "value": 0.7,
-      "state": "testing",
-      "label": "Testing",
-      "color": "yellow",
-      "meaning": "SPY sits just above its 200-day and can flip either way. In the next 3 months it dipped 5%+ about 1 in 3 times and 10%+ about 1 in 5."
+      "value": 3,
+      "state": "uptrend",
+      "label": "Uptrend",
+      "color": "green",
+      "meaning": "Healthy trend, historically the best balance of risk and reward: SPY was higher 3 months later about 3 times in 4, and 10% drops were rare (about 1 in 13)."
     },
     "breadth": {
-      "value": 49,
-      "change10": 5.7,
+      "value": 57.4,
+      "change10": 13,
       "state": "mixed",
       "label": "Mixed",
       "color": "yellow",
@@ -95,16 +95,16 @@
     "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
   },
   "total_scanned": 6214,
-  "ranking_universe": 2774,
+  "ranking_universe": 2800,
   "stats": {
-    "ok": 6189,
-    "no_data": 25,
+    "ok": 6188,
+    "no_data": 26,
     "fetch_failed": 0,
     "retries": 0,
     "failure_rate": 0,
     "fundamentals_checked": 1,
     "fundamentals_failed": 0,
-    "earnings_unknown": 0
+    "earnings_unknown": 1
   },
   "matches": [
     {
@@ -112,13 +112,13 @@
       "family": "BASE",
       "setup_type": "Base Breakout",
       "signal_date": "2026-11-06",
-      "sessions_left": 5,
-      "price": 433.739990234375,
-      "dma10": 416.72300109863284,
-      "ema21": 415.42461557216933,
-      "sma50": 404.0734002685547,
-      "rs_rank": 95.74314574314575,
-      "dv_rank": 92.50180245133382,
+      "sessions_left": 4,
+      "price": 423.2200012207031,
+      "dma10": 417.3230010986328,
+      "ema21": 416.1332869947633,
+      "sma50": 404.82700012207033,
+      "rs_rank": 95.74007220216606,
+      "dv_rank": 92.4963924963925,
       "dollar_volume": 609072875.1867676,
       "base_depth": "-5.0%",
       "depth_52w": 4.985763365963856,
@@ -126,18 +126,18 @@
       "up_from_low52": 165.91869818609285,
       "setup_depth": 12.51916624238431,
       "setup_length": 20,
-      "spread_10_21": 0.3125441964182174,
-      "vol_ratio": 1.8345932126745168,
-      "vol_status": "Vol 183% of 20d",
+      "spread_10_21": 0.28589736535171173,
+      "vol_ratio": 1.6999660158577403,
+      "vol_status": "Vol 170% of 20d",
       "is_ipo": false,
       "ipo_date": null,
-      "adr": 3.7369594960702037,
-      "relative_strength_3mo": 17.337363848049165,
-      "dist_10dma": 4.083525289191914,
-      "dist_21ema": 4.408832306910759,
+      "adr": 3.869649305460475,
+      "relative_strength_3mo": 15.837678137530945,
+      "dist_10dma": 1.4130541826225862,
+      "dist_21ema": 1.7029914326534001,
       "recent_pivot": 456.5,
       "buy_stop": 456.5,
-      "dist_from_pivot": -4.985763365963858,
+      "dist_from_pivot": -7.290251649353097,
       "timing_status": "SOON",
       "timing_label": "⏳ Soon",
       "buy_limit": 470.195,
@@ -153,30 +153,22 @@
           "pivot": 456.5,
           "struct_stop": 402.15909271240236,
           "suggested_stop": 419.98,
-          "rs_rank": 95.74314574314575,
-          "dv_rank": 92.50180245133382
+          "rs_rank": 95.74007220216606,
+          "dv_rank": 92.4963924963925
         }
       ],
-      "eps_growth": 0.271,
-      "rev_growth": 0.262,
+      "eps_growth": -0.179,
+      "rev_growth": 0.261,
       "growth_ok": true,
       "short_percent": 0.0347,
-      "float_shares": 119826939,
+      "float_shares": 119849832,
       "sector": "Healthcare",
       "industry": "Healthcare Plans",
-      "earnings_date": "2026-11-06",
-      "earnings_time": "before open",
-      "earnings_estimate": false,
-      "earnings_source": "yahoo",
-      "earnings_reported": true,
+      "earnings_date": "Unknown",
+      "earnings_time": null,
       "earnings_soon": false,
       "earnings_no_buy_session": null,
-      "earnings_events": [
-        {
-          "date": "2026-11-06",
-          "amc": false
-        }
-      ]
+      "earnings_events": []
     }
   ],
   "tracked": []
