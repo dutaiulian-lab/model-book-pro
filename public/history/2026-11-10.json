@@ -1,0 +1,175 @@
+{
+  "timestamp": "2026-11-10T22:18:31.363Z",
+  "as_of": "2026-11-10",
+  "rules_version": "2026-10-27 (F7)",
+  "rules": {
+    "rsMin": 90,
+    "dvPctMin": 85,
+    "dvMin": 10000000,
+    "priceMin": 10,
+    "upLow52Min": 100,
+    "depth52Max": 35,
+    "families": [
+      "RANGE",
+      "TIGHT",
+      "BASE",
+      "HTF"
+    ],
+    "trackFamilies": [],
+    "trackNote": "",
+    "regime": "spy200",
+    "stop": "clamp",
+    "exit": "c50t21",
+    "entryWindow": 5,
+    "stopMinPct": 3,
+    "stopMaxPct": 8,
+    "trailAfterGainPct": 20,
+    "gapLimitPct": 3,
+    "skipEarningsSession": true,
+    "dealPin": {
+      "jumpPct": 15,
+      "volMult": 4,
+      "lookback": 15,
+      "minQuietSessions": 3,
+      "rangeMaxPct": 1
+    },
+    "readyWithinPct": 2,
+    "soonWithinPct": 10,
+    "maxHold": 252,
+    "rankPriceMin": 5,
+    "rankDvMin": 5000000
+  },
+  "rules_text": {
+    "families": [
+      "Launchpad Coil",
+      "Tight Range",
+      "Base Breakout",
+      "High Tight Flag"
+    ],
+    "tracked_families": [],
+    "track_note": "",
+    "regime": "SPY above its 200-day SMA",
+    "stop": "Structural stop clamped to 3%-8% below the fill",
+    "exit": "First close below the 50-day SMA (21-day EMA once a close is 20%+ above the fill)",
+    "entry": "Buy stop at the pivot (limit +3%), valid 5 sessions; no fill on an earnings-reaction session",
+    "tiers": {
+      "ready": 2,
+      "soon": 10
+    }
+  },
+  "regime": {
+    "rule": "spy200",
+    "rule_text": "SPY above its 200-day SMA",
+    "on": true,
+    "spy_above_200": true,
+    "spy_above_50": false,
+    "breadth_50": 55.5,
+    "spy_close": 749.9199829101562,
+    "spy_sma200": 730.99
+  },
+  "idle_cash": {
+    "mode": "spy200band",
+    "band": 3,
+    "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
+    "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
+    "on": true,
+    "spy_vs_200": 2.59
+  },
+  "context": {
+    "spy": {
+      "value": 2.6,
+      "state": "testing",
+      "label": "Testing",
+      "color": "yellow",
+      "meaning": "SPY sits just above its 200-day and can flip either way. In the next 3 months it dipped 5%+ about 1 in 3 times and 10%+ about 1 in 5."
+    },
+    "breadth": {
+      "value": 55.5,
+      "change10": 9.8,
+      "state": "mixed",
+      "label": "Mixed",
+      "color": "yellow",
+      "meaning": "No clear direction; money is rotating between sectors."
+    },
+    "flags": [],
+    "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
+  },
+  "total_scanned": 6215,
+  "ranking_universe": 2794,
+  "stats": {
+    "ok": 6189,
+    "no_data": 26,
+    "fetch_failed": 0,
+    "retries": 0,
+    "failure_rate": 0,
+    "fundamentals_checked": 1,
+    "fundamentals_failed": 0,
+    "earnings_unknown": 1
+  },
+  "matches": [
+    {
+      "ticker": "HUM",
+      "family": "BASE",
+      "setup_type": "Base Breakout",
+      "signal_date": "2026-11-06",
+      "sessions_left": 3,
+      "price": 438.05999755859375,
+      "dma10": 419.6440002441406,
+      "ema21": 418.1266243187479,
+      "sma50": 405.9235998535156,
+      "rs_rank": 95.74007220216606,
+      "dv_rank": 92.4963924963925,
+      "dollar_volume": 609072875.1867676,
+      "base_depth": "-5.0%",
+      "depth_52w": 4.985763365963856,
+      "high_52w": 456.5,
+      "up_from_low52": 165.91869818609285,
+      "setup_depth": 12.51916624238431,
+      "setup_length": 20,
+      "spread_10_21": 0.3628986620655875,
+      "vol_ratio": 1.4371727512358414,
+      "vol_status": "Vol 144% of 20d",
+      "is_ipo": false,
+      "ipo_date": null,
+      "adr": 3.7154923381984744,
+      "relative_strength_3mo": 15.582785020694082,
+      "dist_10dma": 4.388481022900148,
+      "dist_21ema": 4.767305423882839,
+      "recent_pivot": 456.5,
+      "buy_stop": 456.5,
+      "dist_from_pivot": -4.039430983878701,
+      "timing_status": "SOON",
+      "timing_label": "⏳ Soon",
+      "buy_limit": 470.195,
+      "below_stop": false,
+      "struct_stop": 402.15909271240236,
+      "suggested_stop": 419.98,
+      "suggested_stop_pct": 7.9999999999999964,
+      "setups": [
+        {
+          "family": "BASE",
+          "setup_type": "Base Breakout",
+          "signal_date": "2026-11-06",
+          "pivot": 456.5,
+          "struct_stop": 402.15909271240236,
+          "suggested_stop": 419.98,
+          "rs_rank": 95.74007220216606,
+          "dv_rank": 92.4963924963925
+        }
+      ],
+      "eps_growth": -0.179,
+      "rev_growth": 0.261,
+      "growth_ok": true,
+      "short_percent": 0.0347,
+      "float_shares": 119849832,
+      "sector": "Healthcare",
+      "industry": "Healthcare Plans",
+      "earnings_date": "Unknown",
+      "earnings_time": null,
+      "earnings_soon": false,
+      "earnings_no_buy_session": null,
+      "earnings_events": []
+    }
+  ],
+  "tracked": []
+}
