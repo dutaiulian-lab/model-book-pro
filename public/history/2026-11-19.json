@@ -1,0 +1,175 @@
+{
+  "timestamp": "2026-11-20T02:33:02.788Z",
+  "as_of": "2026-11-19",
+  "rules_version": "2026-10-27 (F7)",
+  "rules": {
+    "rsMin": 90,
+    "dvPctMin": 85,
+    "dvMin": 10000000,
+    "priceMin": 10,
+    "upLow52Min": 100,
+    "depth52Max": 35,
+    "families": [
+      "RANGE",
+      "TIGHT",
+      "BASE",
+      "HTF"
+    ],
+    "trackFamilies": [],
+    "trackNote": "",
+    "regime": "spy200",
+    "stop": "clamp",
+    "exit": "c50t21",
+    "entryWindow": 5,
+    "stopMinPct": 3,
+    "stopMaxPct": 8,
+    "trailAfterGainPct": 20,
+    "gapLimitPct": 3,
+    "skipEarningsSession": true,
+    "dealPin": {
+      "jumpPct": 15,
+      "volMult": 4,
+      "lookback": 15,
+      "minQuietSessions": 3,
+      "rangeMaxPct": 1
+    },
+    "readyWithinPct": 2,
+    "soonWithinPct": 10,
+    "maxHold": 252,
+    "rankPriceMin": 5,
+    "rankDvMin": 5000000
+  },
+  "rules_text": {
+    "families": [
+      "Launchpad Coil",
+      "Tight Range",
+      "Base Breakout",
+      "High Tight Flag"
+    ],
+    "tracked_families": [],
+    "track_note": "",
+    "regime": "SPY above its 200-day SMA",
+    "stop": "Structural stop clamped to 3%-8% below the fill",
+    "exit": "First close below the 50-day SMA (21-day EMA once a close is 20%+ above the fill)",
+    "entry": "Buy stop at the pivot (limit +3%), valid 5 sessions; no fill on an earnings-reaction session",
+    "tiers": {
+      "ready": 2,
+      "soon": 10
+    }
+  },
+  "regime": {
+    "rule": "spy200",
+    "rule_text": "SPY above its 200-day SMA",
+    "on": false,
+    "spy_above_200": false,
+    "spy_above_50": false,
+    "breadth_50": 37.6,
+    "spy_close": 715.8699951171875,
+    "spy_sma200": 732.69
+  },
+  "idle_cash": {
+    "mode": "spy200band",
+    "band": 3,
+    "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
+    "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
+    "on": true,
+    "spy_vs_200": -2.3
+  },
+  "context": {
+    "spy": {
+      "value": -2.3,
+      "state": "downtrend",
+      "label": "Downtrend",
+      "color": "red",
+      "meaning": "SPY is below its 200-day, a long-term downtrend. Expect wide swings: about 1 in 3 times SPY fell another 10%+ at some point in the next 3 months."
+    },
+    "breadth": {
+      "value": 37.6,
+      "change10": -10.6,
+      "state": "weak",
+      "label": "Weak",
+      "color": "red",
+      "meaning": "Most stocks are in pullbacks. SPY fell 10%+ at some point in the next 3 months about 1 in 4 times."
+    },
+    "flags": [],
+    "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
+  },
+  "total_scanned": 6210,
+  "ranking_universe": 1605,
+  "stats": {
+    "ok": 6184,
+    "no_data": 26,
+    "fetch_failed": 0,
+    "retries": 0,
+    "failure_rate": 0,
+    "fundamentals_checked": 1,
+    "fundamentals_failed": 0,
+    "earnings_unknown": 1
+  },
+  "matches": [
+    {
+      "ticker": "GKOS",
+      "family": "TIGHT",
+      "setup_type": "Tight Range",
+      "signal_date": "2026-11-16",
+      "sessions_left": 3,
+      "price": 233.0800018310547,
+      "dma10": 237.94400177001953,
+      "ema21": 223.15319498149515,
+      "sma50": 188.1933999633789,
+      "rs_rank": 98.568281938326,
+      "dv_rank": 89.77647489923048,
+      "dollar_volume": 466268670.8972168,
+      "base_depth": "-4.0%",
+      "depth_52w": 4.038243930627266,
+      "high_52w": 255.18499755859375,
+      "up_from_low52": 180.43976836766694,
+      "setup_depth": 6.192891039728075,
+      "setup_length": 5,
+      "spread_10_21": 6.6280954613940875,
+      "vol_ratio": 0.5899239345628843,
+      "vol_status": "Vol 59% of 20d",
+      "is_ipo": false,
+      "ipo_date": null,
+      "adr": 5.437347521168896,
+      "relative_strength_3mo": 32.57435732668526,
+      "dist_10dma": -2.0441784213018566,
+      "dist_21ema": 4.448426942927131,
+      "recent_pivot": 250.61000061035156,
+      "buy_stop": 250.61000061035156,
+      "dist_from_pivot": -6.994931860900677,
+      "timing_status": "SOON",
+      "timing_label": "⏳ Soon",
+      "buy_limit": 258.1283006286621,
+      "below_stop": false,
+      "struct_stop": 230.99920364379884,
+      "suggested_stop": 230.99920364379884,
+      "suggested_stop_pct": 7.825225217984655,
+      "setups": [
+        {
+          "family": "TIGHT",
+          "setup_type": "Tight Range",
+          "signal_date": "2026-11-16",
+          "pivot": 250.61000061035156,
+          "struct_stop": 230.99920364379884,
+          "suggested_stop": 230.99920364379884,
+          "rs_rank": 98.568281938326,
+          "dv_rank": 89.77647489923048
+        }
+      ],
+      "eps_growth": null,
+      "rev_growth": 0.58,
+      "growth_ok": true,
+      "short_percent": 0.0917,
+      "float_shares": 57045299,
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "earnings_date": "Unknown",
+      "earnings_time": null,
+      "earnings_soon": false,
+      "earnings_no_buy_session": null,
+      "earnings_events": []
+    }
+  ],
+  "tracked": []
+}
