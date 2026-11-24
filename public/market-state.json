@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-11-21T02:43:37.877Z",
-  "as_of": "2026-11-20",
+  "timestamp": "2026-11-24T05:27:56.459Z",
+  "as_of": "2026-11-23",
   "rules_version": "2026-10-27 (F7)",
   "rules": {
     "rsMin": 90,
@@ -63,9 +63,9 @@
     "on": false,
     "spy_above_200": false,
     "spy_above_50": false,
-    "breadth_50": 31,
-    "spy_close": 689.8099975585938,
-    "spy_sma200": 732.76
+    "breadth_50": 38.4,
+    "spy_close": 722.2899780273438,
+    "spy_sma200": 732.91
   },
   "idle_cash": {
     "mode": "spy200band",
@@ -73,19 +73,19 @@
     "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
     "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
     "on": false,
-    "spy_vs_200": -5.86
+    "spy_vs_200": -1.45
   },
   "context": {
     "spy": {
-      "value": -5.9,
+      "value": -1.4,
       "state": "downtrend",
       "label": "Downtrend",
       "color": "red",
       "meaning": "SPY is below its 200-day, a long-term downtrend. Expect wide swings: about 1 in 3 times SPY fell another 10%+ at some point in the next 3 months."
     },
     "breadth": {
-      "value": 31,
-      "change10": -17.9,
+      "value": 38.4,
+      "change10": -19,
       "state": "weak",
       "label": "Weak",
       "color": "red",
@@ -94,82 +94,18 @@
     "flags": [],
     "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
   },
-  "total_scanned": 6208,
-  "ranking_universe": 2698,
+  "total_scanned": 6205,
+  "ranking_universe": 2725,
   "stats": {
-    "ok": 6182,
+    "ok": 6179,
     "no_data": 26,
     "fetch_failed": 0,
     "retries": 0,
     "failure_rate": 0,
-    "fundamentals_checked": 1,
+    "fundamentals_checked": 0,
     "fundamentals_failed": 0,
-    "earnings_unknown": 1
+    "earnings_unknown": 0
   },
-  "matches": [
-    {
-      "ticker": "GKOS",
-      "family": "TIGHT",
-      "setup_type": "Tight Range",
-      "signal_date": "2026-11-16",
-      "sessions_left": 1,
-      "price": 237.30999755859375,
-      "dma10": 241.04600219726564,
-      "ema21": 225.6754506804066,
-      "sma50": 190.94899993896485,
-      "rs_rank": 98.568281938326,
-      "dv_rank": 89.74358974358975,
-      "dollar_volume": 466268670.8972168,
-      "base_depth": "-4.0%",
-      "depth_52w": 4.038243930627266,
-      "high_52w": 255.18499755859375,
-      "up_from_low52": 180.43976836766694,
-      "setup_depth": 6.192891039728075,
-      "setup_length": 5,
-      "spread_10_21": 6.810909857725838,
-      "vol_ratio": 0.5678608282346074,
-      "vol_status": "Vol 57% of 20d",
-      "is_ipo": false,
-      "ipo_date": null,
-      "adr": 5.53583828210953,
-      "relative_strength_3mo": 37.47460936467349,
-      "dist_10dma": -1.549913545388082,
-      "dist_21ema": 5.155433097888684,
-      "recent_pivot": 250.61000061035156,
-      "buy_stop": 250.61000061035156,
-      "dist_from_pivot": -5.307052000864343,
-      "timing_status": "SOON",
-      "timing_label": "⏳ Soon",
-      "buy_limit": 258.1283006286621,
-      "below_stop": false,
-      "struct_stop": 230.4519506072998,
-      "suggested_stop": 230.56120056152344,
-      "suggested_stop_pct": 8.000000000000002,
-      "setups": [
-        {
-          "family": "TIGHT",
-          "setup_type": "Tight Range",
-          "signal_date": "2026-11-16",
-          "pivot": 250.61000061035156,
-          "struct_stop": 230.4519506072998,
-          "suggested_stop": 230.56120056152344,
-          "rs_rank": 98.568281938326,
-          "dv_rank": 89.74358974358975
-        }
-      ],
-      "eps_growth": null,
-      "rev_growth": 0.58,
-      "growth_ok": true,
-      "short_percent": 0.0917,
-      "float_shares": 57045299,
-      "sector": "Healthcare",
-      "industry": "Medical Devices",
-      "earnings_date": "Unknown",
-      "earnings_time": null,
-      "earnings_soon": false,
-      "earnings_no_buy_session": null,
-      "earnings_events": []
-    }
-  ],
+  "matches": [],
   "tracked": []
 }
