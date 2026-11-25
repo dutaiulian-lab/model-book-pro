@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-11-24T05:27:56.459Z",
-  "as_of": "2026-11-23",
+  "timestamp": "2026-11-25T04:30:37.189Z",
+  "as_of": "2026-11-24",
   "rules_version": "2026-10-27 (F7)",
   "rules": {
     "rsMin": 90,
@@ -63,9 +63,9 @@
     "on": false,
     "spy_above_200": false,
     "spy_above_50": false,
-    "breadth_50": 38.4,
-    "spy_close": 722.2899780273438,
-    "spy_sma200": 732.91
+    "breadth_50": 41.7,
+    "spy_close": 718.780029296875,
+    "spy_sma200": 733.04
   },
   "idle_cash": {
     "mode": "spy200band",
@@ -73,32 +73,32 @@
     "rule_text": "Idle cash: held in SPY while SPY is above its 200-day SMA (to cash below -3%, back above +3%)",
     "note": "2026-10 study: parking idle cash in SPY while SPY is above its 200-day SMA (3% band) raised the walk-forward record of the selection procedure from 8.6% to 10.8-12.2%/yr (2010-2026; SPY 12.0%; the range depends on when SPY is sold to fund a fill) and F6b 2007-2026 from 11.9% to 14.7-16.0%/yr with about the same max drawdown (22-23%). Bands of 1-5% gave similar results.",
     "on": false,
-    "spy_vs_200": -1.45
+    "spy_vs_200": -1.95
   },
   "context": {
     "spy": {
-      "value": -1.4,
+      "value": -1.9,
       "state": "downtrend",
       "label": "Downtrend",
       "color": "red",
       "meaning": "SPY is below its 200-day, a long-term downtrend. Expect wide swings: about 1 in 3 times SPY fell another 10%+ at some point in the next 3 months."
     },
     "breadth": {
-      "value": 38.4,
-      "change10": -19,
-      "state": "weak",
-      "label": "Weak",
-      "color": "red",
-      "meaning": "Most stocks are in pullbacks. SPY fell 10%+ at some point in the next 3 months about 1 in 4 times."
+      "value": 41.7,
+      "change10": -13.7,
+      "state": "mixed",
+      "label": "Mixed",
+      "color": "yellow",
+      "meaning": "No clear direction; money is rotating between sectors."
     },
     "flags": [],
     "note": "Display only (never changes buy rules). Calibrated 2026-10-06 on SPY and breadth (% of liquid US stocks above their 50-day SMA), Oct 2005 - Oct 2026 (5,273 sessions): SPY's return and worst drawdown over the next 1 and 3 months by state. Odds are rough: overlapping windows, few independent episodes at the extremes."
   },
-  "total_scanned": 6205,
-  "ranking_universe": 2725,
+  "total_scanned": 6233,
+  "ranking_universe": 2731,
   "stats": {
-    "ok": 6179,
-    "no_data": 26,
+    "ok": 6206,
+    "no_data": 27,
     "fetch_failed": 0,
     "retries": 0,
     "failure_rate": 0,
